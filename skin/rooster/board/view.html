@@ -1,0 +1,39 @@
+<div id=board-view>
+  <div class=bdr_content>
+    <header>
+      <h1>{TOPIC}</h1>
+      <nav class="breadcrumbs cuttext">
+        <ul>{BREADCRUMBS}</ul>
+      </nav>
+    </header>
+    <div class="q imgicon">
+      <div class=clear>
+        <div class=post-author>
+          <img class="nozoom circle usericon" src="{WEBURL}index.php/index/model/usericon/index?id={UID}" alt=usericon>
+          <a class="status{STATUS} cuttext block" title="{LNG_Sender}" href="{WEBURL}index.php?module=member&amp;id={UID}">{DISPLAYNAME}</a>
+        </div>
+        <div class=post-detail>
+          <p class=content-action>
+            <a class="icon-quote quote-{QID}-0-0-{MODULE}" title="{LNG_Quote}"></a>
+            <a class="icon-edit edit-{QID}-0-0-{MODULE}" title="{LNG_Edit}"></a>
+            <a class="icon-{PIN}pin pin-{QID}-0-0-{MODULE}" title="{PIN_TITLE}" id="pin_{QID}"></a>
+            <a class="icon-{LOCK}lock lock-{QID}-0-0-{MODULE}" title="{LOCK_TITLE}" id="lock_{QID}"></a>
+            <a class="icon-delete delete-{QID}-0-0-{MODULE}" title="{DELETE}"></a>
+            <a class="icon-print print-{QID}-0-0-{MODULE}" title="{LNG_Print page}"></a>
+          </p>
+          <div>{DETAIL}</div>
+        </div>
+      </div>
+      <footer class="reaction">
+        <span class="icon-create create" title="{LNG_Posted}">{DATE {DATE} d M Y}</span>
+        <span class="icon-comments comments" title="{LNG_comments}">{COMMENTS}</span>
+        <span class="icon-visited visited" title="{LNG_Views}">{VISITED}</span>
+      </footer>
+    </div>
+  </div>
+  <div id=comment-list>{COMMENTLIST}</div>
+  {REPLYFORM}
+</div>
+<script>
+  initDocumentView('board-view', 'board');
+</script>

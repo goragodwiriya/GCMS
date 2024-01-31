@@ -1,0 +1,37 @@
+.widget-album a {
+  display: block;
+  margin: 5px;
+  border-radius: 0.25rem;
+  overflow: hidden;
+  position: relative;
+  text-align: center;
+}
+.widget-album figure {
+  display: flex;
+  background-position: center;
+  background-size: cover;
+  transition: all 0.5s cubic-bezier(0.43, 0.41, 0.22, 0.91);
+}
+.widget-album figure:before {
+  content: '';
+  display: block;
+  padding-top: 100%;
+}
+.widget-album a:hover figure {
+  transform: scale(1.1);
+}
+.widget-album a > figcaption {
+  color: #fff;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  padding: 5px 10px;
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  -webkit-line-clamp: 2;
+  font-size: 0.9rem;
+  line-height: 1.5rem;
+  background: linear-gradient(to bottom, rgba(255, 255, 255, 0), #1e2024);
+}

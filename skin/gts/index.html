@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="{LANGUAGE}" dir="ltr" class="smooth">
+
+<head>
+  <title>{TITLE}</title>
+  <meta charset=utf-8>
+  <meta name=viewport content="width=device-width, initial-scale=1.0">
+  <link rel="shortcut icon" href="{WEBURL}favicon.ico">
+  <link rel=stylesheet href="{WEBURL}index.php/css/view/index">
+  <script src="{WEBURL}index.php/js/view/index"></script>
+</head>
+
+<body class="responsive facebook">
+  <a class=skip_content accesskey=s href=#content title="{LNG_skip to content}"></a>
+  <div id=top_header>
+    <div class="table gcss-wrapper">
+      <div class="td left">{WIDGET_SHARE}</div>
+      <div class="td center language_menu">{LNG_Text size} {LANGUAGES}{FONTSIZE}</div>
+      <div class="td right" id=login-box>{LOGIN}</div>
+    </div>
+  </div>
+  <div class=gcss-wrapper>
+    <header class="header header_bg_color">
+      <div class="header_bg">
+        <a id=logo href="{WEBURL}index.php">{LOGO}</a>
+        <p class=description>{WEBDESCRIPTION}</p>
+      </div>
+      <div id=scroll-to class="menu_wrapper menu_bg menu_bg_color">
+        <nav id=topmenu class="topmenu responsive fullwidth">
+          <ul>{MAINMENU}</ul>
+        </nav>
+      </div>
+    </header>
+    <div class="wrapper_top_bg wrapper_bg_color clear">
+      <main class="leftsidebar wrapper_bg margin-top">
+        <div class=content>
+          <div id=content class="article clear content_bg content_bg_color"> {CONTENT} </div>
+        </div>
+        <aside class=sidebar>
+          <div class="sidebar_bg sidebar_bg_color clear">
+            <section class=widget>
+              <header>
+                <h2>Mainmenu</h2>
+              </header>
+              <nav class="sidemenu responsive">
+                <ul>{SIDEMENU}</ul>
+              </nav>
+            </section>
+            <section class="widget widget_bdr widget_bg widget_bg_color search">
+              <header>
+                <h2>Search</h2>
+              </header>
+              <div class=widget_body>{WIDGET_SEARCH}</div>
+            </section>
+            <div class="widget right">{WIDGET_LIKE}</div>
+            <section class="widget widget_bdr widget_bg widget_bg_color gallery">
+              <header>
+                <h2>Gallery</h2>
+              </header>
+              <div class=widget_body>{WIDGET_GALLERY}</div>
+            </section>
+          </div>
+        </aside>
+      </main>
+    </div>
+    <div id=text-links class=center>
+      <a href="https://www.goragod.com" title="Goragod.com">
+        <img src="https://www.goragod.com/smalllogo.gif" alt="Goragod.com">
+      </a>
+    </div>
+    <footer class="footer footer_bg_color footer_bg">
+      <p>Copyright &copy; 2017
+        <a href="{WEBURL}">{WEBTITLE}</a>
+      </p>
+      <p> GCMS Version {VERSION} designed by
+        <a href="https://www.kotchasan.com">Kotchasan.com</a> {LNG_page process}
+        <span id=db_elapsed>{ELAPSED}</span> {LNG_second} (
+        <span id=db_quries>{QURIES}</span> quries.)
+      </p>
+    </footer>
+  </div>
+  <a href=#scroll-to class=scroller>^</a>
+</body>
+
+</html>

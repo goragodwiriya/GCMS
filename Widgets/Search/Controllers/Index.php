@@ -1,0 +1,41 @@
+<?php
+/**
+ * @filesource Widgets/Search/Controllers/Index.php
+ *
+ * @copyright 2016 Goragod.com
+ * @license https://www.kotchasan.com/license/
+ *
+ * @see https://www.kotchasan.com/
+ */
+
+namespace Widgets\Search\Controllers;
+
+/**
+ * Controller หลัก สำหรับแสดงผล Widget
+ *
+ * @author Goragod Wiriya <admin@goragod.com>
+ *
+ * @since 1.0
+ */
+class Index extends \Kotchasan\Controller
+{
+    /**
+     * แสดงผล Widget
+     *
+     * @param array $query_string ข้อมูลที่ส่งมาจากการเรียก Widget
+     *
+     * @return string
+     */
+    public function get($query_string)
+    {
+        // ฟอร์มค้นหา
+        $template = \Kotchasan\Template::createFromFile(ROOT_PATH.'Widgets/Search/Views/search.html');
+        $template->add(array(
+            '/{ID}/' => uniqid(),
+            '/{SEARCH}/' => self::$request->get('q')->topic(),
+            '/{MODULE}/' => empty($query_string['module']) ? 'search' : $query_string['module']
+        ));
+        // คืนค่า HTML
+        return $template->render();
+    }
+}

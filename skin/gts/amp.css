@@ -1,0 +1,310 @@
+body {
+  font-family: Tahoma, Loma, Arial, Helvetica, sans-serif;
+  background-color: #F5F5F5;
+  font-size: 13px;
+}
+ul,
+ol {
+  padding: 10px 0 10px 25px;
+  line-height: 0;
+}
+body,
+li {
+  line-height: 2em;
+}
+.gcss-wrapper {
+  margin: 0 auto;
+  max-width: 1088px;
+}
+.page {
+  box-shadow: 0 2px 5px 0 rgba(0, 0, 0, 0.26);
+  background-color: #FFF;
+  padding: 10px;
+}
+.header {
+  position: relative;
+  z-index: 2;
+  background-color: #4285F4;
+  padding: 20px 0;
+  box-shadow: 0 2px 5px 0 rgba(0, 0, 0, 0.26);
+}
+.header a {
+  color: inherit;
+  text-decoration: none;
+}
+.footer {
+  text-align: center;
+  color: #999;
+  padding: 20px 0;
+}
+.header .h1 {
+  color: #FFF;
+  text-shadow: -1px -1px 0 rgba(0, 0, 0, 0.3);
+  padding: 0 10px;
+}
+h1,
+h2,
+.header .h1 {
+  font-size: 2em;
+  font-family: Roboto, Tahoma, Loma, Arial, Helvetica, sans-serif;
+  font-weight: normal;
+}
+h1,
+h2 {
+  text-align: center;
+}
+.content footer {
+  margin-top: 10px;
+  padding: 10px;
+  text-shadow: 1px 1px 0 #FFF;
+  background-color: #F5F5F5;
+}
+#comment-list footer {
+  text-align: right;
+}
+#comment-list .r {
+  padding: 10px 0;
+  margin-top: 10px;
+}
+footer p {
+  margin: 0;
+  color: #666;
+  display: inline;
+}
+.hidden {
+  display: none;
+}
+.create,
+time {
+  color: #666;
+}
+.php {
+  color: #808000;
+}
+.asp {
+  color: #F0F;
+}
+.css {
+  color: #C0F;
+}
+.comment {
+  color: #008000;
+}
+.xml {
+  color: #C60;
+}
+.html {
+  color: #008080;
+}
+.sql,
+.tags {
+  color: #000080;
+}
+.htaccess {
+  color: #036;
+}
+.comment {
+  color: #393;
+}
+.visited,
+.count {
+  color: #669517;
+}
+.reply {
+  color: #906;
+}
+.ip {
+  color: #FFA444;
+}
+i {
+  font-style: italic;
+}
+a {
+  text-decoration: underline;
+  font-weight: bold;
+}
+em {
+  font-style: inherit;
+  font-family: inherit;
+  color: #F00;
+}
+strong {
+  font-weight: bold;
+}
+figure {
+  margin: 0 0 10px 0;
+  display: block;
+}
+amp-img {
+  border: none;
+}
+del {
+  text-decoration: line-through;
+}
+u {
+  text-decoration: underline;
+}
+.right {
+  text-align: right
+}
+.left {
+  text-align: left;
+}
+.center {
+  text-align: center;
+}
+.message {
+  background-color: #80CB92;
+  border-color: #4CAF50;
+  color: #255A32;
+}
+.warning {
+  background-color: #FBDCA0;
+  border-color: #FF9800;
+  color: #644405;
+}
+.error,
+.empty {
+  background-color: #DF8989;
+  border-color: #F44336;
+  color: #7B2121;
+}
+.tip {
+  background-color: #85B7E7;
+  border-color: #2196F3;
+  color: #1A5186;
+}
+.error,
+.message,
+.empty,
+.warning,
+.tip {
+  text-shadow: 1px 1px 1px rgba(255, 255, 255, 0.5);
+  position: relative;
+  padding: 10px;
+  display: block;
+  clear: both;
+}
+div.error,
+div.message,
+div.empty,
+div.warning,
+div.tip {
+  margin-top: 10px;
+  margin-bottom: 10px;
+}
+code,
+blockquote {
+  background-color: #F9F9F9;
+  background-color: rgba(0, 0, 0, 0.04);
+  margin-top: 10px;
+  margin-bottom: 10px;
+  display: block;
+}
+code+br,
+blockquote+br {
+  display: none;
+}
+code {
+  border-width: 1px;
+  border-style: solid;
+  border-color: #DDD;
+  padding: 10px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  white-space: nowrap;
+}
+blockquote {
+  font-style: italic;
+  position: relative;
+  padding: 10px 10px 10px 45px;
+}
+blockquote>b:first-child {
+  display: block;
+  margin-bottom: 5px;
+  font-style: normal;
+}
+blockquote:before {
+  content: "\201C";
+  font-size: 6em;
+  line-height: 1;
+  font-family: Georgia, serif;
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: block;
+  color: rgba(0, 0, 0, 0.1)
+}
+code code,
+blockquote blockquote {
+  margin-right: 10px;
+  padding-right: 0;
+}
+code ol,
+blockquote ol,
+code ul,
+blockquote ul {
+  padding-top: 0;
+  padding-bottom: 0;
+}
+aside.error,
+aside.message,
+aside.empty,
+aside.warning,
+aside.tip {
+  border-style: solid;
+  border-width: 1px;
+  margin: 10px;
+}
+table {
+  width: 100%;
+  margin: 10px auto;
+  border-collapse: collapse;
+  border-right: 1px solid #666;
+  border-top: 1px solid #666;
+}
+table td,
+table th,
+table caption {
+  padding: 5px;
+}
+table caption {
+  text-align: left;
+}
+table>thead>tr>th,
+table caption {
+  background: #EEE;
+  border-bottom: 1px solid #666;
+}
+table>thead>tr>th {
+  border-left: 1px solid #666;
+}
+table>tbody>tr>td,
+table>tbody>tr>th {
+  vertical-align: middle;
+  border-bottom: 1px solid #666;
+  border-left: 1px solid #666;
+  background-color: #FFF;
+}
+table>tbody>tr>th {
+  text-align: center;
+}
+table>tbody>tr.bg2>td {
+  background: #EEE;
+}
+table>tbody>tr.bg2>th {
+  background: #EEE;
+}
+table>tbody>tr>th {
+  background: #F5F5F5;
+}
+table>tbody>tr>th.th {
+  background: #EEE;
+}
+table>thead>tr>th.th {
+  border-left: 1px solid #666;
+}
+table th>span {
+  display: block;
+  color: #F90;
+}

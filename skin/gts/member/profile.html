@@ -1,0 +1,72 @@
+<form id=register_frm class="main_frm" method=post action="{WEBURL}index.php" autocomplete=off>
+  <header>
+    <h2 class="cuttext icon-profile">{LNG_Editing your account}</h2>
+  </header>
+  <fieldset>
+    <div class=item>
+      <label for=register_email>{LNG_Email}/Facebook ID</label>
+      <span class="g-input icon-email"><input type=text name=register_email id=register_email {EDITEMAIL} value="{EMAIL}"></span>
+    </div>
+    <div class=item>
+      <label for=register_phone1>{LNG_Phone}</label>
+      <span class="g-input icon-phone"><input type=text name=register_phone1 id=register_phone1 {EDITPHONE} value="{PHONE1}"></span>
+    </div>
+    <div class=item>
+      <label for=register_displayname>{LNG_Displayname}</label>
+      <span class="g-input icon-user"><input type=text name=register_displayname id=register_displayname maxlength=50 value="{DISPLAYNAME}" title="{LNG_Name for the show on the site at least 2 characters}" autofocus></span>
+      <div class=comment id=result_register_displayname>{LNG_Name for the show on the site at least 2 characters}</div>
+    </div>
+    <div class=item>
+      <label for=register_sex>{LNG_Sex}</label>
+      <span class="g-input icon-sex"><select id=register_sex name=register_sex title="{LNG_Please choose}">
+          <option value="">--- {LNG_Please choose} ---</option>
+          {SEX}
+        </select></span>
+    </div>
+    <div class=item>
+      <div class=usericon><span><img src="{WEBURL}index.php/index/model/usericon/index?id={ID}" alt=Usericon id=imgIcon></span></div>
+      <label for=register_usericon>{LNG_Avatar}</label>
+      <span class="g-input icon-upload"><input type=file class=g-file name=register_usericon id=register_usericon placeholder="{LNG_Browse file}" title="{LNG_Upload a picture of :type} ({LNG_automatic resize})" data-preview=imgIcon></span>
+      <div class=comment id=result_register_usericon>{LNG_Upload a picture of :type} ({LNG_automatic resize})</div>
+    </div>
+    <div class=item>
+      <label for=register_website>{LNG_Website}</label>
+      <span class="g-input icon-world"><input type=text name=register_website id=register_website maxlength=255 value="{WEBSITE}" title="{LNG_Your site&#039;s URL (include http://)}"></span>
+      <div class=comment id=result_register_website>{LNG_Your site&#039;s URL (include http://)}</div>
+    </div>
+    <div class=item>
+      <label for=register_idcard>{LNG_Identification No.}</label>
+      <span class="g-input icon-profile"><input type=number name=register_idcard id=register_idcard maxlength=13 value="{IDCARD}" title="{LNG_13-digit identification number}"></span>
+      <div class=comment id=result_register_idcard>{LNG_13-digit identification number}</div>
+    </div>
+    <div class=item>
+      <label for=register_birthday>{LNG_Birthday}</label>
+      <span class="g-input icon-calendar"><input type=date id=register_birthday name=register_birthday value="{BIRTHDAY}" title="{LNG_Birthday}"></span>
+    </div>
+    <div class=item>
+      <label for="register_company">{LNG_Company}</label>
+      <span class="g-input icon-address"><input id="register_company" placeholder="{LNG_Your workplace}" maxlength="255" type="text" name="register_company" value="{COMPANY}"></span>
+    </div>
+    <div class=item>
+      <label for=register_phone2>{LNG_Phone}/{LNG_Fax}</label>
+      <span class="g-input icon-print"><input type=text name=register_phone2 id=register_phone2 maxlength=32 value="{PHONE2}" title="{LNG_Phone}"></span>
+    </div>
+  </fieldset>
+  <fieldset class="submit">
+    <input type=submit class="button large save" value="{LNG_Save}">
+    <input type=hidden name=token id=token value="{TOKEN}">
+    <input type=hidden name=register_id id=register_id value="{ID}">
+    <input type=hidden name=tab value=profile>
+  </fieldset>
+</form>
+<script>
+  $G(window).Ready(function() {
+    new GForm('register_frm', '{WEBURL}xhr.php/index/model/updateprofile/submit').onsubmit(doFormSubmit);
+    birthdayChanged('register_birthday', '%s ({LNG_age} %y {LNG_year}, %m {LNG_month} %d {LNG_days})');
+    new GValidator('register_displayname', 'keyup,change', checkDisplayname, '{WEBURL}index.php/index/model/checker/displayname', null, 'register_frm');
+    new GValidator('register_phone1', 'keyup,change', checkPhone, '{WEBURL}index.php/index/model/checker/phone', null, 'register_frm');
+    if ($E('register_idcard')) {
+      new GValidator('register_idcard', 'keyup,change', checkIdcard, '{WEBURL}index.php/index/model/checker/idcard', null, 'register_frm');
+    }
+  });
+</script>

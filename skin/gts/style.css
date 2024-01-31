@@ -1,0 +1,283 @@
+/*
+ Name: Go To School
+ Description: แม่แบบสองคอลัมน์ ยอดนิยม สำหรับเว็บไซต์โรงเรียน
+ Author: Goragod.com
+ Author URI: https://goragod.com
+ Responsive
+*/
+body {
+  background-color: #eee;
+  color: #666;
+}
+a {
+  color: #333;
+}
+a:hover {
+  color: #000;
+}
+#top_header {
+  background-color: #333;
+  color: rgba(255, 255, 255, 0.5);
+  white-space: nowrap;
+  line-height: 24px;
+}
+.widget_share a {
+  color: inherit;
+}
+#login_editprofile:hover,
+.widget_share a:hover,
+.language_menu a:hover {
+  color: #fff;
+}
+#login_google {
+  display: inline-block;
+  vertical-align: middle;
+}
+@media only screen and (max-width: 768px) {
+  #top_header {
+    white-space: normal;
+  }
+  #top_header div.td,
+  #top_header div.table {
+    display: block;
+    text-align: center !important;
+  }
+  body .member_section {
+    margin-left: 0;
+  }
+}
+.header .header_bg {
+  background-image: url(img/logo.jpg);
+  height: 200px;
+  color: transparent;
+}
+#login_frm label,
+#login_frm fieldset {
+  display: inline;
+}
+#login_editprofile:after {
+  border-width: 7px;
+  border-style: solid solid none solid;
+  border-color: #ddd transparent #ddd transparent;
+  content: "";
+  display: inline-block;
+  margin-left: 5px;
+}
+#login_editprofile:hover:after {
+  border-color: #fff transparent #fff transparent;
+}
+.sidebar section.widget-like {
+  text-align: right;
+}
+.sidebar section.social-box {
+  clear: both;
+  text-align: center;
+  padding-bottom: 10px;
+}
+.widget-search-form {
+  padding: 3px;
+  border-width: 1px;
+  border-style: solid;
+  border-color: inherit;
+  color: #000;
+}
+.sidebar .gallery-box .table_rss_gallery_class a {
+  border: 1px solid #ddd;
+}
+.sidebar_bg_color {
+  background-color: #fff;
+  border-color: rgba(0, 0, 0, 0.2);
+}
+#text-links,
+.footer {
+  padding: 10px;
+  overflow: hidden;
+}
+.footer_bg_color {
+  background-color: #313131;
+  color: #fff;
+}
+.footer a {
+  color: #ffc459;
+}
+#register_frm dl.info {
+  border: 1px dashed #ddd;
+  padding: 5px 10px;
+  line-height: 1.8em;
+  margin-top: 8px;
+}
+#register_frm dl.info dt {
+  padding-bottom: 5px;
+}
+.member_section {
+  padding: 10px;
+  margin-left: 10px;
+  background-color: #fff;
+}
+.reaction {
+  background-color: #f9f7ee;
+  overflow: hidden;
+  white-space: nowrap;
+  clear: both;
+}
+#document-view .reaction p {
+  margin: 0;
+}
+#board-view div.body {
+  margin-bottom: 0;
+}
+fieldset > legend > span,
+.bdr_content header > h3.icon-tags {
+  font-size: 1.4em;
+  padding-top: 10px;
+  overflow: hidden;
+  display: inline-block;
+}
+#comment-list {
+  margin-top: 10px;
+  margin-bottom: 10px;
+}
+#comment-list .r {
+  padding: 5px 0 0 0;
+  margin-bottom: 10px;
+}
+#comment-list .r-body > .detail {
+  z-index: 2;
+  margin-left: 60px;
+  position: relative;
+}
+#comment-list .r > .reaction {
+  text-align: right;
+}
+#comment-list .r-body > img.usericon {
+  float: left;
+  margin: 0 10px 10px 0;
+}
+nav.breadcrumbs {
+  background-color: #f5f5f5;
+  padding: 5px 10px;
+  position: absolute;
+  top: 0;
+  left: -10px;
+  right: -10px;
+}
+nav.breadcrumbs li a {
+  text-shadow: 1px 1px 0 rgba(255, 255, 255, 0.4), -1px -1px 0 rgba(255, 255, 255, 0.2);
+}
+nav.breadcrumbs li:before {
+  border-width: 5px;
+  border-style: solid none solid solid;
+  border-color: transparent #33ccff;
+  content: "";
+  display: inline-block;
+}
+.widget p.right {
+  margin: 0;
+  padding-right: 5px;
+}
+.subcontent .widget_bdr,
+.bdr_content {
+  background-color: #fff;
+}
+.bdr_content {
+  padding: 0 10px 10px;
+}
+.subcontent .widget_bdr,
+.subcontent .bdr_content {
+  border-width: 1px;
+  border-style: solid;
+  border-color: #ddd;
+  box-shadow: 0 0 2px rgba(0, 0, 0, 0.1);
+}
+.homepage .widget_bdr {
+  padding: 0;
+}
+.bdr_content > header {
+  padding: 2.3em 0 0;
+}
+.widget h2,
+.member_section h1,
+.bdr_content h1 {
+  line-height: 2;
+}
+.bdr_content > header,
+header.header {
+  position: relative;
+}
+.widget header {
+  padding-left: 5px;
+  padding-right: 5px;
+}
+.widget header h2 {
+  padding: 0;
+}
+.homepage .bar1 {
+  background-color: #ff6600;
+  color: #fff;
+}
+.homepage .bar2 {
+  background-color: #8c153b;
+  color: #fff;
+}
+.homepage .bartop {
+  background-color: #691f74;
+  color: #fff;
+}
+.homepage .icon-next {
+  margin: 5px;
+  display: inline-block;
+}
+.menu_wrapper .topmenu {
+  background-color: #333;
+}
+.menu_wrapper .topmenu ul {
+  color: #a5a5a5;
+}
+.menu_wrapper .topmenu > ul > li > a {
+  border-color: rgba(0, 0, 0, 0.1) rgba(0, 0, 0, 0.1) rgba(0, 0, 0, 0.2) rgba(0, 0, 0, 0.2);
+  border-width: 1px;
+  border-style: solid;
+  text-shadow: -1px -1px 0 rgba(0, 0, 0, 0.4), 1px 1px 0 rgba(0, 0, 0, 0.2);
+}
+.menu_wrapper .topmenu ul > li:hover > a,
+.menu_wrapper .topmenu ul > li.select > a {
+  background-color: #ffc459;
+  color: #2c2c2c;
+  text-shadow: 1px 1px 0 rgba(255, 255, 255, 0.4), -1px -1px 0 rgba(255, 255, 255, 0.2);
+}
+.sidemenu {
+  border-width: 1px;
+  border-style: solid;
+  border-color: inherit;
+  padding: 5px;
+}
+.sidemenu > ul > li {
+  border-bottom-style: solid;
+  border-width: 1px;
+  border-color: inherit;
+}
+.sidemenu > ul ul {
+  box-shadow: 0 0 5px rgba(0, 0, 0, 0.4);
+}
+#GModal_modaldiv > .modaldiv form {
+  padding: 10px;
+  background-color: #fff;
+}
+.mainform p {
+  padding-left: 0;
+  padding-right: 0;
+}
+.iconview .figure > span,
+.thumbview .figure > span {
+  transition: all 0.5s cubic-bezier(0.43, 0.41, 0.22, 0.91);
+}
+.iconview .figure:hover > span,
+.thumbview .figure:hover > span {
+  transform: scale(1.3);
+}
+.document-list.thumbview .description {
+  color: #999;
+}
+.thumbview .figure > span::before {
+  padding-top: 75%;
+}

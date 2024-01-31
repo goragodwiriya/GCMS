@@ -1,0 +1,51 @@
+.widget-tags {
+  padding: 3px 4px 4px 4px;
+  text-align: center;
+}
+.widget-tags>a {
+  margin: 2px;
+  display: inline-block;
+  cursor: pointer;
+}
+.widget-tags>a:hover {
+  background: #FEE8FF;
+  color: #F0C;
+  text-decoration: underline;
+}
+.widget-tags>a.class0 {
+  font-size: 1em;
+}
+.widget-tags>a.class1 {
+  font-size: 1.1em;
+}
+.widget-tags>a.class2 {
+  font-size: 1.2em;
+}
+.widget-tags>a.class3 {
+  font-size: 1.3em;
+}
+.widget-tags>a.class4 {
+  font-size: 1.4em;
+}
+.widget-tags>a.class5 {
+  font-size: 1.5em;
+}
+.widget-tags>a.class6 {
+  font-size: 1.6em;
+}
+.widget-tags>a.class7 {
+  font-size: 1.7em;
+}
+.widget-tags>a.class8 {
+  font-size: 1.8em;
+}
+.widget-tags>a.class9 {
+  font-size: 1.9em;
+}
+div.tag-tooltip h5 {
+  font-size: 120%;
+  white-space: nowrap;
+  border-bottom: 1px dotted #FFF;
+  padding: 0 20px 3px 0;
+  margin-bottom: 3px;
+}

@@ -1,0 +1,24 @@
+<div class=bdr_content>
+  <header>
+    <h1>{TOPIC}</h1>
+    <nav class="breadcrumbs cuttext">
+      <ul>{BREADCRUMBS}</ul>
+    </nav>
+  </header>
+  <div id=event-day>
+    <div class=ecalendar>
+      <div>
+        <div class=year>{DATE {DATE} Y}</div>
+        <div class=date>{DATE {DATE} d}</div>
+        <div class=month>{DATE {DATE} M}</div>
+      </div>
+    </div>
+    <div>
+      <p class=time><span class=color style="background-color:{COLOR}"></span><span>{FROM_TIME}</span><span>{TO_TIME}</span></p>
+      <div class=detail>{DETAIL}</div>
+    </div>
+  </div>
+</div>
+<script>
+  initIndex();
+</script>

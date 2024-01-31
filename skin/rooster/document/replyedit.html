@@ -1,0 +1,26 @@
+<div class=bdr_content>
+  <header>
+    <h1>{LNG_Edit} {LNG_comments}</h1>
+    <nav class="breadcrumbs cuttext">
+      <ul>{BREADCRUMBS}</ul>
+    </nav>
+  </header>
+  <form id=reply-form class=mainform method=post action="{WEBURL}index.php" autocomplete=off>
+    <fieldset>
+      <div class=item>
+        <label for=reply_detail>{LNG_Detail}</label>
+        <span class="g-input icon-file"><textarea id=reply_detail name=reply_detail rows=10 placeholder="{LNG_BBCode supports}">{DETAIL}</textarea></span>
+      </div>
+    </fieldset>
+    <fieldset class=submit>
+      <input type=submit class="button large save" value="{LNG_Save}">
+      <input type=hidden name=token id=token value="{TOKEN}">
+      <input type=hidden name=index_id value={QID}>
+      <input type=hidden name=reply_id value={RID}>
+      <input type=hidden name=module_id value={MODULEID}>
+    </fieldset>
+  </form>
+</div>
+<script>
+  initEditor('reply-form', 'reply_detail', WEB_URL + 'xhr.php/document/model/reply/submit');
+</script>

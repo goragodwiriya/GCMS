@@ -1,0 +1,214 @@
+/*
+ Name: ระกา
+ Description: Template เริ่มต้นสำหรับ GCMS 11.2.0 แบบ 1 คอลัมน์
+ Author: Goragod.com
+ Author URI: https://goragod.com
+ Responsive
+*/
+body {
+  font-size: 14px;
+  color: #272727;
+  font-family: "Kanit", Tahoma, Loma;
+}
+body,
+li {
+  line-height: 2em;
+}
+a {
+  color: #c30;
+}
+a:hover {
+  color: #0066ff;
+}
+#top_header {
+  background-color: #252124;
+  color: #ddd;
+  padding: 5px 0;
+  font-size: 0.8em;
+}
+#top_header .widget-search-form,
+#top_header a {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: inherit;
+}
+#top_header a:hover {
+  color: #fff;
+  background-color: rgba(255, 255, 255, 0.06);
+}
+#top_header .widget-search-form {
+  max-width: 200px;
+  margin: 0 auto;
+}
+#top_header .widget_share a {
+  border-radius: 50em;
+  -moz-border-radius: 50em;
+  -webkit-border-radius: 50em;
+  margin: 0 5px;
+}
+.header #logo {
+  font-family: "Bungee Outline", cursive;
+  font-size: 6em;
+  padding: 0.5em 0;
+  text-align: center;
+}
+.header .description {
+  text-align: center;
+}
+.footer_grid {
+  padding: 30px 0;
+  border-color: rgba(255, 255, 255, 0.2);
+  text-shadow: -1px -1px 0 rgba(0, 0, 0, 0.1);
+}
+.footer_bg_color {
+  color: rgba(255, 255, 255, 0.7);
+  background-color: #362f34;
+}
+.footer .copyright {
+  text-align: center;
+  font-size: 0.8em;
+  background-color: rgba(0, 0, 0, 0.3);
+  padding: 20px 10px;
+}
+.footer a {
+  color: inherit;
+}
+.footer a:hover {
+  color: #fff;
+}
+.footer_grid h3 {
+  margin-bottom: 10px;
+  display: inline-block;
+  border-width: 3px;
+  border-bottom-style: solid;
+  color: #fff;
+  font-family: "Bungee Outline", cursive;
+}
+#login-box ul,
+.footer_grid ul {
+  padding: 0;
+  list-style-type: none;
+}
+.footer_grid ul.bottommenu {
+  padding: 0 0 0 25px;
+  list-style-type: disc;
+}
+.footer_grid span {
+  padding: 0;
+}
+.footer_grid .document-list.listview article {
+  border-color: rgba(255, 255, 255, 0.25);
+}
+.footer_grid .counter-detail > :last-child {
+  background-color: rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid #362f34;
+  border-radius: 0.25rem;
+}
+.topmenu {
+  border-bottom: 3px solid rgba(0, 0, 0, 0.1);
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
+  padding: 10px;
+}
+.topmenu > ul > li > a {
+  text-transform: uppercase;
+  font-size: 1.3em;
+}
+.topmenu > ul > li.select > a,
+.topmenu > ul > li:hover > a {
+  text-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+}
+.breadcrumbs {
+  text-align: center;
+  color: #aaa;
+  background-color: #f9f9f9;
+  border-radius: 3px;
+  -moz-border-radius: 3px;
+  -webkit-border-radius: 3px;
+  padding: 5px;
+  text-shadow: 1px 1px 0 #fff;
+}
+.breadcrumbs li:before {
+  content: "/";
+}
+.content header {
+  margin: 30px 0;
+  text-align: center;
+}
+.content header > h1 {
+  padding: 0.5em 0;
+  font-size: 3em;
+}
+.rightsidebar > .content {
+  padding-right: 10px;
+}
+.homepage .widget {
+  margin: 0;
+}
+.widget header {
+  margin: 0;
+  padding: 0;
+  border-bottom: 3px solid #f9f9f9;
+  overflow: hidden;
+}
+.widget header > h2 {
+  background-color: #f9f9f9;
+  float: left;
+  font-size: 1.3em;
+  padding: 5px 10px;
+}
+.reaction {
+  background-color: #f9f9f9;
+}
+.post-detail .no {
+  color: #cee7ec;
+  font-size: 300%;
+  font-family: Courier;
+  font-stretch: condensed;
+  position: absolute;
+  right: 10px;
+  bottom: 0;
+  z-index: 0;
+  -moz-opacity: 0.4;
+  filter: alpha(opacity=40);
+  opacity: 0.4;
+  line-height: 1;
+}
+.bdr_content {
+  margin-left: 0;
+  margin-right: 0;
+}
+form > fieldset > legend > span {
+  font-size: 1.2rem;
+}
+@media only screen and (max-width: 960px) {
+  #top_header {
+    padding-left: 0;
+  }
+  #top_header .table,
+  #top_header .td {
+    display: block;
+    width: auto;
+    text-align: center !important;
+  }
+  #top_header .td {
+    margin: 5px auto;
+  }
+  #top_header .widget-search-form {
+    margin: 0 auto;
+  }
+}
+@media only screen and (max-width: 768px) {
+  .header {
+    padding: 0 10px;
+  }
+  .header #logo {
+    font-size: 4em;
+  }
+  .content header > h1 {
+    font-size: 2em;
+  }
+}
+@media only screen and (max-width: 480px) {
+  .header #logo {
+    font-size: 3em;
+  }
+}

@@ -1,0 +1,46 @@
+<div class=bdr_content>
+  <header>
+    <h2 class=icon-signin>{TOPIC}</h2>
+    <nav class="breadcrumbs cuttext">
+      <ul>{BREADCRUMBS}</ul>
+    </nav>
+  </header>
+  <div class=ggrid>
+    <div class="float-left block6">
+      <div class="table center margin-bottom">
+        <a id=login_fb class="button wide {FACEBOOK} icon-facebook">{LNG_Login with Facebook}</a>
+        <div id=login_google class="margin-top"></div>
+      </div>
+    </div>
+    <div class="float-left block6">
+      <form id=login_frm class=member_frm method=post action="{WEBURL}index.php" autocomplete=off>
+        <fieldset>
+          <div class=item>
+            <label class="g-input icon-{ICON}"><input type=text name=login_username id=login_username maxlength=255 value="{EMAIL}" placeholder="{PLACEHOLDER}" autofocus></label>
+          </div>
+          <div class=item>
+            <label class="g-input icon-password"><input type=password name=login_password id=login_password maxlength=20 value="{PASSWORD}" placeholder="{LNG_Password}" autocomplete="off"></label>
+          </div>
+          <div class="submit table fullwidth collapse">
+            <div class="td">
+              <label><input type=checkbox value=1 name="login_remember"{REMEMBERME}> {LNG_Remember me}</label>
+            </div>
+            <div class="td right">
+              <a href="{WEBURL}index.php?module=forgot" title="{LNG_Request new password}"><span>{LNG_Forgot}</span></a>
+              <input type=submit class="button large send" value="{LNG_Sign in}" title="{LNG_Member Login}">
+            </div>
+          </div>
+          <input type=hidden name=login_action id=login_action value=back>
+          <input type=hidden name=token id=token value="{TOKEN}">
+        </fieldset>
+      </form>
+    </div>
+  </div>
+</div>
+<script>
+  $G(window).Ready(function() {
+    new GForm('login_frm', '{WEBURL}xhr.php/index/model/login/chklogin').onsubmit(doLoginSubmit);
+    initFacebookButton('login_fb');
+    initGoogleButton();
+  });
+</script>

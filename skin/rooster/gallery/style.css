@@ -1,0 +1,66 @@
+#gallery_list .caption {
+  display: block;
+}
+#gallery_list .item {
+  text-align: center;
+  border: none;
+}
+#gallery_list .item img {
+  border-width: 5px;
+  border-style: solid;
+  border-color: rgba(0, 0, 0, 0.05);
+  transition: border-color 0.5s;
+  -moz-transition: border-color 0.5s;
+  -webkit-transition: border-color 0.5s;
+}
+#gallery_list .item:hover img {
+  border-color: rgba(0, 0, 0, 0.1);
+}
+#gallery_list .item a {
+  position: relative;
+  display: block;
+}
+#gallery_list .item .zoom {
+  width: 100%;
+  height: 100%;
+  left: 0;
+  top: 0;
+  position: absolute;
+  background-color: rgba(0, 0, 0, 0);
+  transition: background-color 0.5s;
+  -moz-transition: background-color 0.5s;
+  -webkit-transition: background-color 0.5s;
+}
+#gallery_list .item .zoom:before {
+  font-family: 'icomoon';
+  speak: none;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-style: normal;
+  font-weight: normal;
+  content: '\E607';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  font-size: 3em;
+  width: 1em;
+  height: 1em;
+  line-height: 1em;
+  text-align: center;
+  margin: -0.5em 0 0 -0.5em;
+  color: transparent;
+  transition: color 0.5s;
+  -moz-transition: color 0.5s;
+  -webkit-transition: color 0.5s;
+}
+#gallery_list .item a:hover .zoom {
+  background-color: rgba(0, 0, 0, 0.4);
+}
+#gallery_list .item a:hover .zoom:before {
+  color: #FFF;
+}
+.gallery_detail {
+  margin-bottom: 10px;
+  padding: 10px;
+  text-align: center;
+}

@@ -1,0 +1,26 @@
+<form id=login_frm method=post action="{WEBURL}index.php" autocomplete=off>
+  <fieldset>
+    <label>
+      <input placeholder="{PLACEHOLDER}" type=text name=login_username id=login_username size=10 maxlength=255 value="{EMAIL}" title="{LNG_Please fill in}">
+    </label>
+    <label>
+      <input placeholder="{LNG_Password}" type=password name=login_password id=login_password size=10 maxlength=20 value="{PASSWORD}" title="{LNG_Please fill in}" autocomplete="off">
+    </label>
+  </fieldset>
+  <fieldset class=facebook>
+    <input type=submit id=login_submit value="{LNG_Sign in}" title="{LNG_Member Login}" class="button save">
+    <input type=hidden name=token id=token value="{TOKEN}">
+    <input type=hidden name=login_action id=login_action value=0>
+    <a id=login_register href="{WEBURL}index.php?module=register" title="{LNG_Create new account}" class="button border register">{LNG_Register}</a>
+    <a id=login_forgot href="{WEBURL}index.php?module=forgot" title="{LNG_Request new password}" class="button border forgot">{LNG_Forgot}</a>
+    <a id=login_fb title="{LNG_Login with Facebook}" class="{FACEBOOK} button blue">Facebook</a>
+    <div id=login_google data-type="icon" data-size="small"></div>
+  </fieldset>
+</form>
+<script>
+  $G(window).Ready(function() {
+    new GForm('login_frm', '{WEBURL}xhr.php/index/model/login/chklogin').onsubmit(doLoginSubmit);
+    initFacebookButton('login_fb');
+    initGoogleButton();
+  });
+</script>

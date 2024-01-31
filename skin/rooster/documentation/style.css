@@ -1,0 +1,66 @@
+#doc_content article {
+  border-width: 1px;
+  border-style: none solid solid;
+}
+#doc_content article:first-child {
+  border-top-style: solid;
+}
+#doc_content h6 {
+  display: block;
+  background-color: #F5F5F5;
+  border-width: 1px;
+  border-bottom-style: solid;
+  font-size: 1.2em;
+}
+#doc_content h6,
+#doc_content .description {
+  padding: 5px;
+  margin: 0;
+}
+.documentation section {
+  margin-bottom: 20px;
+}
+.tree_menu {
+  border-radius: 10px;
+  -moz-border-radius: 10px;
+  -webkit-border-radius: 10px;
+  padding: 10px;
+  background-color: rgba(0, 0, 0, 0.1);
+}
+.tree_menu span.icon-collapse,
+.tree_menu span.icon-collapse ~ a,
+.tree_menu li.select > * {
+  color: #000;
+}
+.tree_menu span:before {
+  margin: 0 5px;
+}
+.tree_menu ul {
+  padding: 0;
+  list-style-type: none;
+}
+.tree_menu ul ul {
+  height: 0;
+  overflow: hidden;
+  -webkit-transition: all .2s ease-in-out;
+  -moz-transition: all .2s ease-in-out;
+  -ms-transition: all .2s ease-in-out;
+  -o-transition: all .2s ease-in-out;
+  transition: all .2s ease-in-out;
+}
+.tree_menu li {
+  padding: 0.3em 0;
+}
+.tree_menu ul ul li {
+  padding-left: 20px;
+}
+.tree_menu span.icon-collapse ~ ul {
+  height: auto;
+}
+.tree_menu a {
+  color: inherit;
+}
+.tree_menu li.select,
+.tree_menu li:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}

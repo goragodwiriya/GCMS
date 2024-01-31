@@ -1,0 +1,16 @@
+<div class=bdr_content>
+  <header>
+    <h1>{TOPIC}</h1>
+    <nav class="breadcrumbs cuttext">
+      <ul>{BREADCRUMBS}</ul>
+    </nav>
+  </header>
+  <div class=detail>{DETAIL}</div>
+  <div id=download-list>{LIST}</div>
+  <footer class=splitpage>{SPLITPAGE}</footer>
+</div>
+<script>
+  $G(window).Ready(function() {
+    initDownloadList('download-list');
+  });
+</script>

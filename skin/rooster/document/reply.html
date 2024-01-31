@@ -1,0 +1,27 @@
+<form id=reply-form class="mainform bdr_content" method=post action="{WEBURL}index.php" autocomplete=off>
+  <fieldset>
+    <legend><span class=icon-reply>{LNG_Comment}</span></legend>
+    <div class=item>
+      <label for=reply_detail>{LNG_Detail}</label>
+      <span class="g-input icon-file"><textarea id=reply_detail name=reply_detail rows=5 placeholder="{LNG_BBCode supports}"></textarea></span>
+    </div>
+    <MEMBER>
+      <div class=item>
+        <div class=input-groups>
+          <label class="width50 g-input icon-{ICON}"><input type=text id=reply_email name=reply_email maxlength=255 value="{LOGIN_EMAIL}" placeholder="{PLACEHOLDER}"></label>
+          <label class="width50 g-input icon-password"><input type=password id=reply_password name=reply_password maxlength=20 placeholder="{LNG_Password}"></label>
+        </div>
+      </div>
+    </MEMBER>
+  </fieldset>
+  <fieldset class=submit>
+    <input type=submit class="button large save" value="{LNG_Send Comment}">
+    <input type=hidden name=token id=token value="{TOKEN}">
+    <input type=hidden name=index_id value={QID}>
+    <input type=hidden name=reply_id value=0>
+    <input type=hidden name=module_id value={MODULEID}>
+  </fieldset>
+</form>
+<script>
+  initEditor('reply-form', 'reply_detail', WEB_URL + 'xhr.php/document/model/reply/submit');
+</script>

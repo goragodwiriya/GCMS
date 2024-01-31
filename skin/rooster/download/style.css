@@ -1,0 +1,46 @@
+#download-list article {
+  margin-bottom: 5px;
+  display: block;
+  border-color: inherit;
+  border-width: 2px;
+  border-style: none none dotted none;
+  padding: 5px 0;
+  overflow: hidden;
+}
+#download-list h6 {
+  display: inline;
+  font-size: 100%;
+  font-weight: bold;
+  border: none;
+}
+#download-list .description,
+#download-list h6 {
+  padding-left: 5px;
+}
+#download-list .icon {
+  background-color: rgba(0, 0, 0, 0.1);
+  border-radius: 50em;
+  display: inline-block;
+  height: 32px;
+  line-height: 26px;
+  text-align: center;
+  width: 32px;
+}
+#download-list .icon-download:before {
+  color: #04C;
+  font-size: 1.6em;
+  vertical-align: bottom;
+}
+#download-list .footer {
+  font-style: italic;
+  text-shadow: 1px 1px rgba(255, 255, 255, 0.05);
+  background-color: rgba(0, 0, 0, 0.03);
+  border-radius: 3px;
+  -moz-border-radius: 3px;
+  -webkit-border-radius: 3px;
+  padding: 0 5px;
+  color: inherit;
+}
+#download-list .footer > span {
+  margin-right: 5px;
+}

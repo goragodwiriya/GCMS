@@ -1,0 +1,76 @@
+#personnel_list ul {
+  padding: 0;
+  display: table;
+  width: 100%;
+  float: none;
+}
+#personnel_list li {
+  display: table-cell;
+  text-align: center;
+  vertical-align: top;
+  padding: 10px;
+}
+#personnel_list h6 {
+  display: block;
+  font-size: 160%;
+  color: #ffaf02;
+  clear: both;
+  padding-bottom: 5px;
+  margin-bottom: 10px;
+  font-weight: normal;
+  text-align: center;
+}
+#personnel_list p {
+  margin: 0;
+}
+#personnel_list .name {
+  font-weight: bold;
+}
+#personnel_view {
+  border-width: 1px;
+  border-style: solid;
+  border-color: rgba(0, 0, 0, 0.07);
+}
+#personnel_view .col {
+  vertical-align: top;
+  padding: 10px;
+  display: table-cell;
+}
+#personnel_view p {
+  border-bottom: 1px;
+  border-bottom-style: dashed;
+  border-color: inherit;
+  padding: 2px 5px;
+  margin: 0;
+  white-space: nowrap;
+}
+#personnel_view span {
+  display: inline-block;
+}
+#personnel_view .label {
+  font-weight: bold;
+  width: 10em;
+}
+#personnel_list .thumbnail,
+#personnel_view .thumbnail {
+  border-width: 5px;
+  border-style: solid;
+  border-color: rgba(0, 0, 0, 0.07);
+  display: inline-block;
+}
+#personnel_list .thumbnail img,
+#personnel_view .thumbnail img {
+  width: 100%;
+}
+#personnel_list h3 {
+  text-align: center;
+}
+@media only screen and (max-width: 480px) {
+  #personnel_view .col {
+    display: block;
+  }
+  #personnel_view .thumbnail {
+    display: table;
+    margin: 0 auto;
+  }
+}

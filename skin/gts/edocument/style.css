@@ -1,0 +1,31 @@
+#edocument-list a.topic {
+  background-repeat: no-repeat;
+  background-position: 0 50%;
+  padding-left: 20px;
+  color: #000;
+}
+#edocument-list td {
+  border-bottom-style: dotted;
+  border-bottom-width: 2px;
+}
+#edocument-list td.detail > span {
+  display: block;
+}
+#edocument-list .size {
+  color: #F9C;
+  font-size: 0.9em;
+}
+#edocument-list .icon-download:before {
+  font-size: 1.6em;
+  margin-right: 0;
+}
+#edocument-list .icon-download {
+  color: #04C;
+}
+#edocument-list .icon-report {
+  color: #C0F;
+  font-size: 0.9em;
+}
+#edocument-list .no {
+  font-size: 2em;
+}

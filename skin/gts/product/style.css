@@ -1,0 +1,20 @@
+#product_list .figure {
+  border-bottom: 5px solid #FFC459;
+}
+#product_list .netprice {
+  color: #CC6600;
+  font-size: 1.2em;
+}
+#product_list .price {
+  font-style: normal;
+  font-size: 0.8em;
+  margin-left: 5px;
+  text-decoration: line-through;
+}
+#product_list .price,
+#product_view .price {
+  color: #999;
+}
+#product_view .netprice {
+  font-size: 2em;
+}
