@@ -1,0 +1,91 @@
+.widget_share a {
+  vertical-align: middle;
+  text-align: center;
+  display: inline-block;
+  width: 2em;
+  height: 2em;
+  line-height: 2em;
+  padding: 0;
+  margin: 0 5px;
+}
+.widget_share > a {
+  -webkit-transition: all 0.5s ease;
+  -moz-transition: all 0.5s ease;
+  -o-transition: all 0.5s ease;
+  -ms-transition: all 0.5s ease;
+  transition: all 0.5s ease;
+}
+.widget_share > a:before {
+  margin-right: 0;
+  line-height: inherit;
+  font-size: 1em;
+}
+.color:not(.circle) .widget_share > a {
+  float: left;
+  border-width: 5px;
+  border-color: rgba(0, 0, 0, 0.1);
+  border-style: solid none none none;
+}
+.color:not(.circle) > .widget_share > a:hover {
+  border-color: rgba(0, 0, 0, 0.3);
+}
+.widget_share_count > a.icon-facebook,
+.color > .widget_share > a.icon-facebook {
+  background-color: #3b5998;
+}
+.widget_share_count > a.icon-twitter,
+.color > .widget_share > a.icon-twitter {
+  background-color: #1da1f2;
+}
+.widget_share_count > a.icon-line,
+.color > .widget_share > a.icon-line {
+  background-color: #00c300;
+}
+.circle > .widget_share > a {
+  border-width: 1px;
+  border-style: solid;
+  border-radius: 50em;
+  -moz-border-radius: 50em;
+  -webkit-border-radius: 50em;
+  margin: 0 10px;
+}
+.circle.left > .widget_share > a {
+  margin: 0 20px 0 0;
+}
+.circle.right > .widget_share > a {
+  margin: 0 0 0 20px;
+}
+.color > .widget_share > a {
+  color: rgba(255, 255, 255, 0.7);
+  padding: 0;
+}
+.color > .widget_share > a:hover {
+  color: #fff;
+}
+.circle > .widget_share > a:before {
+  line-height: inherit;
+}
+.widget_share_count {
+  font-family: Arial, sans-serif;
+  line-height: 1;
+  overflow: hidden;
+  display: inline-block;
+}
+.widget_share_count a {
+  color: #eee;
+  padding: 0.5em 1em;
+  float: left;
+  margin: 0.5em 0 0.5em 0.5em;
+}
+.widget_share_count b {
+  font-size: 3em;
+  color: #ccc;
+  display: block;
+}
+.widget_share_count span {
+  color: #8a8c8e;
+  font-size: 0.7em;
+  float: left;
+  text-align: center;
+  font-weight: bold;
+}

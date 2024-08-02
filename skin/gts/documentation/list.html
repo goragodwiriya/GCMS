@@ -1,0 +1,20 @@
+<div class=bdr_content>
+  <header>
+    <h1>{TOPIC}</h1>
+    <nav class="breadcrumbs cuttext">
+      <ul>{BREADCRUMBS}</ul>
+    </nav>
+  </header>
+  <div class="leftsidebar clear">
+    <aside class="sidebar">
+      {WIDGET_DOCCAT_{MODULE}}
+    </aside>
+    <div class="content">
+      <div>{DETAIL}</div>
+      <div id=doc_content>{LIST}</div>
+    </div>
+  </div>
+</div>
+<script>
+  initDocView(0, {CATID});
+</script>

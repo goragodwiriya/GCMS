@@ -1,0 +1,67 @@
+#friends-list td {
+  border-bottom: 2px solid rgba(255, 255, 255, 0.2);
+  background-color: inherit;
+  line-height: 1.4;
+}
+#friends-list .col4 {
+  max-width: 10em;
+}
+#friends-list .col4 > a {
+  display: block;
+}
+#friends-list .col2 > a {
+  display: block;
+  margin: 5px;
+}
+#friends-list .col2 > a:before {
+  font-size: 1.6em;
+  margin: 0;
+}
+#friends-list .col1 img {
+  min-width: 3em;
+  height: 3em;
+  width: auto;
+}
+#friends-list .banner {
+  padding: 0;
+  text-align: center;
+}
+#friends-form {
+  display: block;
+  background-color: #F9F9F9;
+  border-radius: 1em;
+  -moz-border-radius: 1em;
+  -webkit-border-radius: 1em;
+  text-align: center;
+  margin-bottom: 10px;
+  padding: 5px;
+}
+#friends-form table {
+  margin: 0 auto;
+}
+#friends-form td {
+  padding: 2px;
+}
+.friends_tab a {
+  float: left;
+  margin-right: 5px;
+  padding: 0.2em 10px;
+  background-color: #EEEEEE;
+  border: 1px solid #CCC;
+  border-radius: 3px;
+  -webkit-transition: all .2s ease-in-out;
+  -moz-transition: all .2s ease-in-out;
+  transition: all .2s ease-in-out;
+  text-shadow: 1px 1px 0 rgba(255, 255, 255, 0.7);
+}
+.friends_tab a.select {
+  background-color: #D3222A !important;
+  color: #FFF;
+  border-color: rgba(0, 0, 0, 0.7);
+  text-shadow: -1px -1px 0 rgba(0, 0, 0, 0.3);
+}
+.friends_tab a:hover {
+  background-color: #DD4B39 !important;
+  text-shadow: -1px -1px 0 rgba(0, 0, 0, 0.3);
+  color: #FFF;
+}

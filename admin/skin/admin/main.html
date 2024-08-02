@@ -1,0 +1,62 @@
+<header class="header" id="scroll-to">
+  <div class="table fullwidth">
+    <h2 class="td">
+      <a href="{WEBURL}admin/index.php" accesskey=a>
+        <abbr title="Goragod Content Management System">{WEBTITLE}</abbr>
+      </a>
+    </h2>
+    <div class="td right">
+      <div class="icon-fontsize language-menu" title="{LNG_Text size}">
+        <ul>
+          <li>
+            <a class="font_size small" href="index.php" title="{LNG_change font small}">
+              <span class="icon-minus notext"></span>
+            </a>
+          </li>
+          <li>
+            <a class="font_size normal" href="index.php" title="{LNG_change font normal}">
+              <span class="icon-reset notext"></span>
+            </a>
+          </li>
+          <li>
+            <a class="font_size large" href="index.php" title="{LNG_change font large}">
+              <span class="icon-plus notext"></span>
+            </a>
+          </li>
+        </ul>
+      </div>
+      <div class="icon-language language-menu" title="{LNG_Change language}">
+        <ul>{LANGUAGES}</ul>
+      </div>
+      <span class=label>{LNG_Welcome},</span>
+      <a id=gdpanel-arrow class=gdpanel-arrow>
+        <span class="icon-user loginname">{LOGINNAME}</span>
+      </a>
+      <ul id=gdpanel class=gdpanel>
+        <li>
+          <a class=icon-profile href="index.php?module=editprofile&amp;id={LOGINID}" title="{LNG_Editing your account}" tabindex=1 accesskey=w>{LNG_Editing your account}</a>
+        </li>
+        <li>
+          <a class=icon-preview href="{WEBURL}index.php" target=preview accesskey=p title="{LNG_Preview}" tabindex=1>{LNG_Home}</a>
+        </li>
+        <li>
+          <a class=icon-signout href="index.php?action=logout" accesskey=l title="{LNG_Sign out}" tabindex=1>{LNG_Sign out}</a>
+        </li>
+      </ul>
+    </div>
+  </div>
+  <div id=toTop class="menu menu_bg menu_bg_color">
+    <nav id=topmenu class="topmenu slidemenu">
+      <ul>{MENUS}</ul>
+    </nav>
+  </div>
+</header>
+<div id="skip" class="clear">
+  <main id="content">{CONTENT}</main>
+</div>
+<script>
+  $G(window).Ready(function() {
+    new GDPanel('gdpanel-arrow', 'gdpanel');
+    initWeb('admin');
+  });
+</script>

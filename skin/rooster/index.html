@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="{LANGUAGE}" dir="ltr" class="smooth">
+
+<head>
+  <title>{TITLE}</title>
+  <meta charset=utf-8>
+  <meta name=viewport content="width=device-width, initial-scale=1.0">
+  <link rel="shortcut icon" href="{WEBURL}favicon.ico">
+  <link rel=stylesheet href="{WEBURL}index.php/css/view/index">
+  <script src="{WEBURL}index.php/js/view/index"></script>
+</head>
+
+<body class="wide responsive">
+  <a class=skip_content accesskey=s href=#content title="{LNG_skip to content}"></a>
+  <div id=slidemenu_content>
+    <div id=top_header>
+      <div class="gcss-wrapper">
+        <div class="table fullwidth">
+          <div class="td">{FONTSIZE}{LANGUAGES}</div>
+          <div class="td">{WIDGET_SEARCH}</div>
+          <div class="td right">{WIDGET_SHARE}</div>
+        </div>
+      </div>
+    </div>
+    <header class="header header_bg_color">
+      <div class="header_bg">
+        <div class="gcss-wrapper">
+          <a id=logo href="{WEBURL}index.php">{LOGO}</a>
+          <p class=description>{WEBDESCRIPTION}</p>
+        </div>
+      </div>
+    </header>
+    <div id="toTop" class="menu menu_bg_color">
+      <div class="menu_bg" id="scroll-to">
+        <div class="gcss-wrapper">
+          <nav id=topmenu class="slidemenu topmenu fullwidth">
+            <ul>{MAINMENU}</ul>
+          </nav>
+        </div>
+      </div>
+    </div>
+    <main class="content content_bg_color">
+      <div class="content_bg padding-top-bottom">
+        <div class="gcss-wrapper">
+          <div id=content class="article clear"> {CONTENT} </div>
+        </div>
+      </div>
+    </main>
+    <div class="center margin-top-bottom">
+      <a href="https://www.goragod.com" title="Goragod.com">
+        <img src="https://www.goragod.com/smalllogo.gif" alt="Goragod.com">
+      </a>
+    </div>
+    <footer class="footer footer_bg_color">
+      <div class="footer_grid footer_bg">
+        <div class="gcss-wrapper">
+          <div class="ggrid clear">
+            <section class="float-left block3">
+              <header>
+                <h3>Counter</h3>
+              </header> {WIDGET_COUNTER}
+            </section>
+            <section class="float-left block3">
+              <header>
+                <h3>Member</h3>
+              </header>
+              <ul id=login-box>{LOGIN}</ul>
+            </section>
+            <section class="float-left block3">
+              <header>
+                <h3>News</h3>
+              </header>
+              {WIDGET_DOCUMENT module=knowledge;rows=4}
+            </section>
+            <section class="float-left block3">
+              <header>
+                <h3>About Us</h3>
+              </header>
+              <ul>
+                <li class=icon-customer>xxxx xxxx</li>
+                <li class=icon-home>xxx ม.1 ต.xxxx อ.xxxx จ.xxxx xxxx</li>
+                <li>
+                  <a class=icon-phone href="tel:0123456789">012 345 6789</a>
+                </li>
+                <li>
+                  <a class=icon-email href="mailto:admin@xxx.com">admin@xxx.com</a>
+                </li>
+              </ul>
+            </section>
+          </div>
+        </div>
+      </div>
+      <div class="copyright">
+        <div class="gcss-wrapper">
+          <p> Copyright &copy; 2020
+            <a href="{WEBURL}">{WEBTITLE}</a> designed by
+            <a href="https://www.kotchasan.com">Kotchasan.com</a> GCMS Version {VERSION} {LNG_page process}
+            <span id=db_elapsed>{ELAPSED}</span> {LNG_second} (
+            <span id=db_quries>{QURIES}</span> quries.)
+          </p>
+        </div>
+      </div>
+    </footer>
+  </div>
+  <a href=#scroll-to class="scroller">^</a>
+  <link href="https://fonts.googleapis.com/css?family=Bungee+Outline" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css?family=Kanit" rel="stylesheet">
+</body>
+
+</html>

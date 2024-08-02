@@ -1,0 +1,71 @@
+<div class=bdr_content>
+  <header>
+    <h1>{TOPIC}</h1>
+    <nav class="breadcrumbs cuttext">
+      <ul>{BREADCRUMBS}</ul>
+    </nav>
+  </header>
+  <div class=detail>{DETAIL}</div>
+  <div id=friends-list>
+    <form id=friends-form method=post action="{WEBURL}index.php" autocomplete=off>
+      <p><em>{LNG_Do not post inappropriate messages. Found guilty disabled members immediately.}</em></p>
+      <table>
+        <tr>
+          <td><label for="friends_topic">{LNG_message}</label></td>
+          <td colspan="2">
+            <span class="g-input icon-edit">
+              <input type=text name=friends_topic id=friends_topic maxlength=255 size="50" placeholder="{LNG_Fill out a short message}">
+            </span>
+          </td>
+        </tr>
+        <tr>
+          <td><label for="friends_province">{LNG_Province}</label></td>
+          <td><span class="width g-input icon-location"><select name=friends_province id=friends_province>{PROVINCE}</select></span></td>
+          <td><input type=submit class="button wide save" value="{LNG_Send message}"></td>
+        </tr>
+      </table>
+      <p class="comment">{LNG_You can post a maximum of %COUNT% times per day}</p>
+      <input type=hidden name=id value=0>
+      <input type=hidden name=module_id value={MODULEID}>
+      <input type=hidden name=token id=token value="{TOKEN}">
+    </form>
+    <div class="datatable">
+      <div class="table_nav clear">
+        <div>
+          <fieldset class="friends_tab">{TABS}</fieldset>
+          <fieldset>
+            <label>
+              {LNG_Province}
+              <select id=filter_province>
+                <option value=0>{LNG_all items}</option>{PROVINCE}
+              </select>
+            </label>
+          </fieldset>
+        </div>
+      </div>
+      <div class="tablebody">
+        <table class=fullwidth>
+          <thead>
+            <tr>
+              <th class=left colspan="4">{LNG_message}</th>
+              <th class="center mobile">{LNG_Province}</th>
+              <th class="center mobile">{LNG_Sex}</th>
+              <th class="col4 center">{LNG_Posted by}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {PIN}
+            <tr>
+              <td colspan="7" class="banner">&nbsp;</td>
+            </tr>
+            {LIST}
+          </tbody>
+        </table>
+      </div>
+      <footer class=splitpage>{SPLITPAGE}</footer>
+    </div>
+    <script>
+      initFriends('friends-list', 'friends-form', 'filter_province');
+    </script>
+  </div>
+</div>

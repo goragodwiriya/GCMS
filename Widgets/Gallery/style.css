@@ -1,0 +1,42 @@
+.widget-gallery a {
+  display: block;
+  margin: 5px;
+  border-radius: 0.25rem;
+  overflow: hidden;
+  position: relative;
+  text-align: center;
+}
+.widget-gallery figure {
+  display: flex;
+  background-position: center;
+  background-size: cover;
+  transition: all 0.5s cubic-bezier(0.43, 0.41, 0.22, 0.91);
+}
+.widget-gallery figure:before {
+  content: '';
+  display: block;
+  padding-top: 100%;
+}
+.widget-gallery a:hover figure {
+  transform: scale(1.1);
+}
+.widget-gallery a > figcaption {
+  color: #fff;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  font-size: 0.9rem;
+  background-color: rgba(0, 0, 0, 0.4);
+  margin-top: 200%;
+  transition: all 0.5s cubic-bezier(0.43, 0.41, 0.22, 0.91);
+  opacity: 0;
+}
+.widget-gallery a:hover > figcaption {
+  margin-top: 0;
+  opacity: 1;
+}

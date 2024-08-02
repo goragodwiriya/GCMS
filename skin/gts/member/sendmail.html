@@ -1,0 +1,29 @@
+<div class=bdr_content>
+  <header>
+    <h1 class="cuttext icon-email">{TOPIC}</h1>
+    <nav class="breadcrumbs cuttext">
+      <ul>{BREADCRUMBS}</ul>
+    </nav>
+  </header>
+  <form id=contact_frm class=main_frm method=post action="{WEBURL}index.php">
+    <fieldset>
+      <div class=item>
+        <label class="g-input icon-email-sent"><input type=text readonly value="{RECIEVER}" title="{LNG_Reciever}"></label>
+      </div>
+      <div class=item>
+        <label class="g-input icon-edit"><input type=text name=mail_subject id=mail_subject placeholder="{LNG_Subject}" autofocus></label>
+      </div>
+      <div class=item><label class="g-input icon-file"><textarea id=mail_detail name=mail_detail rows=10 placeholder="{LNG_Detail}"></textarea></label></div>
+    </fieldset>
+    <fieldset class="submit">
+      <input type=submit id=mail_submit class="button large send" value="{LNG_Send message}">
+      <input type=hidden name=mail_reciever value="{RECIEVERID}">
+      <input type=hidden name=token id=token value="{TOKEN}">
+    </fieldset>
+  </form>
+</div>
+<script>
+  $G(window).Ready(function() {
+    new GForm('contact_frm', '{WEBURL}xhr.php/index/model/sendmail/submit').onsubmit(doFormSubmit);
+  });
+</script>

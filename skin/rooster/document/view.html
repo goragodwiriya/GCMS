@@ -1,0 +1,38 @@
+<div id=document-view>
+  <div class=bdr_content>
+    <header>
+      <h1>{TOPIC}</h1>
+      <nav class="breadcrumbs cuttext">
+        <ul>{BREADCRUMBS}</ul>
+      </nav>
+    </header>
+    <div class="q detail">
+      <p class=content-action>
+        <a class="icon-print print-{QID}-0-0-{MODULE}" title="{LNG_Print page}"></a>
+        <a class="icon-quote quote-{QID}-0-0-{MODULE}" title="{LNG_Quote}"></a>
+      </p>
+      <IMAGE>
+        <figure class="center"><img src="{IMG}" alt="{TOPIC}"></figure>
+      </IMAGE>
+      <div>{DETAIL}</div>
+      <footer class="reaction">
+        <p class="icon-user">{LNG_Writer} <a class="status{STATUS}" href="{WEBURL}index.php?module=member&amp;id={UID}">{DISPLAYNAME}</a></p>
+        <p class="icon-create create">{LNG_Posted} {DATE {DATE} d M Y}</p>
+        <p class="icon-comments comments left">{LNG_comments} {COMMENTS}</p>
+        <p class="icon-visited visited left">{LNG_Views} {VISITED}</p>
+        <p class="icon-tags keywords">{LNG_Tags} {TAGS}</p>
+      </footer>
+    </div>
+    <section class="margin-top">
+      <header>
+        <h3 class=icon-tags>{LNG_Related}</h3>
+      </header>
+      {WIDGET_RELATE module={MODULE};id={QID};cols=2;rows=2;}
+    </section>
+  </div>
+  <div id=comment-list>{COMMENTLIST}</div>
+  {REPLYFORM}
+</div>
+<script>
+  initDocumentView('document-view', 'document');
+</script>

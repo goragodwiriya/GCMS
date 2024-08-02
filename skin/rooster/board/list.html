@@ -1,0 +1,27 @@
+<div id=board-list class=bdr_content>
+  <header class=list>
+    <h1>
+      <span>{TOPIC}</span>
+      <a class="newtopic {NEWTOPIC}" href="{WEBURL}index.php?module={MODULE}-write&amp;cat={CATID}" title="{LNG_Create topic}">[{LNG_Create topic}]</a>
+    </h1>
+    <nav class="breadcrumbs cuttext">
+      <ul>{BREADCRUMBS}</ul>
+    </nav>
+  </header>
+  <div class=detail>{DETAIL}</div>
+  <table class=fullwidth>
+    <thead>
+      <tr>
+        <th class="col1 tablet">&nbsp;</th>
+        <th class=col2>&nbsp;</th>
+        <th class="col3 center tablet">{LNG_Visited}</th>
+        <th class="col3 center tablet">{LNG_comments}</th>
+        <th class="col4 center">{LNG_Last posted}</th>
+      </tr>
+    </thead>
+    <tbody>
+      {LIST}
+    </tbody>
+  </table>
+  <footer class=splitpage>{SPLITPAGE}</footer>
+</div>

@@ -1,0 +1,23 @@
+<div class=bdr_content>
+  <header>
+    <h1>{LNG_Search}</h1>
+    <nav class="breadcrumbs cuttext">
+      <ul>{BREADCRUMBS}</ul>
+    </nav>
+  </header>
+  <div id=document-search class=body>
+    <form id=search-form class=search-form method=get action="{WEBURL}index.php">
+      <p>
+        <label><input type=text name=q id=search-input value="{SEARCH}" placeholder="{LNG_Search}" title="{LNG_Enter at least one characters}"></label>
+        <label class=submit><button type=submit class=icon-search title="{LNG_Search}"></button></label>
+      </p>
+      <input type=hidden name=module id=search-module value=search>
+    </form>
+    <div id=search-result>{RESULT}</div>
+    <div id=search-list>{LIST}</div>
+    <div class=splitpage>{SPLITPAGE}</div>
+  </div>
+</div>
+<script>
+  initSearch('search-form', 'search-input', 'search-module');
+</script>

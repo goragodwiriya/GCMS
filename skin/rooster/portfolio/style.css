@@ -1,0 +1,132 @@
+#portfolio_view .detail {
+  margin-bottom: 10px;
+}
+#portfolio_view ul {
+  padding-top: 0;
+  padding-bottom: 0;
+}
+.portfolio a,
+.portfolio a:hover {
+  color: inherit;
+}
+.portfolio .item {
+  border: none;
+  line-height: 1.6em;
+}
+.portfolio .item > figure {
+  border: 5px solid rgba(0, 0, 0, 0.05);
+  display: block;
+  position: relative;
+  overflow: hidden;
+}
+.portfolio .figure {
+  max-width: 100%;
+  margin: 0;
+}
+.portfolio .icon-search {
+  -webkit-transition: all 0.3s ease-in-out;
+  -moz-transition: all 0.3s ease-in-out;
+  -o-transition: all 0.3s ease-in-out;
+  -ms-transition: all 0.3s ease-in-out;
+  transition: all 0.3s ease-in-out;
+}
+.portfolio .icon-search {
+  background-color: rgba(255, 255, 255, 0.1);
+  border-radius: 50em;
+  -moz-border-radius: 50em;
+  -webkit-border-radius: 50em;
+  display: block;
+  text-align: center;
+  width: 2em;
+  height: 2em;
+  line-height: 2em;
+}
+.portfolio .icon-search:hover {
+  color: #FFF;
+  background-color: rgba(0, 0, 0, 0.2);
+}
+.portfolio .item {
+  -webkit-perspective: 1700px;
+  -moz-perspective: 1700px;
+  perspective: 1700px;
+  -webkit-perspective-origin: 0 50%;
+  -moz-perspective-origin: 0 50%;
+  perspective-origin: 0 50%;
+}
+.portfolio h3 {
+  font-size: 1em;
+  text-shadow: -1px -1px 0 rgba(0, 0, 0, 0.4);
+  line-height: 1;
+  color: #FFF;
+}
+.portfolio figure {
+  margin: 0;
+  position: relative;
+}
+.portfolio figure img {
+  display: block;
+  position: relative;
+}
+.portfolio figcaption {
+  position: absolute;
+  top: 0;
+  left: 0;
+  padding: 20px;
+  background: #2c3f52;
+  color: #DDD;
+}
+.portfolio figcaption {
+  height: 100%;
+  min-width: 50%;
+  max-width: 90%;
+  opacity: 0;
+  -webkit-backface-visibility: hidden;
+  -moz-backface-visibility: hidden;
+  backface-visibility: hidden;
+  -webkit-transform-origin: 0 0;
+  -moz-transform-origin: 0 0;
+  transform-origin: 0 0;
+  -webkit-transform: rotateY(-90deg);
+  -moz-transform: rotateY(-90deg);
+  transform: rotateY(-90deg);
+  -webkit-transition: -webkit-transform 0.4s, opacity 0.1s 0.3s;
+  -moz-transition: -moz-transform 0.4s, opacity 0.1s 0.3s;
+  transition: transform 0.4s, opacity 0.1s 0.3s;
+}
+.portfolio figure:hover figcaption {
+  opacity: 1;
+  -webkit-transform: rotateY(0deg);
+  -moz-transform: rotateY(0deg);
+  transform: rotateY(0deg);
+  -webkit-transition: -webkit-transform 0.4s, opacity 0.1s;
+  -moz-transition: -moz-transform 0.4s, opacity 0.1s;
+  transition: transform 0.4s, opacity 0.1s;
+}
+.portfolio figure {
+  -webkit-transform-style: preserve-3d;
+  -moz-transform-style: preserve-3d;
+  transform-style: preserve-3d;
+}
+.portfolio figure > div {
+  overflow: hidden;
+}
+.portfolio figure img {
+  -webkit-transition: -webkit-transform 0.4s;
+  -moz-transition: -moz-transform 0.4s;
+  transition: transform 0.4s;
+}
+.portfolio figure:hover img {
+  -webkit-transform: translateX(25%);
+  -moz-transform: translateX(25%);
+  -ms-transform: translateX(25%);
+  transform: translateX(25%);
+}
+.portfolio .icon-search {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+}
+.portfolio ul {
+  color: #BB0;
+  padding-left: 15px;
+}

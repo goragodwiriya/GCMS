@@ -1,0 +1,95 @@
+/* rss */
+.rss_widget .rss_tab {
+  position: relative;
+}
+.rss_widget .rsstab_loading {
+  color: #FFF;
+  background-color: #F00;
+  -moz-animation: rainbow 2s infinite alternate linear;
+  -ms-animation: rainbow 2s infinite alternate linear;
+  -o-animation: rainbow 2s infinite alternate linear;
+  -webkit-animation: rainbow 2s infinite alternate linear;
+  animation: rainbow 2s infinite alternate linear;
+}
+.rss_widget .rss_div {
+  width: 100%;
+  display: table;
+}
+.rss_widget td {
+  vertical-align: top;
+}
+.rss_widget .rss_tab ul {
+  padding: 0;
+  list-style-type: none;
+}
+.rss_widget .rss_tab li {
+  display: inline-block;
+  float: left;
+  margin: 5px;
+  border-color: inherit;
+}
+.rss_widget .rss_tab a {
+  padding: 5px 10px;
+  display: inline-block;
+  border-width: 1px;
+  border-style: solid;
+  border-color: inherit;
+  background-color: rgba(0, 0, 0, 0.05);
+}
+.rss_widget .rss_tab a:hover {
+  background-color: #333;
+  color: #FFF;
+}
+.rss_widget .rss_tab a.select {
+  background-color: #333;
+  background-image: -moz-linear-gradient(top, rgba(255, 255, 255, 0.1) 0%, rgba(0, 0, 0, 0.1) 100%);
+  background-image: -webkit-gradient(linear, left top, left bottom, color-stop(0%, rgba(255, 255, 255, 0.1)), color-stop(100%, rgba(0, 0, 0, 0.1)));
+  background-image: -webkit-linear-gradient(top, rgba(255, 255, 255, 0.1) 0%, rgba(0, 0, 0, 0.1) 100%);
+  background-image: -o-linear-gradient(top, rgba(255, 255, 255, 0.1) 0%, rgba(0, 0, 0, 0.1) 100%);
+  background-image: -ms-linear-gradient(top, rgba(255, 255, 255, 0.1) 0%, rgba(0, 0, 0, 0.1) 100%);
+  background-image: linear-gradient(to bottom, rgba(255, 255, 255, 0.1) 0%, rgba(0, 0, 0, 0.1) 100%);
+  filter: progid: DXImageTransform.Microsoft.gradient(startColorstr="#1AFFFFFF", endColorstr="#1A000000", GradientType=0);
+  color: #DDD;
+}
+.rss_widget .thumbnail {
+  display: inline-block;
+  margin: 0.4em 5px 0 0;
+  float: left;
+  max-width: 75px;
+}
+.rss_widget .topic,
+.rss_widget td > span {
+  display: block;
+  max-height: 3.6em;
+  overflow: hidden;
+}
+.rss_widget .rss_row,
+.rss_widget .table_rsstab_class,
+table.table_rss_class {
+  width: 100%;
+}
+.rss_widget tr:nth-child(odd) > td {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+.rss_widget tr:nth-child(even) > td {
+  background-color: rgba(0, 0, 0, 0.01);
+}
+.rss_widget a.icon-rss:before {
+  color: #CC6600;
+}
+@media only screen and (max-width: 480px) {
+  .table_rsstab_class,
+  .table_rsstab_class tbody,
+  .table_rsstab_class tr,
+  .table_rsstab_class td {
+    display: block;
+    clear: both;
+    overflow: hidden;
+  }
+  .rss_widget tr > td:nth-child(odd) {
+    background-color: rgba(255, 255, 255, 0.2);
+  }
+  .rss_widget tr > td:nth-child(even) {
+    background-color: rgba(0, 0, 0, 0.01);
+  }
+}

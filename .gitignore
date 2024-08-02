@@ -1,0 +1,8 @@
+# Kotchasan
+
+.htaccess
+.vscode
+robots.txt
+datas/
+settings/*
+requirement/*

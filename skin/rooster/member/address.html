@@ -1,0 +1,51 @@
+<form id=register_frm class="main_frm" method=post action="{WEBURL}index.php" autocomplete=off>
+  <header>
+    <h2 class="cuttext icon-address">{LNG_Address details}</h2>
+  </header>
+  <fieldset>
+    <div class=item>
+      <label for=register_name>{LNG_Name} {LNG_Surname}</label>
+      <span class="g-input icon-user"><input type=text name=register_name id=register_name maxlength=150 value="{NAME}" title="{LNG_Name} {LNG_Surname}" autofocus></span>
+    </div>
+    <div class=item>
+      <label for=register_address1>{LNG_Address}</label>
+      <span class="g-input icon-address"><input type=text name=register_address1 id=register_address1 maxlength=64 value="{ADDRESS1}" title="{LNG_Address} 1"></span>
+    </div>
+    <div class=item>
+      <label for=register_address2>{LNG_Address} 2</label>
+      <span class="g-input icon-address"><input type=text name=register_address2 id=register_address2 maxlength=64 value="{ADDRESS2}" title="{LNG_Address} 2"></span>
+    </div>
+    <div class=item>
+      <div class=input-groups>
+        <div class=width60>
+          <label for=register_provinceID>{LNG_Province}</label>
+          <span class="g-input icon-location"><select id=register_provinceID name=register_provinceID title="{LNG_Province}">{PROVINCEID}</select></span>
+        </div>
+        <div class=width60>
+          <label for=register_province>{LNG_Province}</label>
+          <span class="g-input icon-location"><input type=text name=register_province id=register_province maxlength=64 value="{PROVINCE}" title="{LNG_Province}"></span>
+        </div>
+        <div class=width40>
+          <label for=register_zipcode>{LNG_Zipcode}</label>
+          <span class="g-input icon-location"><input type=number id=register_zipcode name=register_zipcode value="{ZIPCODE}" title="{LNG_Zipcode}"></span>
+        </div>
+      </div>
+    </div>
+    <div class=item>
+      <label for=register_country>{LNG_Country}</label>
+      <span class="g-input icon-world"><select id=register_country name=register_country title="{LNG_Country}">{COUNTRY}</select></span>
+    </div>
+  </fieldset>
+  <fieldset class="submit">
+    <input type=submit class="button large save" value="{LNG_Save}">
+    <input type=hidden name=token id=token value="{TOKEN}">
+    <input type=hidden name=register_id id=register_id value="{ID}">
+    <input type=hidden name=tab value=address>
+  </fieldset>
+</form>
+<script>
+  $G(window).Ready(function() {
+    new GForm('register_frm', '{WEBURL}xhr.php/index/model/updateprofile/submit').onsubmit(doFormSubmit);
+    countryChanged('register');
+  });
+</script>

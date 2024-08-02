@@ -1,0 +1,76 @@
+<div class=bdr_content>
+  <header>
+    <h1 class="cuttext icon-register">{LNG_Create new account}</h1>
+    <nav class="breadcrumbs cuttext">
+      <ul>{BREADCRUMBS}</ul>
+    </nav>
+  </header>
+  <form id=register_frm class=main_frm method=post action="{WEBURL}index.php" autocomplete=off>
+    <fieldset>
+      <div class=item>
+        <div class="input-groups">
+          <EMAIL>
+            <div class=width50>
+              <label for=register_email>{LNG_Email}</label>
+              <span class="g-input icon-email"><input type=text name=register_email id=register_email maxlength=255 title="{LNG_The system will send the registration information to this e-mail. Please use real email address}"></span>
+              <div class=comment id=result_register_email>{LNG_The system will send the registration information to this e-mail. Please use real email address}</div>
+            </div>
+          </EMAIL>
+          <PHONE>
+            <div class=width50>
+              <label for=register_phone1>{LNG_Phone}</label>
+              <span class="g-input icon-phone"><input type=text name=register_phone1 id=register_phone1 maxlength=10 title="{LNG_Please fill in} {LNG_Phone number}" pattern="[0-9]+"></span>
+              <div class=comment id=result_register_phone1>{LNG_Please fill in} {LNG_Phone number}</div>
+            </div>
+          </PHONE>
+        </div>
+      </div>
+      <div class=item>
+        <div class="input-groups">
+          <div class=width50>
+            <label for=register_password>{LNG_Password}</label>
+            <span class="g-input icon-password"><input type=password name=register_password id=register_password maxlength=20 title="{LNG_Passwords must be at least four characters}"></span>
+            <div class=comment id=result_register_password>{LNG_Passwords must be at least four characters}</div>
+          </div>
+          <div class=width50>
+            <label for=register_repassword>{LNG_Repassword}</label>
+            <span class="g-input icon-password"><input type=password name=register_repassword id=register_repassword maxlength=20 title="{LNG_Enter your password again}"></span>
+            <div class=comment id=result_register_repassword>{LNG_Enter your password again}</div>
+          </div>
+        </div>
+      </div>
+      <IDCARD>
+        <div class=item>
+          <label for=register_idcard>{LNG_Identification No.}</label>
+          <span class="g-input icon-profile"><input type=number name=register_idcard id=register_idcard maxlength=13 title="{LNG_Please fill in} {LNG_13-digit identification number}"></span>
+          <div class=comment id=result_register_idcard>{LNG_Please fill in} {LNG_13-digit identification number}</div>
+        </div>
+      </IDCARD>
+      <dl class=info>{LNG_REGISTER_CONFIRM}</dl>
+    </fieldset>
+    <fieldset class="submit right">
+      <label>{LNG_Accept this agreement}&nbsp;<input type=checkbox name=register_accept id=register_accept value=1></label>
+      <input type=submit disabled id=register_submit class="button large save" value="{LNG_Register}">
+      <input type=hidden name=token id=token value="{TOKEN}">
+      <input type=hidden name=register_next value="{NEXT}">
+      <input type=hidden name=register_id id=register_id value=0>
+    </fieldset>
+  </form>
+</div>
+<script>
+  $G(window).Ready(function() {
+    new GForm('register_frm', '{WEBURL}xhr.php/index/model/register/submit').onsubmit(doFormSubmit);
+    new GValidator('register_email', 'keyup,change', checkEmail, '{WEBURL}index.php/index/model/checker/email', null, 'register_frm');
+    if ($E('register_phone1')) {
+      new GValidator('register_phone1', 'keyup,change', checkPhone, '{WEBURL}index.php/index/model/checker/phone', null, 'register_frm');
+    }
+    if ($E('register_idcard')) {
+      new GValidator('register_idcard', 'keyup,change', checkIdcard, '{WEBURL}index.php/index/model/checker/idcard', null, 'register_frm');
+    }
+    new GValidator('register_password', 'keyup,change', checkPassword);
+    new GValidator('register_repassword', 'keyup,change', checkPassword);
+    callClick('register_accept', function() {
+      $E('register_submit').disabled = this.checked ? false : true;
+    });
+  });
+</script>

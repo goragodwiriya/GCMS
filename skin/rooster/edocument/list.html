@@ -1,0 +1,29 @@
+<div class=bdr_content id=edocument-list>
+  <header>
+    <h2>{TOPIC}</h2>
+    <nav class="breadcrumbs cuttext">
+      <ul>{BREADCRUMBS}</ul>
+    </nav>
+  </header>
+  <div class=detail>{DETAIL}</div>
+  <table class=fullwidth>
+    <thead>
+      <tr>
+        <th class=center>{LNG_Document number}</th>
+        <th>{LNG_Detail}</th>
+        <th class="center">{LNG_Download} ({LNG_File size})</dd>
+        <th class="mobile center">{LNG_Uploaded by}</th>
+        <th class="tablet center">{LNG_Last updated}</th>
+      </tr>
+    </thead>
+    <tbody>
+      {LIST}
+    </tbody>
+  </table>
+  <footer class=splitpage>{SPLITPAGE}</footer>
+</div>
+<script>
+  $G(window).Ready(function() {
+    initEDocumentMain('edocument-list');
+  });
+</script>

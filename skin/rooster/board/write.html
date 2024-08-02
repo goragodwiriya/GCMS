@@ -1,0 +1,51 @@
+<div class=bdr_content>
+  <header>
+    <h1>{LNG_Create topic}</h1>
+    <nav class="breadcrumbs cuttext">
+      <ul>{BREADCRUMBS}</ul>
+    </nav>
+  </header>
+  <div class=info>{LNG_NEWTOPIC_INTRODUCTION}</div>
+  <form id=board_form class=mainform method=post action="{WEBURL}index.php" autocomplete=off>
+    <fieldset>
+      <legend><span class=icon-newtopic>{LNG_Write your question here}</span></legend>
+      <div class=item>
+        <label for=board_topic>{LNG_Topic}</label>
+        <span class="g-input icon-edit"><input type=text name=board_topic id=board_topic maxlength=255 title="{LNG_Fill out the topic with short and clear}" autofocus></span>
+        <div class="comment" id="result_board_topic">{LNG_Fill out the topic with short and clear}</div>
+      </div>
+      <div class=item>
+        <label for=board_category_id>{LNG_Category}</label>
+        <span class="g-input icon-category"><select id=board_category_id name=board_category_id title="{LNG_Select the category you want}">{CATEGORIES}</select></span>
+        <div class="comment">{LNG_Select the category you want}</div>
+      </div>
+      <div class=item>
+        <label for=board_detail>{LNG_Detail}</label>
+        <span class="g-input icon-file"><textarea id=board_detail name=board_detail rows=10 placeholder="{LNG_BBCode supports}"></textarea></span>
+      </div>
+      <UPLOAD>
+        <div class=item>
+          <label class="g-input icon-upload"><input type=file class=g-file id=board_picture name=board_picture placeholder="{LNG_Browse file}" title="{LNG_Upload :type files no larger than :size}"></label>
+          <div class=comment id=result_board_picture>{LNG_Upload :type files no larger than :size}</div>
+        </div>
+      </UPLOAD>
+      <MEMBER>
+        <div class=item>
+          <div class=input-groups>
+            <label class="width50 g-input icon-{ICON}"><input type=text id=board_email name=board_email maxlength=255 value="{LOGIN_EMAIL}" placeholder="{PLACEHOLDER}"></label>
+            <label class="width50 g-input icon-password"><input type=password id=board_password name=board_password maxlength=20 placeholder="{LNG_Password}"></label>
+          </div>
+        </div>
+      </MEMBER>
+    </fieldset>
+    <fieldset class=submit>
+      <input type=submit class="button large save" value="{LNG_Create topic}">
+      <input type=hidden name=token id=token value="{TOKEN}">
+      <input type=hidden name=board_id value=0>
+      <input type=hidden name=module_id value={MODULEID}>
+    </fieldset>
+  </form>
+</div>
+<script>
+  initEditor('board_form', 'board_detail', WEB_URL + 'xhr.php/board/model/write/submit');
+</script>

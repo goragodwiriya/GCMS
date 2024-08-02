@@ -1,0 +1,12 @@
+.marquee_containner {
+  overflow: hidden;
+  position: relative;
+  height: 2em;
+  line-height: 2em;
+}
+.marquee_scroller {
+  position: absolute;
+  white-space: nowrap;
+  left: 0;
+  top: 0;
+}
