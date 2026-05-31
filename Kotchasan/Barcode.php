@@ -1,23 +1,13 @@
 <?php
-/**
- * @filesource Kotchasan/Barcode.php
- *
- * Barcode generation class.
- * This class generates barcode images using the Barcode 128 encoding.
- *
- * @copyright 2016 Goragod.com
- * @license https://www.kotchasan.com/license/
- * @author Goragod Wiriya <admin@goragod.com>
- * @package Kotchasan
- */
 
 namespace Kotchasan;
 
 /**
- * Barcode generation class.
- * This class generates barcode images using the Barcode 128 encoding.
+ * Kotchasan Barcode Class
  *
- * @see https://www.kotchasan.com/
+ * This class generates a Code 128 barcode image.
+ *
+ * @package Kotchasan
  */
 class Barcode
 {

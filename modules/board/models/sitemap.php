@@ -11,7 +11,7 @@
 namespace Board\Sitemap;
 
 /**
- * กระทู้ทั้งหมด
+ * All articles
  *
  * @author Goragod Wiriya <admin@goragod.com>
  *
@@ -20,19 +20,20 @@ namespace Board\Sitemap;
 class Model
 {
     /**
-     * กระทู้ทั้งหมด
+     * All articles
      *
-     * @param array $ids แอเรย์ของ module_id
+     * @param array  $ids  Array of module_id
+     * @param string $date Today's date
      *
      * @return array
      */
     public static function getStories($ids)
     {
-        return \Kotchasan\Model::createQuery()
-            ->select('id', 'module_id', 'last_update', 'comment_date')
-            ->from('board_q')
-            ->where(['module_id', $ids])
-            ->cacheOn()
-            ->execute();
+        return \Kotchasan\DB::create()->select(
+            'board_q',
+            ['module_id', $ids],
+            ['cache' => true],
+            ['id', 'module_id', 'updated_at', 'comment_date']
+        );
     }
 }

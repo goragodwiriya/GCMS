@@ -1,19 +1,14 @@
 <?php
-/**
- * @filesource Kotchasan/Pdf.php
- *
- * @copyright 2016 Goragod.com
- * @license https://www.kotchasan.com/license/
- * @author Goragod Wiriya <admin@goragod.com>
- * @package Kotchasan
- */
 
 namespace Kotchasan;
 
 /**
- * Pdf Class
+ * Kotchasan PDF Class
  *
- * @see https://www.kotchasan.com/
+ * This class extends the FPDF library to provide additional functionality
+ * for generating PDF documents with support for Thai language and custom styles.
+ *
+ * @package Kotchasan
  */
 class Pdf extends \PDF\FPDF
 {

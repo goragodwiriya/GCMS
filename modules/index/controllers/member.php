@@ -22,32 +22,11 @@ use Kotchasan\Http\Request;
 class Controller extends \Kotchasan\Controller
 {
     /**
-     * แสดงผลฟอร์ม ที่เรียกมาจาก GModal
-     *
      * @param Request $request
      */
-    public function modal(Request $request)
+    public function profile(Request $request)
     {
-        $action = $request->post('action')->toString();
-        if ($action === 'register') {
-            $page = \Index\Register\View::create()->render($request, true);
-        } elseif ($action === 'forgot') {
-            $page = \Index\Forgot\View::create()->render($request, true);
-        } elseif ($action === 'login') {
-            $page = \Index\Dologin\View::create()->render($request);
-        } else {
-            // 404
-            $page = createClass('Index\Error\Controller')->init('index');
-        }
-        echo json_encode($page);
-    }
-
-    /**
-     * @param Request $request
-     */
-    public function editprofile(Request $request)
-    {
-        return \Index\Editprofile\View::create()->render($request);
+        return \Index\Member\View::create()->render($request, 'profile');
     }
 
     /**
@@ -55,7 +34,7 @@ class Controller extends \Kotchasan\Controller
      */
     public function sendmail(Request $request)
     {
-        return \Index\Sendmail\View::create()->render($request);
+        return \Index\Member\View::create()->render($request, 'sendmail');
     }
 
     /**
@@ -63,7 +42,7 @@ class Controller extends \Kotchasan\Controller
      */
     public function register(Request $request)
     {
-        return \Index\Register\View::create()->render($request, false);
+        return \Index\Member\View::create()->render($request, 'register');
     }
 
     /**
@@ -71,15 +50,15 @@ class Controller extends \Kotchasan\Controller
      */
     public function forgot(Request $request)
     {
-        return \Index\Forgot\View::create()->render($request);
+        return \Index\Member\View::create()->render($request, 'forgot');
     }
 
     /**
      * @param Request $request
      */
-    public function dologin(Request $request)
+    public function login(Request $request)
     {
-        return \Index\Dologin\View::create()->render($request);
+        return \Index\Member\View::create()->render($request, 'login');
     }
 
     /**
@@ -87,7 +66,7 @@ class Controller extends \Kotchasan\Controller
      */
     public function member(Request $request)
     {
-        return \Index\View\View::create()->render($request);
+        return \Index\Member\View::create()->render($request, 'member');
     }
 
     /**
@@ -95,6 +74,22 @@ class Controller extends \Kotchasan\Controller
      */
     public function activate(Request $request)
     {
-        return \Index\Activate\View::create()->render($request);
+        return \Index\Member\View::create()->render($request, 'activate');
+    }
+
+    /**
+     * @param Request $request
+     */
+    public function terms(Request $request)
+    {
+        return \Index\Member\View::create()->render($request, 'terms');
+    }
+
+    /**
+     * @param Request $request
+     */
+    public function privacy(Request $request)
+    {
+        return \Index\Member\View::create()->render($request, 'privacy');
     }
 }

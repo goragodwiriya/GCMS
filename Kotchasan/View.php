@@ -1,20 +1,14 @@
 <?php
-/**
- * @filesource Kotchasan/View.php
- *
- * @copyright 2016 Goragod.com
- * @license https://www.kotchasan.com/license/
- * @author Goragod Wiriya <admin@goragod.com>
- * @package Kotchasan
- */
 
 namespace Kotchasan;
 
 /**
- * This class provides basic functionalities for views.
- * It is responsible for rendering HTML templates, managing CSS and JavaScript files, and handling headers.
+ * Kotchasan View Class
  *
- * @see https://www.kotchasan.com/
+ * This class provides methods to manage the view layer of a web application.
+ * It allows setting headers, metas, scripts, and contents for rendering HTML pages.
+ *
+ * @package Kotchasan
  */
 class View extends \Kotchasan\KBase
 {
@@ -54,13 +48,20 @@ class View extends \Kotchasan\KBase
     protected $scripts = [];
 
     /**
+     * Array to store scripts/styles to be inserted before </body> (footer).
+     *
+     * @var array
+     */
+    protected $footerMetas = [];
+
+    /**
      * Creates an instance of the View class.
      *
      * @return static
      */
     public static function create()
     {
-        return new static;
+        return new static();
     }
 
     /**
@@ -98,9 +99,6 @@ class View extends \Kotchasan\KBase
      * The function takes either an array (returned from preg_replace) or a string.
      * Returns the new query string with the 'id=0' removed.
      *
-     * @assert (array(2 => 'module=retmodule&id=0')) [==] "http://localhost/?module=retmodule&amp;page=1&amp;sort=id"  [[$_SERVER['QUERY_STRING'] = '_module=test&1234&_page=1&_sort=id&action=login&id=1']]
-     * @assert ('module=retmodule&5678') [==] "http://localhost/?module=retmodule&amp;page=1&amp;sort=id&amp;id=1&amp;5678"
-     *
      * @param array|string $f The value from the variable $f used to create the query string.
      *
      * @return string The new query string.
@@ -136,7 +134,8 @@ class View extends \Kotchasan\KBase
                 }
             }
         }
-        return (string) $uri->withQuery($uri->paramsToQuery($queryUrl, true));
+        $queryString = http_build_query($queryUrl, '', '&', PHP_QUERY_RFC3986);
+        return (string) $uri->withQuery($queryString);
     }
 
     /**
@@ -168,6 +167,7 @@ class View extends \Kotchasan\KBase
         $this->contents['/{WEBDESCRIPTION}/'] = self::$cfg->web_description;
         $this->contents['/{WEBURL}/'] = WEB_URL;
         $this->contents['/{SKIN}/'] = Template::get();
+
         foreach ($this->afterContents as $key => $value) {
             $this->contents[$key] = $value;
         }
@@ -180,6 +180,11 @@ class View extends \Kotchasan\KBase
         }
         if ($head != '') {
             $this->contents['/(<head.*)(<\/head>)/isu'] = '$1'.$head.'$2';
+        }
+        // Inject footer scripts/styles before </body>
+        if (!empty($this->footerMetas)) {
+            $footer = implode("\n", $this->footerMetas);
+            $this->contents['/(<\/body>)/isu'] = $footer."\n$1";
         }
         // Replace in the template
         if ($template === null) {
@@ -234,6 +239,18 @@ class View extends \Kotchasan\KBase
     {
         foreach ($array as $key => $value) {
             $this->metas[$key] = $value;
+        }
+    }
+
+    /**
+     * Adds scripts/styles to be inserted just before </body> (footer).
+     *
+     * @param array $array An array of HTML strings (e.g., array(key1 => val1, key2 => val2)).
+     */
+    public function setFooterMetas($array)
+    {
+        foreach ($array as $key => $value) {
+            $this->footerMetas[$key] = $value;
         }
     }
 

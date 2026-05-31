@@ -10,11 +10,11 @@
 
 namespace Index\Forgot;
 
-use Gcms\Gcms;
 use Gcms\Login;
 use Kotchasan\Http\Request;
 use Kotchasan\Language;
 use Kotchasan\Template;
+use Web\Gcms;
 
 /**
  * module=forgot
@@ -23,7 +23,7 @@ use Kotchasan\Template;
  *
  * @since 1.0
  */
-class View extends \Gcms\View
+class View extends \Web\View
 {
     /**
      * หน้าขอรหัสผ่านใหม่
@@ -44,7 +44,7 @@ class View extends \Gcms\View
         $template->add([
             '/{WEBTITLE}/' => self::$cfg->web_title,
             '/{TOPIC}/' => $index->topic,
-            '/{EMAIL}/' => isset(Login::$login_params['username']) ? Login::$login_params['username'] : '',
+            '/{USERNAME}/' => isset(Login::$login_params['username']) ? Login::$login_params['username'] : '',
             '/{WEBURL}/' => WEB_URL,
             '/{TOKEN}/' => $request->createToken(),
             '/{MODAL}/' => $modal ? 'true' : WEB_URL.'index.php',

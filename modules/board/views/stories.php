@@ -2,145 +2,133 @@
 /**
  * @filesource modules/board/views/stories.php
  *
- * @copyright 2016 Goragod.com
+ * @copyright 2026 Goragod.com
  * @license https://www.kotchasan.com/license/
- *
- * @see https://www.kotchasan.com/
  */
 
 namespace Board\Stories;
 
-use Board\Index\Controller;
-use Gcms\Gcms;
-use Kotchasan\Http\Request;
 use Kotchasan\Template;
+use Kotchasan\Text;
+use Web\Gcms;
+use Web\Login;
 
 /**
- * แสดงรายการกระทู้
+ * Board Frontend Views
  *
  * @author Goragod Wiriya <admin@goragod.com>
  *
  * @since 1.0
  */
-class View extends \Gcms\View
+class View extends \Web\View
 {
     /**
-     * แสดงรายการกระทู้
+     * Render board listing page
      *
-     * @param Request $request
-     * @param object  $index   ข้อมูลโมดูล
+     * @param object $index Module data
      *
      * @return object
      */
-    public function index(Request $request, $index)
+    public function render($index)
     {
-        // ลิสต์รายการ
-        $index = \Board\Stories\Model::get($request, $index);
-        if ($index) {
-            // login
-            $login = $request->session('login', ['id' => 0, 'status' => -1, 'email' => '', 'password' => ''])->all();
-            // วันที่สำหรับเครื่องหมาย new
-            $valid_date = time() - $index->new_date;
-            // /board/listitem.html
-            $listitem = Template::create('board', $index->module, 'listitem');
-            foreach ($index->items as $item) {
-                if (!empty($item->picture) && is_file(ROOT_PATH.DATA_FOLDER.'board/thumb-'.$item->picture)) {
-                    $thumb = WEB_URL.DATA_FOLDER.'board/thumb-'.$item->picture;
-                } elseif ($item->pin > 0) {
-                    $thumb = WEB_URL.'skin/'.self::$cfg->skin.'/board/img/pin.png';
-                } elseif ($item->locked > 0) {
-                    $thumb = WEB_URL.'skin/'.self::$cfg->skin.'/board/img/lock.png';
-                } elseif (!empty($index->icon) && is_file(ROOT_PATH.DATA_FOLDER.'board/'.$index->icon)) {
-                    $thumb = WEB_URL.DATA_FOLDER.'board/'.$index->icon;
-                } else {
-                    $thumb = WEB_URL.(isset($index->default_icon) ? $index->default_icon : 'modules/board/img/default_icon.png');
-                }
-                if ((int) $item->create_date > $valid_date && empty($item->comment_date)) {
-                    $icon = ' new';
-                } elseif ((int) $item->last_update > $valid_date || (int) $item->comment_date > $valid_date) {
-                    $icon = ' update';
-                } else {
-                    $icon = '';
-                }
-                $listitem->add([
-                    '/{ID}/' => $item->id,
-                    '/{PICTURE}/' => $thumb,
-                    '/{URL}/' => Controller::url($index->module, $item->id),
-                    '/{TOPIC}/' => $item->topic,
-                    '/{UID}/' => $item->member_id,
-                    '/{SENDER}/' => $item->sender,
-                    '/{STATUS}/' => $item->status,
-                    '/{DATE}/' => $item->create_date,
-                    '/{VISITED}/' => number_format($item->visited),
-                    '/{REPLY}/' => number_format($item->comments),
-                    '/{REPLYDATE}/' => $item->comment_date == 0 ? '' : $item->comment_date,
-                    '/{REPLYER}/' => $item->comment_date == 0 ? '&nbsp;' : $item->commentator,
-                    '/{STATUS2}/' => $item->replyer_status,
-                    '/{RID}/' => $item->commentator_id,
-                    '/{ICON}/' => $icon
-                ]);
+        if (!empty($index->category_id) && count($index->category_id) === 1) {
+            $category = $index->categories->get('category', $index->category_id[0]);
+            if ($category) {
+                $index->topic = $category->topic;
+                $index->description = $category->detail;
             }
-            // breadcrumb ของโมดูล
-            if (!empty($index->category_id) && is_array($index->category_id)) {
-                // แสดงหลายหมวด
-                $index->canonical = Gcms::createUrl($index->module, '', 0, 0, 'cat='.implode(',', $index->category_id));
-            } else {
-                // ไม่มีหมวด หรือ มีหมวดเดียว
-                $index->canonical = Gcms::createUrl($index->module);
-            }
-            if (!Gcms::$menu->isHome($index->index_id)) {
-                $menu = Gcms::$menu->findTopLevelMenu($index->index_id);
-                if ($menu) {
-                    // ใช้ข้อความจากเมนู
-                    Gcms::$view->addBreadcrumb($index->canonical, $menu->menu_text, $menu->menu_tooltip);
-                } else {
-                    // โมดูล
-                    Gcms::$view->addBreadcrumb($index->canonical, $index->topic);
-                }
-            } elseif (!empty($index->category_id)) {
-                // โมดูล
-                Gcms::$view->addBreadcrumb($index->canonical, $index->topic);
-            }
-            if (empty($index->category_id)) {
-                // ไม่มีหมวด
-                $category_id = 0;
-            } elseif (is_array($index->category_id)) {
-                // แสดงหลายหมวด
-                $category_id = 0;
-            } else {
-                // หมวดหมู่เดียว แสดงตามหมวดหมู่ที่เลือก
-                $category_id = $index->category_id;
-                $index->topic = $index->category;
-                $index->canonical = Gcms::createUrl($index->module, '', $category_id);
-                // หมวดหมู่
-                Gcms::$view->addBreadcrumb($index->canonical, $index->category);
-            }
-            // current URL
-            $uri = \Kotchasan\Http\Uri::createFromUri($index->canonical);
-            // list.html หรือ empty.html หากไม่มีข้อมูล
-            $template = Template::create('board', $index->module, $listitem->hasItem() ? 'list' : 'empty');
-            $template->add([
-                '/{TOPIC}/' => $index->topic,
-                '/{DETAIL}/' => $index->detail,
-                '/{LIST}/' => $listitem->render(),
-                '/{SPLITPAGE}/' => $uri->pagination($index->totalpage, $index->page),
-                '/{NEWTOPIC}/' => empty($index->can_post) ? 'hidden' : '',
-                '/{CATID}/' => $category_id,
-                '/{MODULE}/' => $index->module
-            ]);
-            // JSON-LD (Index)
-            Gcms::$view->setJsonLd(\Index\Jsonld\View::webpage($index));
-            // คืนค่า
-            return (object) [
-                'canonical' => $index->canonical,
-                'module' => $index->module,
-                'topic' => $index->topic,
-                'description' => $index->description,
-                'keywords' => $index->keywords,
-                'detail' => $template->render()
-            ];
         }
-        // 404
-        return createClass('Index\Error\Controller')->init('board');
+
+        if (Gcms::$menu->isHomeMenu($index->index_id)) {
+            $index->canonical = WEB_URL.'index.php';
+        } else {
+            $index->canonical = \Board\Index\Controller::url($index->module, $index->category_id);
+            Gcms::$view->addBreadcrumb($index->canonical, $index->topic, $index->description);
+        }
+
+        $login = Login::isMember();
+        $canPost = $login && Login::checkStatus($login, $index->config, ['can_write']);
+
+        // listitem.html
+        $listitem = Template::create($index->owner, $index->module, 'listitem');
+
+        foreach ($index->items as $item) {
+            $url = \Board\Index\Controller::url($index->module, $index->category_id, $item->id);
+            $cat = $index->categories->get('category', $item->category_id);
+            if ($item->locked && $item->pin) {
+                $icon = 'icon-lock';
+            } elseif ($item->locked) {
+                $icon = 'icon-lock';
+            } elseif ($item->pin) {
+                $icon = 'icon-pin';
+            } else {
+                $icon = '';
+            }
+
+            $listitem->add([
+                '/{URL}/' => $url,
+                '/{ID}/' => $item->id,
+                '/{TOPIC}/' => Text::htmlspecialchars($item->topic),
+                '/{SENDER}/' => empty($item->sender) ? '{LNG_Unknown}' : Text::htmlspecialchars($item->sender),
+                '/{STATUS}/' => $item->status,
+                '/{DATE}/' => $item->created_at,
+                '/{COMMENTS}/' => (int) $item->comments,
+                '/{VISITED}/' => (int) $item->visited,
+                '/{CATEGORY}/' => $cat ? Text::htmlspecialchars($cat->topic) : '',
+                '/{CATEGORY_ID}/' => $item->category_id,
+                '/{LAST_REPLY}/' => $item->comment_date,
+                '/{LAST_REPLY_BY}/' => empty($item->comment_date) ? '-' : Text::htmlspecialchars((string) $item->commentator),
+                '/{REPLY_STATUS}/' => $item->reply_status,
+                '/{PIN}/' => $item->pin ? ' board-pinned' : '',
+                '/{LOCKED}/' => $item->locked ? ' board-locked' : '',
+                '/{ICON}/' => $icon
+            ]);
+        }
+
+        // list.html template
+        $template = Template::create($index->owner, $index->module, 'list');
+
+        $uri = \Kotchasan\Http\Uri::createFromUri($index->canonical);
+
+        // Build category filter links
+        $catLinks = '';
+        if (empty($index->config->category_display)) {
+            $url = \Board\Index\Controller::url($index->module);
+            $catLinks .= '<a href="'.$url.'" class="cat-link'.(empty($index->category_id) ? ' active' : '').'">{LNG_All}</a>';
+            foreach ($index->categories->all('category') as $cat => $text) {
+                $active = in_array($cat, $index->category_id) ? ' active' : '';
+                $url = \Board\Index\Controller::url($index->module, $cat);
+                $catLinks .= '<a href="'.$url.'" class="cat-link'.$active.'">'.Text::htmlspecialchars($text->topic).'</a>';
+            }
+        }
+
+        if ($listitem->hasItem()) {
+            $list = $listitem->render();
+        } else {
+            $list = '<div class="list-empty"><div class="list-empty-icon icon-comments"></div><h3>{LNG_No topics found}</h3></div>';
+        }
+
+        $params = [
+            'module' => $index->module.'-write'
+        ];
+        if (!empty($index->category_id)) {
+            $params['category_id'] = (int) $index->category_id;
+        }
+
+        $template->add([
+            '/{LIST}/' => $list,
+            '/{PAGINATION}/' => $uri->pagination($index->total_pages, $index->page),
+            '/{TOPIC}/' => Text::htmlspecialchars($index->topic),
+            '/{DESCRIPTION}/' => Text::htmlspecialchars($index->description),
+            '/{MODULE}/' => $index->module,
+            '/{MODULE_ID}/' => (int) $index->module_id,
+            '/{CATEGORY_LINKS}/' => $catLinks,
+            '/{NEW_TOPIC_URL}/' => WEB_URL.'index.php?'.http_build_query($params),
+            '/{CAN_POST}/' => $canPost ? '' : ' hidden'
+        ]);
+
+        $index->detail = $template->render();
+
+        return $index;
     }
 }

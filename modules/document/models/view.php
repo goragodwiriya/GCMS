@@ -2,20 +2,16 @@
 /**
  * @filesource modules/document/models/view.php
  *
- * @copyright 2016 Goragod.com
+ * @copyright 2026 Goragod.com
  * @license https://www.kotchasan.com/license/
- *
- * @see https://www.kotchasan.com/
  */
 
 namespace Document\View;
 
 use Kotchasan\Database\Sql;
-use Kotchasan\Http\Request;
-use Kotchasan\Language;
 
 /**
- * อ่านข้อมูลโมดูล
+ * Document Frontend Model — single article
  *
  * @author Goragod Wiriya <admin@goragod.com>
  *
@@ -24,96 +20,81 @@ use Kotchasan\Language;
 class Model extends \Kotchasan\Model
 {
     /**
-     * อ่านบทความที่เลือก
+     * Get single article for frontend rendering
      *
-     * @param Request $request
-     * @param object  $index   ข้อมูลที่ส่งมา
+     * @param object $index Module index data (doc_id must be set)
      *
-     * @return object ข้อมูล object ไม่พบคืนค่า null
+     * @return object|null
      */
-    public static function get(Request $request, $index)
+    public static function get($index)
     {
-        // model
-        $model = new static;
-        // select
-        $fields = [
-            'M.config',
-            'M.module',
-            'M.owner',
-            'I.id',
-            'I.module_id',
-            'I.category_id',
-            'D.topic',
-            'I.picture',
-            'D.description',
-            'D.detail',
-            'I.create_date',
-            'I.last_update',
-            'I.visited',
-            'I.visited_today',
-            'I.comments',
-            'I.alias',
-            'D.keywords',
-            'D.relate',
-            'I.can_reply canReply',
-            'I.published',
-            '0 vote',
-            '0 vote_count',
-            'C.topic category',
-            'C.detail cat_tooltip',
-            'U.status',
-            'U.id member_id',
-            Sql::create('(CASE WHEN U.`displayname`="" THEN U.`email` ELSE U.`displayname` END) AS `displayname`')
-        ];
-        // where
         $where = [];
         if (!empty($index->id)) {
             $where[] = ['I.id', $index->id];
         } elseif (!empty($index->alias)) {
             $where[] = ['I.alias', $index->alias];
         }
+        if (empty($where)) {
+            return null;
+        }
+        $where[] = ['I.module_id', $index->module_id];
         $where[] = ['I.index', 0];
-        if (!empty($index->module_id)) {
-            $where[] = ['I.module_id', $index->module_id];
-        }
-        $query = $model->db()->createQuery()
-            ->from('index I')
-            ->join('modules M', 'INNER', ['M.id', 'I.module_id'])
-            ->join('index_detail D', 'INNER', [['D.id', 'I.id'], ['D.module_id', 'I.module_id'], ['D.language', ['', Language::name()]]])
-            ->join('user U', 'LEFT', ['U.id', 'I.member_id'])
-            ->join('category C', 'LEFT', [['C.category_id', 'I.category_id'], ['C.module_id', 'I.module_id']])
-            ->where($where)
-            ->toArray();
-        if (!$request->request('visited')->exists()) {
-            $query->cacheOn(false);
-        }
-        $result = $query->first($fields);
-        if ($result) {
-            // อัปเดตการเยี่ยมชม
-            ++$result['visited'];
-            ++$result['visited_today'];
-            $model->db()->update($model->getTableName('index'), $result['id'], ['visited' => $result['visited'], 'visited_today' => $result['visited_today']]);
-            $model->db()->cacheSave([$result]);
-            // อัปเดตตัวแปร
-            foreach ($result as $key => $value) {
-                switch ($key) {
-                    case 'config':
-                        $config = @unserialize($value);
-                        if (is_array($config)) {
-                            foreach ($config as $k => $v) {
-                                $index->$k = $v;
-                            }
-                        }
-                        break;
-                    default:
-                        $index->$key = $value;
-                        break;
-                }
-            }
-            // คืนค่าข้อมูลบทความ
+        $where[] = ['I.published', 1];
+        $where[] = ['D.language', ['', LANGUAGE]];
 
-            return $index;
+        $query = static::createQuery()
+            ->select(
+                'I.id',
+                'I.module_id',
+                'D.language',
+                'I.alias',
+                'I.picture',
+                'C.category_id',
+                'C.topic category_name',
+                'D.topic',
+                'D.keywords',
+                'D.description',
+                'D.detail',
+                'I.published',
+                'I.published_date',
+                'I.created_at',
+                'I.visited',
+                Sql::GROUP_CONCAT('T.tag', 'tags')
+            )
+            ->from('index I')
+            ->join('index_detail D', [['D.id', 'I.id'], ['D.module_id', 'I.module_id']])
+            ->join('category C', [['C.type', 'category'], ['C.module_id', 'I.module_id'], ['C.category_id', 'I.category_id']], 'LEFT')
+            ->join('index_tag T', ['T.index_id', 'I.id'], 'LEFT')
+            ->where($where)
+            ->orderBy('D.language', 'DESC')
+            ->cacheOn(false);
+        $result = $query->first();
+
+        if (!$result) {
+            return null;
         }
-        return null;
+
+        $result->visited++; // Increment visited count for cache
+        $query->saveCache($result);
+
+        // Restore stored entities
+        $result->detail = str_replace(
+            ['&#x007B;', '&#x007D;', '&#92;', '{WEBURL}'],
+            ['{', '}', '\\', WEB_URL],
+            $result->detail
+        );
+        $categories = json_decode($result->category_name ?: '{}', true) ?: [];
+        $result->category_name = $categories[LANGUAGE] ?? $categories[''] ?? '';
+
+        // Increment view counter atomically to avoid race conditions
+        \Kotchasan\DB::create()->increment('index', ['id', $result->id], ['visited', 'visited_today']);
+
+        // Copy meta to index object
+        $index->topic = $result->topic;
+        $index->description = $result->description;
+        $index->keywords = $result->keywords;
+        $index->article = $result;
+
+        return $index;
     }
 }

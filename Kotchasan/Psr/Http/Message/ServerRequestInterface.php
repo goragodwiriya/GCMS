@@ -1,5 +1,6 @@
 <?php
-namespace Psr\Http\Message;
+
+namespace Kotchasan\Psr\Http\Message;
 
 /**
  * Representation of an incoming, server-side HTTP request.
@@ -12,32 +13,16 @@ namespace Psr\Http\Message;
  * - URI
  * - Headers
  * - Message body
+ * - Query string arguments
+ * - Server parameters
+ * - Cookie parameters
+ * - Upload file information
  *
- * Additionally, it encapsulates all data as it has arrived to the
- * application from the CGI and/or PHP environment, including:
+ * Additionally, it provides methods for accessing the parsed body.
  *
- * - The values represented in $_SERVER.
- * - Any cookies provided (generally via $_COOKIE)
- * - Query string arguments (generally via $_GET, or as parsed via parse_str())
- * - Upload files, if any (as represented by $_FILES)
- * - Deserialized body parameters (generally from $_POST)
- *
- * $_SERVER values MUST be treated as immutable, as they represent application
- * state at the time of request; as such, no methods are provided to allow
- * modification of those values. The other values provide such methods, as they
- * can be restored from $_SERVER or the request body, and may need treatment
- * during the application (e.g., body parameters may be deserialized based on
- * content type).
- *
- * Additionally, this interface recognizes the utility of introspecting a
- * request to derive and match additional parameters (e.g., via URI path
- * matching, decrypting cookie values, deserializing non-form-encoded body
- * content, matching authorization headers to users, etc). These parameters
- * are stored in an "attributes" property.
- *
- * Requests are considered immutable; all methods that might change state MUST
- * be implemented such that they retain the internal state of the current
- * message and return an instance that contains the changed state.
+ * The body of the request can be a raw string (e.g., the content of php://input),
+ * or it can be parsed into a PHP type via deserialization. The parsed body is
+ * based on the request Content-Type.
  */
 interface ServerRequestInterface extends RequestInterface
 {
@@ -78,8 +63,7 @@ interface ServerRequestInterface extends RequestInterface
      * immutability of the message, and MUST return an instance that has the
      * updated cookie values.
      *
-     * @param array $cookies array of key/value pairs representing cookies
-     *
+     * @param array $cookies Array of key/value pairs representing cookies.
      * @return static
      */
     public function withCookieParams(array $cookies);
@@ -116,10 +100,8 @@ interface ServerRequestInterface extends RequestInterface
      * immutability of the message, and MUST return an instance that has the
      * updated query string arguments.
      *
-     *     $_GET.
-     *
      * @param array $query Array of query string arguments, typically from
-     *
+     *     $_GET.
      * @return static
      */
     public function withQueryParams(array $query);
@@ -133,9 +115,8 @@ interface ServerRequestInterface extends RequestInterface
      * These values MAY be prepared from $_FILES or the message body during
      * instantiation, or MAY be injected via withUploadedFiles().
      *
-     *     array MUST be returned if no data is present.
-     *
      * @return array An array tree of UploadedFileInterface instances; an empty
+     *     array MUST be returned if no data is present.
      */
     public function getUploadedFiles();
 
@@ -146,11 +127,9 @@ interface ServerRequestInterface extends RequestInterface
      * immutability of the message, and MUST return an instance that has the
      * updated body parameters.
      *
-     * @param  array                     an array tree of UploadedFileInterface instances
-     *
-     * @throws \InvalidArgumentException if an invalid structure is provided
-     *
+     * @param array $uploadedFiles An array tree of UploadedFileInterface instances.
      * @return static
+     * @throws \InvalidArgumentException if an invalid structure is provided.
      */
     public function withUploadedFiles(array $uploadedFiles);
 
@@ -166,9 +145,8 @@ interface ServerRequestInterface extends RequestInterface
      * potential types MUST be arrays or objects only. A null value indicates
      * the absence of body content.
      *
+     * @return null|array|object The deserialized body parameters, if any.
      *     These will typically be an array or object.
-     *
-     * @return null|array|object the deserialized body parameters, if any
      */
     public function getParsedBody();
 
@@ -194,14 +172,11 @@ interface ServerRequestInterface extends RequestInterface
      * immutability of the message, and MUST return an instance that has the
      * updated body parameters.
      *
-     *     typically be in an array or object.
-     *     provided.
-     *
      * @param null|array|object $data The deserialized body data. This will
-     *
-     * @throws \InvalidArgumentException if an unsupported argument type is
-     *
+     *     typically be in an array or object.
      * @return static
+     * @throws \InvalidArgumentException if an unsupported argument type is
+     *     provided.
      */
     public function withParsedBody($data);
 
@@ -214,7 +189,7 @@ interface ServerRequestInterface extends RequestInterface
      * deserializing non-form-encoded message bodies; etc. Attributes
      * will be application and request specific, and CAN be mutable.
      *
-     * @return array attributes derived from the request
+     * @return array Attributes derived from the request.
      */
     public function getAttributes();
 
@@ -229,10 +204,8 @@ interface ServerRequestInterface extends RequestInterface
      * specifying a default value to return if the attribute is not found.
      *
      * @see getAttributes()
-     *
-     * @param string $name    the attribute name
-     * @param mixed  $default default value to return if the attribute does not exist
-     *
+     * @param string $name The attribute name.
+     * @param mixed $default Default value to return if the attribute does not exist.
      * @return mixed
      */
     public function getAttribute($name, $default = null);
@@ -248,10 +221,8 @@ interface ServerRequestInterface extends RequestInterface
      * updated attribute.
      *
      * @see getAttributes()
-     *
-     * @param string $name  the attribute name
-     * @param mixed  $value the value of the attribute
-     *
+     * @param string $name The attribute name.
+     * @param mixed $value The value of the attribute.
      * @return static
      */
     public function withAttribute($name, $value);
@@ -267,9 +238,7 @@ interface ServerRequestInterface extends RequestInterface
      * the attribute.
      *
      * @see getAttributes()
-     *
-     * @param string $name the attribute name
-     *
+     * @param string $name The attribute name.
      * @return static
      */
     public function withoutAttribute($name);

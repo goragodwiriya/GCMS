@@ -1,19 +1,13 @@
 <?php
-/**
- * @filesource Kotchasan/Language.php
- *
- * @copyright 2016 Goragod.com
- * @license https://www.kotchasan.com/license/
- * @author Goragod Wiriya <admin@goragod.com>
- * @package Kotchasan
- */
-
 namespace Kotchasan;
 
 /**
- * Class for language loading.
+ * Kotchasan Language Class
  *
- * @see https://www.kotchasan.com/
+ * This class provides methods for managing and retrieving language translations.
+ * It supports loading language files, retrieving language variables, and formatting strings.
+ *
+ * @package Kotchasan
  */
 final class Language extends \Kotchasan\KBase
 {
@@ -35,12 +29,6 @@ final class Language extends \Kotchasan\KBase
     /**
      * Retrieves the language variable with the specified key.
      *
-     * @assert ('YEAR_OFFSET') [==] 543
-     * @assert ('XYZ', []) [==] []
-     * @assert ('DATE_LONG', null, 0) [==] 'อาทิตย์'
-     * @assert ('DATE_LONG', null, 12) [==] 'DATE_LONG'
-     * @assert ('not found', 'default') [==] 'default'
-     *
      * @param string $key     The language variable key or English text.
      * @param mixed  $default The default value to return if the key is not found.
      * @param mixed  $value   If an array variable is specified and $value is set, returns the language value at $key[$value].
@@ -50,8 +38,9 @@ final class Language extends \Kotchasan\KBase
     public static function get($key, $default = null, $value = null)
     {
         if (null === self::$languages) {
-            new static;
+            new static();
         }
+        $key = preg_replace('/\s+/', ' ', trim($key));
         if (isset(self::$languages->{$key})) {
             $item = self::$languages->{$key};
             if ($value !== null && is_array($item)) {
@@ -74,10 +63,11 @@ final class Language extends \Kotchasan\KBase
     public static function getItems(array $keys = [])
     {
         if (null === self::$languages) {
-            new static;
+            new static();
         }
         $result = [];
         foreach ($keys as $i => $key) {
+            $key = preg_replace('/\s+/', ' ', trim($key));
             $result[is_int($i) ? $key : $i] = isset(self::$languages->{$key}) ? self::$languages->{$key} : $key;
         }
         return $result;
@@ -86,28 +76,22 @@ final class Language extends \Kotchasan\KBase
     /**
      * Loads all installed language files.
      *
-     * @param string $type The file type (php or js).
+     * @param string $type The file type (php).
      *
      * @return array An array of language data.
      */
     public static function installed($type)
     {
+        if ($type !== 'php') {
+            return [];
+        }
+
         $language_folder = self::languageFolder();
         $datas = [];
         foreach (self::installedLanguage() as $lng) {
-            if ($type == 'php') {
-                if (is_file($language_folder.$lng.'.php')) {
-                    // php
-                    $datas[$lng] = include $language_folder.$lng.'.php';
-                }
-            } elseif (is_file($language_folder.$lng.'.js')) {
-                // js
-                $list = file($language_folder.$lng.'.js');
-                foreach ($list as $item) {
-                    if (preg_match('/var\s+(.*)\s+=\s+[\'"](.*)[\'"];/', $item, $values)) {
-                        $datas[$lng][$values[1]] = $values[2];
-                    }
-                }
+            $language = self::loadPhpLanguage($language_folder, $lng);
+            if ($language !== null) {
+                $datas[$lng] = $language;
             }
         }
         // จัดกลุ่มภาษาตาม key
@@ -138,24 +122,22 @@ final class Language extends \Kotchasan\KBase
     public static function installedLanguage()
     {
         if (!isset(self::$installed_languages)) {
+            self::$installed_languages = [];
             $language_folder = self::languageFolder();
             $files = [];
             File::listFiles($language_folder, $files);
             foreach ($files as $file) {
-                if (preg_match('/(.*\/([a-z]{2,2}))\.(php|js)$/', $file, $match)) {
+                if (preg_match('/(.*\/([a-z]{2,2}))\.(php)$/', $file, $match)) {
                     self::$installed_languages[$match[2]] = $match[2];
                 }
             }
+            ksort(self::$installed_languages);
         }
         return self::$installed_languages;
     }
 
     /**
      * Checks if a language key exists in the given array of languages.
-     *
-     * @assert (array(array('id' => 0, 'key' => 'One'), array('id' => 100, 'key' => 'Two')), 'One') [==] 0
-     * @assert (array(array('id' => 0, 'key' => 'One'), array('id' => 100, 'key' => 'Two')), 'two') [==] 100
-     * @assert (array(array('id' => 0, 'key' => 'One'), array('id' => 100, 'key' => 'Two')), 'O') [==] -1
      *
      * @param array  $languages An array of language data.
      * @param string $key       The language key to check.
@@ -175,9 +157,6 @@ final class Language extends \Kotchasan\KBase
     /**
      * Checks if a language variable specified by name exists and is an array with a given key.
      *
-     * @assert ('DATE_LONG', 1) [==] true
-     * @assert ('DATE_LONG', 7) [==] false
-     *
      * @param array  $datas The language data.
      * @param string $name  The name of the language variable.
      * @param string $key   The key to check.
@@ -187,7 +166,7 @@ final class Language extends \Kotchasan\KBase
     public static function arrayKeyExists($name, $key)
     {
         if (null === self::$languages) {
-            new static;
+            new static();
         }
         return is_array(self::$languages->{$name}) && isset(self::$languages->{$name}[$key]);
     }
@@ -205,14 +184,12 @@ final class Language extends \Kotchasan\KBase
     /**
      * Retrieves the name of the currently active language.
      *
-     * @assert () [==] 'th'
-     *
      * @return string The name of the currently active language.
      */
     public static function name()
     {
         if (null === self::$languages) {
-            new static;
+            new static();
         }
         return self::$language_name;
     }
@@ -226,7 +203,7 @@ final class Language extends \Kotchasan\KBase
      */
     public static function setName($language)
     {
-        if (null === self::$languages || $language !== self::$languages) {
+        if (null === self::$languages || $language !== self::$language_name) {
             new static($language);
         }
         return self::$language_name;
@@ -235,8 +212,7 @@ final class Language extends \Kotchasan\KBase
     /**
      * Function that translates the language received from Theme parsing.
      *
-     * @assert (array(1 => 'not found')) [==] 'not found'
-     *
+
      * @param array $match The variable received from Theme parsing.
      *
      * @return string
@@ -249,10 +225,6 @@ final class Language extends \Kotchasan\KBase
     /**
      * Retrieves the language value based on the given key and replaces placeholders with values from the $replace array.
      *
-     * @assert ('You want to :action', array(':action' => 'delete')) [==] 'You want to delete'
-     * @assert ('You want to %s', 'delete') [==] 'You want to delete'
-     * @assert ('You want to %s', 1) [==] 'You want to 1'
-     *
      * @param string $key     The language key.
      * @param mixed  $replace The values to replace placeholders.
      *
@@ -261,7 +233,7 @@ final class Language extends \Kotchasan\KBase
     public static function replace($key, $replace)
     {
         if (null === self::$languages) {
-            new static;
+            new static();
         }
         $value = isset(self::$languages->$key) ? self::$languages->$key : $key;
         if (is_array($replace) || is_object($replace)) {
@@ -278,9 +250,6 @@ final class Language extends \Kotchasan\KBase
     /**
      * Format a string based on a key using sprintf formatting.
      *
-     * @assert ('Error moving uploaded file %1s to %2s', 'one', 'two') [==] 'Error moving uploaded file one to two'
-     * @assert ('Error moving uploaded file %s to %s', 'one', 'two') [==] 'Error moving uploaded file one to two'
-     *
      * @param string $key The key to lookup in the language translations.
      * @param mixed ...$values Optional values to substitute into the formatted string.
      *
@@ -289,7 +258,7 @@ final class Language extends \Kotchasan\KBase
     public static function sprintf($key, ...$values)
     {
         if (null === self::$languages) {
-            new static;
+            new static();
         }
         $values = func_get_args();
         $key = array_shift($values);
@@ -301,7 +270,7 @@ final class Language extends \Kotchasan\KBase
      * Saves the language file.
      *
      * @param array  $languages The language data to be saved.
-     * @param string $type      The type of file to save ('php' or 'js').
+     * @param string $type      The type of file to save ('php' or 'json').
      *
      * @return string
      */
@@ -310,7 +279,7 @@ final class Language extends \Kotchasan\KBase
         $datas = [];
         foreach ($languages as $items) {
             foreach ($items as $key => $value) {
-                if (!in_array($key, ['id', 'key', 'array', 'owner', 'type', 'js'])) {
+                if (!in_array($key, ['id', 'key', 'array', 'owner', 'type'])) {
                     $datas[$key][$items['key']] = $value;
                 }
             }
@@ -319,12 +288,8 @@ final class Language extends \Kotchasan\KBase
         foreach ($datas as $lang => $items) {
             $list = [];
             foreach ($items as $key => $value) {
-                if ($type == 'js') {
-                    if (is_string($value)) {
-                        $list[] = "var $key = '$value';";
-                    } else {
-                        $list[] = "var $key = $value;";
-                    }
+                if ($type == 'json') {
+                    $list[$key] = $value;
                 } elseif (is_array($value)) {
                     $save = [];
                     foreach ($value as $k => $v) {
@@ -354,6 +319,8 @@ final class Language extends \Kotchasan\KBase
             if ($f !== false) {
                 if ($type == 'php') {
                     $content = '<'."?php\n/* language/$lang.php */\nreturn array(\n  ".implode(",\n  ", $list)."\n);";
+                } elseif ($type == 'json') {
+                    $content = json_encode($list, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
                 } else {
                     $content = implode("\n", $list);
                 }
@@ -372,8 +339,6 @@ final class Language extends \Kotchasan\KBase
 
     /**
      * Translates the given content by replacing language placeholders.
-     *
-     * @assert ('ภาษา {LNG_DATE_FORMAT} ไทย') [==] 'ภาษา d M Y เวลา H:i น. ไทย'
      *
      * @param string $content The content to be translated.
      *
@@ -395,12 +360,10 @@ final class Language extends \Kotchasan\KBase
     {
         // Language folder
         $language_folder = self::languageFolder();
-        if (is_file($language_folder.$lang.'.php')) {
-            $language = include $language_folder.$lang.'.php';
-            if (isset($language)) {
-                self::$languages = (object) $language;
-                self::$language_name = $lang;
-            }
+        $language = self::loadPhpLanguage($language_folder, $lang);
+        if ($language !== null) {
+            self::$languages = (object) $language;
+            self::$language_name = $lang;
         }
     }
 
@@ -411,45 +374,53 @@ final class Language extends \Kotchasan\KBase
      */
     private function __construct($lang = null)
     {
-        // Language folder
         $language_folder = self::languageFolder();
-        // Selected language
+        $installedLanguages = self::installedLanguage();
+        if (self::$cfg && isset(self::$cfg->languages) && is_array(self::$cfg->languages)) {
+            $configLanguages = self::$cfg->languages;
+        } elseif (!empty($installedLanguages)) {
+            $configLanguages = $installedLanguages;
+        } else {
+            $configLanguages = ['th' => 'th'];
+        }
+
         if ($lang === null) {
-            $lang = self::$request->get('lang', self::$request->cookie('my_lang', '')->toString())->filter('a-z');
+            if (self::$request !== null) {
+                $queryParams = self::$request->getQueryParams();
+                $cookieParams = self::$request->getCookieParams();
+                $lang = isset($queryParams['lang']) ? $queryParams['lang'] : (isset($cookieParams['my_lang']) ? $cookieParams['my_lang'] : '');
+                $lang = preg_match('/^[a-z]+$/', $lang) ? $lang : '';
+            } else {
+                $lang = '';
+            }
         }
         if (empty($lang)) {
             if (defined('INIT_LANGUAGE')) {
-                if (INIT_LANGUAGE === 'auto') {
-                    // Language from browser
-                    $languages = self::$request->getAcceptableLanguages();
-                    if (!empty($languages) && preg_match('/^([a-z]{2,2}).*?$/', strtolower($languages[0]), $match)) {
-                        $lang = $match[1];
-                    } else {
-                        $lang = 'th';
-                    }
+                $init_language = constant('INIT_LANGUAGE');
+                if ($init_language === 'auto') {
+                    $lang = array_key_first($configLanguages) ?: 'th';
                 } else {
-                    // Use the specified initial language
-                    $lang = INIT_LANGUAGE;
+                    $lang = $init_language;
                 }
+            } else {
+                $lang = array_key_first($configLanguages) ?: 'th';
             }
         }
-        // Check language and use the first one found
-        foreach (ArrayTool::replace([$lang => $lang], self::$cfg->languages) as $item) {
+
+        foreach (ArrayTool::replace([$lang => $lang], $configLanguages) as $item) {
             if (!empty($item)) {
-                if (is_file($language_folder.$item.'.php')) {
-                    $language = include $language_folder.$item.'.php';
-                    if (isset($language)) {
-                        self::$languages = (object) $language;
-                        self::$language_name = $item;
-                        // Save the currently used language in a cookie
+                $language = self::loadPhpLanguage($language_folder, $item);
+                if ($language !== null) {
+                    self::$languages = (object) $language;
+                    self::$language_name = $item;
+                    if (PHP_SAPI !== 'cli' && !headers_sent()) {
                         setcookie('my_lang', $item, time() + 2592000, '/');
-                        break;
                     }
+                    break;
                 }
             }
         }
         if (null === self::$languages) {
-            // Default language
             self::$language_name = 'th';
             self::$languages = (object) [
                 'DATE_FORMAT' => 'd M Y เวลา H:i น.',
@@ -503,8 +474,26 @@ final class Language extends \Kotchasan\KBase
             ];
         }
         if (!defined('LANGUAGE')) {
-            /* Register the currently used language */
             define('LANGUAGE', self::$language_name);
         }
+    }
+
+    /**
+     * Load a PHP language dictionary.
+     *
+     * @param string $language_folder
+     * @param string $lang
+     *
+     * @return array|null
+     */
+    private static function loadPhpLanguage($language_folder, $lang)
+    {
+        $file = $language_folder.$lang.'.php';
+        if (!is_file($file)) {
+            return null;
+        }
+
+        $language = include $file;
+        return is_array($language) ? $language : null;
     }
 }

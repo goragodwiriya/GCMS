@@ -10,8 +10,6 @@
 
 namespace Index\Module;
 
-use Kotchasan\Database\Sql;
-
 /**
  * คลาสสำหรับโหลดรายการโมดูลที่ติดตั้งแล้วทั้งหมด จากฐานข้อมูลของ GCMS
  *
@@ -19,87 +17,114 @@ use Kotchasan\Database\Sql;
  *
  * @since 1.0
  */
-class Model
+class Model extends \Kotchasan\KBase
 {
     /**
      * รายการโมดูล เรียงลำดับตาม owner
      *
      * @var array
      */
-    public $by_owner;
+    private $modulesByOwner = [];
+
     /**
      * รายการโมดูล เรียงลำดับตาม module
      *
      * @var array
      */
-    public $by_module = [];
+    private $modulesByName = [];
 
     /**
-     * อ่านรายชื่อโมดูลและไดเร็คทอรี่ของโมดูลทั้งหมดที่ติดตั้งไว้
+     * อ่านรายชื่อโมดูลทั้งหมดที่ติดตั้งไว้
      *
-     * @param string                 $dir
+     * @param string $dir ไดเรคทอรีที่ติดตั้งโมดูล
      * @param \Index\Menu\Controller $menu
      */
     public function __construct($dir, $menu)
     {
-        $this->by_owner = ['index' => []];
-        // โมดูลที่ติดตั้ง
+        // Initialize module containers
+        $this->modulesByOwner = [];
+
+        // Installed modules (by owner)
         $f = @opendir($dir);
         if ($f) {
             while (false !== ($owner = readdir($f))) {
-                if ($owner != '.' && $owner != '..' && $owner != 'index' && $owner != 'js' && $owner != 'css') {
-                    $this->by_owner[$owner] = [];
+                if ($owner != '.' && $owner != '..') {
+                    $this->modulesByOwner[$owner] = [];
                 }
             }
             closedir($f);
         }
-        // โหลดโมดูลที่ติดตั้งแล้ว และสามารถใช้งานได้
-        $modules = $this->getModules();
-        // ใส่ข้อมูลโมดูลลงในเมนู
+
+        if (!empty(self::$cfg->modules)) {
+            foreach (self::$cfg->modules as $owner) {
+                $this->modulesByOwner[$owner] = [];
+            }
+        }
+
+        // Load installed and active modules
+        $modules = $this->getInstalledModules(array_keys($this->modulesByOwner));
+
+        // Add module data to the menu if $menu is valid
         if ($menu instanceof \Index\Menu\Controller) {
-            foreach ($menu->getMenus() as $item) {
+            foreach ($menu->getAllMenus() as $item) {
                 if (isset($modules[$item->index_id])) {
                     $item->module = $modules[$item->index_id];
-                    $this->by_module[$item->module->module] = null;
                 }
             }
         }
-        // เรียงลำดับข้อมูลโมดูลตาม module และ owner
+
+        // Sort module data by module name and owner
         foreach ($modules as $item) {
-            $this->by_module[$item->module] = $item;
-            $this->by_owner[$item->owner][] = $item;
+            $this->modulesByName[$item->module] = $item;
+            $this->modulesByOwner[$item->owner][] = $item;
         }
+    }
+
+    /**
+     * คืนค่ารายการโมดูลทั้งหมด เรียงลำดับตาม owner
+     *
+     * @return array
+     */
+    public function getModulesByOwner()
+    {
+        return $this->modulesByOwner;
+    }
+
+    /**
+     * คืนค่ารายการโมดูลทั้งหมด เรียงลำดับตาม module
+     *
+     * @return array
+     */
+    public function getModulesByName()
+    {
+        return $this->modulesByName;
     }
 
     /**
      * โหลดโมดูลที่ติดตั้งแล้ว และสามารถใช้งานได้
      *
+     * @param array $owners รายการโมดูลที่สามารถใช้ได้
+     *
      * @return array
      */
-    private function getModules()
+    private function getInstalledModules($owners)
     {
         $query = \Kotchasan\Model::createQuery()
-            ->select('I.id index_id', 'I.module_id', 'M.module', 'M.owner', 'M.config', 'D.topic', 'D.keywords', 'D.description')
-            ->from('modules M')
-            ->join('index I', 'INNER', [
+            ->select('D.id index_id', 'I.module_id', 'M.module', 'M.owner', 'M.config', 'D.topic', 'D.keywords', 'D.description')
+            ->from('index I')
+            ->join('index_detail D', [['D.id', 'I.id'], ['D.module_id', 'I.module_id'], ['D.language', ['', LANGUAGE]]])
+            ->join('modules M', ['M.id', 'I.module_id'])
+            ->where([
                 ['I.index', 1],
-                ['I.module_id', 'M.id'],
                 ['I.published', 1],
-                ['I.language', [\Kotchasan\Language::name(), '']]
+                ['M.owner', $owners]
             ])
-            ->join('index_detail D', 'INNER', [['D.id', 'I.id'], ['D.module_id', 'I.module_id'], ['D.language', 'I.language']])
-            ->cacheOn()
-            ->toArray();
+            ->cacheOn();
         $result = [];
-        foreach ($query->execute() as $item) {
-            $config = @unserialize($item['config']);
-            if (is_array($config)) {
-                foreach ($config as $key => $value) {
-                    $item[$key] = $value;
-                }
-            }
-            unset($item['config']);
-            $result[$item['index_id']] = (object) $item;
+
+        foreach ($query->fetchAll() as $item) {
+            $item->config = json_decode($item->config);
+            $result[$item->index_id] = $item;
         }
         return $result;
     }
@@ -109,83 +134,86 @@ class Model
      * คืนค่าข้อมูลโมดูล (Object) ไม่พบคืนค่า false
      *
      * @param string $owner
-     * @param string $module
      * @param int    $module_id
+     * @param string $module
      *
      * @return object|false
      */
-    public static function getModuleWithConfig($owner, $module = '', $module_id = 0)
+    public static function getModuleWithConfig($owner, $module_id = 0, $module = '')
     {
-        if (empty($module) && empty($module_id)) {
-            $where = ['owner', Sql::strValue($owner)];
-        } elseif (empty($owner) && empty($module)) {
-            $where = ['id', (int) $module_id];
+        $module_id = (int) $module_id;
+        if (empty($owner) && empty($module) && $module_id > 0) {
+            $where = ['id', $module_id];
         } elseif (empty($owner) && empty($module_id)) {
-            $where = ['module', Sql::strValue($module)];
-        } elseif (empty($module_id)) {
-            $where = [['module', Sql::strValue($module)], ['owner', Sql::strValue($owner)]];
+            $where = ['module', $module];
+        } elseif ($module_id > 0 && !empty($owner)) {
+            $where = [['id', $module_id], ['owner', $owner]];
+        } elseif (!empty($module) && !empty($owner)) {
+            $where = [['module', $module], ['owner', $owner]];
         } else {
-            $where = [['id', (int) $module_id], ['owner', Sql::strValue($owner)]];
+            $where = ['owner', $owner];
         }
-        $model = new \Kotchasan\Model();
-        $search = $model->db()->createQuery()
+
+        $search = \Kotchasan\Model::createQuery()
+            ->select('id', 'module', 'owner', 'config')
             ->from('modules')
             ->where($where)
-            ->cacheOn()
-            ->toArray()
-            ->first('id', 'module', 'owner', 'config');
+            ->first();
+
         if ($search) {
-            $config = @unserialize($search['config']);
-            if (is_array($config)) {
-                $config['id'] = $search['id'];
-                $config['module'] = $search['module'];
-                $config['owner'] = $search['owner'];
-                return (object) $config;
-            } else {
-                unset($search['config']);
-                return (object) $search;
+            $search->config = json_decode($search->config);
+            if (!is_object($search->config)) {
+                $search->config = (object) [];
             }
+            return $search;
         }
-        return null;
+        return false;
     }
 
     /**
-     * อ่านรายละเอียดของโมดูล
+     * Save module configuration to DB
+     *
+     * @param int $module_id
+     * @param object $config
+     *
+     * @return bool True if update successful, false otherwise
+     */
+    public static function updateConfig($module_id, $config)
+    {
+        $result = \Kotchasan\DB::create()->update('modules', ['id', (int) $module_id], ['config' => json_encode($config, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)]);
+        return $result >= 0;
+    }
+
+    /**
+     * Read module details
      * topic, details, keywords, description
-     * ไม่พบคืนค่า null
+     * Not found, returns null.
      *
      * @param object $index
-     * @param string $page  ถ้าไม่ระบุ (default null) อ่านข้อมูลหลักของโมดูล
      *
-     * @return object
+     * @return object|null
      */
-    public static function getDetails($index, $page = null)
+    public static function getModuleDetails($index)
     {
-        $query = \Kotchasan\Model::createQuery()
-            ->from('index I')
-            ->join('index_detail D', 'INNER', [['D.id', 'I.id'], ['D.module_id', 'I.module_id'], ['D.language', 'I.language']])
-            ->cacheOn()
-            ->toArray();
-        if (empty($page)) {
-            $query->where([
-                ['I.id', (int) $index->index_id],
-                ['I.module_id', (int) $index->module_id],
-                ['I.page', '']
-            ]);
-        } else {
-            $query->where([
-                ['I.module_id', (int) $index->module_id],
-                ['I.page', $page]
-            ])
-                ->order('I.page DESC');
-        }
-        $search = $query->first('D.topic', 'D.detail', 'D.keywords', 'D.description');
-        if ($search) {
-            $index->topic = $search['topic'];
-            $index->detail = $search['detail'];
-            $index->keywords = $search['keywords'];
-            $index->description = $search['description'];
-            return $index;
+        if (!empty($index->index_id) && !empty($index->module_id)) {
+            $search = \Kotchasan\Model::createQuery()
+                ->select('D.topic', 'D.keywords', 'D.detail', 'D.description')
+                ->from('index I')
+                ->join('index_detail D', [['D.id', 'I.id'], ['D.module_id', 'I.module_id'], ['D.language', 'I.language']])
+                ->where([
+                    ['I.id', (int) $index->index_id],
+                    ['I.module_id', (int) $index->module_id]
+                ])
+                ->cacheOn()
+                ->first();
+
+            if ($search) {
+                $index->topic = $search->topic;
+                $index->detail = $search->detail;
+                $index->keywords = $search->keywords;
+                $index->description = $search->description;
+                return $index;
+            }
         }
         return null;
     }

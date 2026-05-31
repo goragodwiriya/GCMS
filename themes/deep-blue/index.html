@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="{LANGUAGE}" dir="ltr" class="smooth">
+
+<head>
+  <title>{TITLE}</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- Fonts: preconnect must be in <head> so browser starts DNS/TLS early -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&family=Sarabun:wght@300;400;500;600&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700&display=swap">
+  <!-- Framework CSS -->
+  <link rel="stylesheet" href="{WEBURL}Now/dist/now.core.min.css">
+  <!-- GCMS Core CSS -->
+  <link rel="stylesheet" href="{WEBURL}themes/gcms.css">
+  <link rel="stylesheet" href="{WEBURL}Now/css/carousel.css">
+  <link rel="stylesheet" href="{WEBURL}Now/css/galleryslideshow.css">
+  <!-- Theme CSS -->
+  <link rel="stylesheet" href="{WEBURL}{SKIN}css/styles.css">
+  <script>
+    const WEB_URL = "{WEBURL}";
+  </script>
+</head>
+
+<body>
+  <div>
+    <!-- Header -->
+    <header class="header">
+      <div class="container">
+        <div class="header-content">
+          <!-- Logo -->
+          <div class="logo">
+            <div>
+              <a href="{WEBURL}index.php" class="logo-text">{WEBTITLE}</a>
+              <p class="logo-subtitle">{WEBDESCRIPTION}</p>
+            </div>
+          </div>
+          <!-- Navigation -->
+          <nav class="topmenu responsive-menu" data-component="menu">{MAINMENU}</nav>
+          <!-- Mobile Menu Button -->
+          <button class="menu-toggle topmenu-toggle">
+            <span class="toggle-icon">
+              <span class="toggle-bar"></span>
+              <span class="toggle-bar"></span>
+              <span class="toggle-bar"></span>
+            </span>
+          </button>
+        </div>
+      </div>
+    </header>
+    <main id="main" role="main">{MAIN}</main>
+    <div class="container textlinks-footer">{WIDGET_TEXTLINKS_footer}</div>
+  </div>
+  <!-- Footer -->
+  <footer class="footer" id="contact">
+    <div class="container">
+      <div class="footer-content">
+        <div class="footer-section">
+          <h3 class="footer-title" data-i18n>Contact Us</h3>
+          <ul class="footer-links">
+            <li><span class="icon-office" data-text="company.name"></span></li>
+            <li><a class="icon-phone" data-attr="href:'tel:' + company.phone" data-text="company.phone"></a></li>
+            <li><a class="icon-email" data-attr="href:'mailto:' + company.email" data-text="company.email"></a></li>
+          </ul>
+        </div>
+        <div class="footer-section">
+          <h3 class="footer-title" data-i18n>Service</h3>
+          <ul class="footer-links">
+            <li data-if="user === null"><a href="{WEBURL}login" data-i18n>{LNG_Log in}</a></li>
+            <li data-if="user === null"><a href="{WEBURL}register" data-i18n>{LNG_Register}</a></li>
+            <li data-if="user === null"><a href="{WEBURL}forgot" data-i18n>{LNG_Forgot Password}</a></li>
+            <li data-if="user !== null"><a href="{WEBURL}profile" data-i18n>{LNG_Edit profile}</a></li>
+            <li data-if="user !== null"><a href="{WEBURL}logout" data-on="click:doLogout" data-i18n>{LNG_Logout}</a></li>
+          </ul>
+        </div>
+        <div class="footer-section">
+          <h3 class="footer-title" data-i18n>Business Hours</h3>
+          <ul class="footer-links">
+            <li>จันทร์ - ศุกร์: 9:00 - 18:00</li>
+            <li>เสาร์ - อาทิตย์: 10:00 - 16:00</li>
+            <li>วันหยุดราชการ: ปิด</li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p> Copyright &copy; 2026 <a href="{WEBURL}">{WEBTITLE}</a> designed by <a href="https://www.kotchasan.com">Kotchasan.com</a> GCMS Version {VERSION} <a href="{WEBURL}terms"
+             target="_blank" data-i18n>Terms of Service</a>
+          <a href="{WEBURL}privacy" target="_blank" data-i18n>Privacy Policy</a>
+        </p>
+      </div>
+    </div>
+  </footer>
+  <!-- Framework CSS -->
+  <link rel="stylesheet" href="{WEBURL}Now/css/fonts.css">
+  <link rel="stylesheet" href="{WEBURL}Now/dist/now.syntaxhighlighter.min.css">
+  <!-- Framework Scripts -->
+  <script src="{WEBURL}Now/dist/now.core.min.js"></script>
+  <script src="{WEBURL}Now/dist/now.syntaxhighlighter.min.js"></script>
+  <!-- App Scripts -->
+  <script src="{WEBURL}js/main.js?v=1767242358"></script>
+  <script src="{WEBURL}js/global.js?v=1767242358"></script>
+</body>
+
+</html>

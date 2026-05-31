@@ -1,19 +1,14 @@
 <?php
-/**
- * @filesource Kotchasan/Province.php
- *
- * @copyright 2016 Goragod.com
- * @license https://www.kotchasan.com/license/
- * @author Goragod Wiriya <admin@goragod.com>
- * @package Kotchasan
- */
 
 namespace Kotchasan;
 
 /**
- * This class provides a list of provinces in Thailand and Laos.
+ * Kotchasan Province Class
  *
- * @see https://www.kotchasan.com/
+ * This class provides methods to retrieve province data based on the selected country.
+ * It supports multiple countries and allows fetching province names in different languages.
+ *
+ * @package Kotchasan
  */
 class Province
 {
@@ -61,6 +56,32 @@ class Province
     }
 
     /**
+     * Get a list of all provinces.
+     * It returns the names of provinces in the specified language (defaults to English).
+     *
+     * @param string $country (default: 'TH')
+     *
+     * @return array
+     */
+    public static function getOptions($country = 'TH')
+    {
+        $datas = self::init($country);
+        $result = [];
+        if (!empty($datas)) {
+            $language = Language::name();
+            $language = in_array($language, array_keys(reset($datas))) ? $language : 'en';
+            $result = [];
+            foreach ($datas as $iso => $values) {
+                $result[] = ['value' => $iso, 'text' => $values[$language]];
+            }
+            if ($language == 'en') {
+                usort($result, fn($a, $b) => strcmp($a['text'], $b['text']));
+            }
+        }
+        return $result;
+    }
+
+    /**
      * Get a list of countries with installed provinces.
      *
      * @return array
@@ -86,10 +107,14 @@ class Province
     public static function get($iso, $lang = '', $country = 'TH')
     {
         $datas = self::init($country);
+        if (empty($datas)) {
+            return '';
+        }
         if (empty($lang)) {
             $lang = Language::name();
         }
-        $lang = in_array($lang, array_keys(reset($datas))) ? $lang : 'en';
+        $first = reset($datas);
+        $lang = in_array($lang, array_keys($first)) ? $lang : 'en';
         return isset($datas[$iso]) ? $datas[$iso][$lang] : '';
     }
 
@@ -105,14 +130,18 @@ class Province
     public static function isoFromProvince($province, $lang = '', $country = 'TH')
     {
         $datas = self::init($country);
+        if (empty($datas)) {
+            return '';
+        }
         if (empty($lang)) {
             $lang = Language::name();
         }
-        $lang = in_array($lang, array_keys(reset($datas))) ? $lang : 'en';
+        $first = reset($datas);
+        $lang = in_array($lang, array_keys($first)) ? $lang : 'en';
         $result = '';
         foreach ($datas as $iso => $items) {
             if ($items[$lang] === $province) {
-                $result = $iso;
+                $result = (string) $iso;
                 break;
             }
         }

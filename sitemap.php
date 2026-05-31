@@ -12,6 +12,5 @@
 include 'load.php';
 // Initial Kotchasan Framework
 $app = Kotchasan::createWebApplication('Gcms\Config');
-$app->defaultRouter = 'Gcms\Router';
 $app->defaultController = 'Index\Sitemap\Controller';
 $app->run();

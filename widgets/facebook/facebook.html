@@ -1,0 +1,76 @@
+<aside data-component="sidebar"></aside>
+<div class="main-content">
+  <div>
+    <header data-component="topbar"></header>
+    <main class="content">
+      <div class="card-groups">
+        <header>
+          <div>
+            <h1 class="icon-facebook" data-i18n>Facebook Page</h1>
+            <p data-i18n>{LNG_Edit Widgets} {LNG_Facebook Page}</p>
+          </div>
+        </header>
+
+        <div class="content-body">
+          <!-- API Settings -->
+          <form data-form="settings" action="../api/index/widgets/save?widget=facebook" method="POST" data-ajax-submit="true"
+                data-load-api="../api/index/widgets/get?widget=facebook" data-confirm="Confirm save">
+            <fieldset>
+              <legend class="icon-facebook" data-i18n>Facebook Page</legend>
+
+              <div>
+                <label for="height" data-i18n>Height</label>
+                <span class="form-control">
+                  <input type="range" id="height" name="height" data-attr="value:height" min="70" max="1000" step="10">
+                </span>
+              </div>
+
+              <div>
+                <label for="width" data-i18n>Width</label>
+                <span class="form-control">
+                  <input type="range" id="width" name="width" data-attr="value:width" min="180" max="500" step="1">
+                </span>
+              </div>
+
+              <div>
+                <label for="user" data-i18n>Username</label>
+                <span class="form-control icon-facebook">
+                  <input type="text" id="user" name="user" placeholder="username" data-attr="value:user">
+                </span>
+                <div class="comment" id="result_user" data-i18n>
+                  {LNG_Facebook profile username eg} https://www.facebook.com/<em>username</em>
+                </div>
+              </div>
+
+              <div>
+                <input type="checkbox" class="switch" id="show_facepile" name="show_facepile" value="1" data-attr="check:show_facepile">
+                <label for="show_facepile" data-i18n>Friend's faces</label>
+              </div>
+
+              <div>
+                <input type="checkbox" class="switch" id="cover_image" name="cover_image" value="1" data-attr="check:cover_image">
+                <label for="cover_image" data-i18n>Cover image</label>
+              </div>
+
+              <div>
+                <input type="checkbox" class="switch" id="small_header" name="small_header" value="1" data-attr="check:small_header">
+                <label for="small_header" data-i18n>Small header</label>
+              </div>
+            </fieldset>
+
+            <fieldset>
+              <iframe data-attr="src:iframe_url,height:height" allowfullscreen="true" allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"></iframe>
+            </fieldset>
+
+            <!-- Submit Button -->
+            <fieldset class="submit">
+              <button type="submit" class="btn btn-primary icon-save" data-i18n>Save</button>
+            </fieldset>
+          </form>
+        </div>
+      </div>
+    </main>
+  </div>
+  <footer class="footer">
+    <p class="center">&copy; 2026 GCMS - Powered by <a href="https://nowjs.net">Now.js</a></p>
+  </footer>

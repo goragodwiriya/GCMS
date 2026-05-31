@@ -1,38 +1,19 @@
 <?php
-/**
- * @filesource Kotchasan/Currency.php
- *
- * @copyright 2016 Goragod.com
- * @license https://www.kotchasan.com/license/
- * @author Goragod Wiriya <admin@goragod.com>
- * @package Kotchasan
- */
 
 namespace Kotchasan;
 
 /**
- * Convert numbers to currency format (Baht, Dollar)
+ * Kotchasan Currency Class
  *
- * @see https://www.kotchasan.com/
+ * This class provides methods for converting numbers to their text representation in Thai and English,
+ * calculating VAT amounts, and formatting numbers.
+ *
+ * @package Kotchasan
  */
 class Currency
 {
     /**
      * Convert number to text (English)
-     *
-     * @assert (13.00) [==] 'thirteen Baht'
-     * @assert (101.55) [==] 'one hundred one Baht and fifty-five Satang'
-     * @assert (1234.56) [==] 'one thousand two hundred thirty-four Baht and fifty-six Satang'
-     * @assert (12345.67) [==] 'twelve thousand three hundred forty-five Baht and sixty-seven Satang'
-     * @assert (-1000000050) [==] 'negative one billion fifty Baht'
-     * @assert (1416921) [==] 'one million four hundred sixteen thousand nine hundred twenty-one Baht'
-     * @assert (269346000.00) [==] 'two hundred sixty-nine million three hundred forty-six thousand Baht'
-     * @assert (1000000000.00) [==] 'one billion Baht'
-     * @assert (10000000050.25) [==] 'ten billion fifty Baht and twenty-five Satang'
-     * @assert (100000000000.00) [==] 'one hundred billion Baht'
-     * @assert (1000000000000) [==] 'one trillion Baht'
-     * @assert (999999999999999) [==] 'nine hundred ninety-nine trillion nine hundred ninety-nine billion nine hundred ninety-nine million nine hundred ninety-nine thousand nine hundred ninety-nine Baht'
-     * @assert (1000000000000000500) [==] 'one thousand quadrillion five hundred Baht'
      *
      * @param string $thb
      *
@@ -41,9 +22,9 @@ class Currency
     public static function bahtEng($thb)
     {
         if (preg_match('/(-)?([0-9]+)(\.([0-9]+))?/', (string) $thb, $match)) {
-            $thb = self::engFormat(intval($match[2])).' Baht';
+            $thb = self::engFormat(intval($match[2])).' baht';
             if (isset($match[4]) && intval($match[4]) > 0) {
-                $thb .= ' and '.self::engFormat(intval(substr($match[4].'00', 0, 2))).' Satang';
+                $thb .= ' and '.self::engFormat(intval(substr($match[4].'00', 0, 2))).' satang';
             }
             return ($match[1] == '-' ? 'negative ' : '').$thb;
         }

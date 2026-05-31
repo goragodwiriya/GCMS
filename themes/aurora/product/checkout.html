@@ -1,0 +1,167 @@
+<!-- Checkout Page -->
+<form id="checkoutForm" class="checkout-page" data-form="checkout" data-validate="true" data-ajax-submit="true" data-load-api="{WEBURL}api/product/checkout/get"
+      data-load-options-api="{WEBURL}api/product/checkout/get" action="{WEBURL}api/product/checkout/save" method="post" autocomplete="off" data-on-load="initCheckout">
+
+  <header class="hero">
+    <h1 class="hero-title" data-i18n>Make payment</h1>
+    <p class="hero-subtitle" data-i18n>Please fill in the information to proceed with your order</p>
+  </header>
+
+  <div class="page-content">
+    <div class="container">
+      <div class="checkout-content">
+        <!-- Order Summary -->
+        <div class="order-summary">
+          <h2 class="summary-title" data-i18n>Order summary</h2>
+
+          <div class="summary-items" id="checkoutItems">
+            <!-- Items will be loaded by JavaScript -->
+          </div>
+
+          <div class="summary-totals">
+            <div class="summary-row">
+              <span data-i18n>Subtotal</span>
+              <span id="subtotal">0</span>
+            </div>
+            <div class="summary-row">
+              <span data-i18n>Shipping</span>
+              <span id="shipping">0</span>
+            </div>
+            <div class="summary-row discount-row" id="discountRow" style="display: none;">
+              <span data-i18n>Discount</span>
+              <span id="discount">0</span>
+            </div>
+            <div class="summary-row total">
+              <span data-i18n>Grand Total</span>
+              <span id="grandTotal">0</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Checkout Form -->
+        <div class="checkout-form-wrapper">
+
+          <!-- Customer information -->
+          <fieldset class="form-section">
+            <h3 class="section-title" data-i18n>Customer information</h3>
+
+            <div>
+              <label for="name" data-i18n>Name</label>
+              <span class="form-control icon-profile">
+                <input type="text" id="name" name="name" data-attr="value:name" required maxlength="150">
+              </span>
+            </div>
+
+            <div>
+              <label for="phone" data-i18n>Phone</label>
+              <span class="form-control icon-phone">
+                <input type="tel" id="phone" name="phone" data-attr="value:phone" required maxlength="20">
+              </span>
+            </div>
+          </fieldset>
+
+          <!-- Shipping Address -->
+          <fieldset class="form-section">
+            <h3 class="section-title" data-i18n>Shipping Address</h3>
+
+            <div>
+              <label for="address" data-i18n>Address</label>
+              <span class="form-control icon-address">
+                <textarea id="address" name="address" rows="3" data-text="address" required maxlength="64"></textarea>
+              </span>
+            </div>
+
+            <div class="form-group">
+              <div class="width50">
+                <label for="provinceID" data-i18n>Province</label>
+                <span class="form-control icon-location">
+                  <input type="text" id="provinceID" name="provinceID" data-options-key="province" data-attr="value:provinceID" placeholder="{LNG_Type to search}">
+                </span>
+              </div>
+              <div class="width50">
+                <label for="zipcode" data-i18n>Zipcode</label>
+                <span class="form-control icon-location">
+                  <input type="number" id="zipcode" name="zipcode" data-attr="value:zipcode" maxlength="5">
+                </span>
+              </div>
+            </div>
+          </fieldset>
+
+          <!-- Payment Method -->
+          <fieldset class="form-section">
+            <h3 class="section-title" data-i18n>Payment Method</h3>
+            <ul class="payment-methods" id="paymentMethods">
+              <!-- Payment methods will be loaded by JavaScript -->
+            </ul>
+
+            <!-- Bank Transfer Details -->
+            <div id="bankTransferDetails" class="payment-details payment-details-card hidden">
+              <div class="payment-detail-header">
+                <span class="icon-bank"></span>
+                <div>
+                  <h4 data-i18n>Bank Transfer Details</h4>
+                  <p data-i18n>Transfer to the account below and attach the slip.</p>
+                </div>
+              </div>
+              <div class="bank-info" id="bankInfo"></div>
+            </div>
+
+            <!-- QR Code Payment -->
+            <div id="qrCodeDetails" class="payment-details payment-details-card hidden">
+              <div class="qr-code-info">
+                <h4 data-i18n>Scan QR Code with PromptPay</h4>
+                <div class="qr-code-container">
+                  <div id="qrCodeImage" class="qr-code-image">
+                    <!-- <img src="https://promptpay.io/promptpay_id/money.png"> -->
+                    <!-- Alternatively, a canvas can be used for QR code generation -->
+                  </div>
+                  <div class="qr-code-amount">
+                    <strong data-i18n>Amount</strong> <span id="qrAmount">0</span>
+                  </div>
+                </div>
+                <ol class="qr-code-instructions">
+                  <li data-i18n>Open your banking app</li>
+                  <li data-i18n>Scan QR Code with PromptPay</li>
+                  <li data-i18n>Make payment for the displayed amount</li>
+                  <li data-i18n>Save proof of payment</li>
+                </ol>
+              </div>
+            </div>
+          </fieldset>
+
+          <!-- Payment Proof Upload -->
+          <fieldset class="form-section">
+            <h3 class="section-title" data-i18n>Payment Proof</h3>
+
+            <div>
+              <label for="payment_proof" data-i18n>Attach money transfer slip</label>
+              <span class="form-control icon-upload">
+                <input type="file" id="payment_proof" name="payment_proof" accept="image/*" data-files="payment_proof" data-preview="true">
+              </span>
+              <div class="comment" id="result_payment_proof" data-i18n>{LNG_Browse image uploaded, type} jpg, jpeg, png, webp</div>
+            </div>
+          </fieldset>
+
+          <!-- Notes -->
+          <fieldset class="form-section">
+            <h3 class="section-title" data-i18n>Notes</h3>
+            <div class="form-group">
+              <span class="form-control icon-file">
+                <textarea id="comment" name="comment" rows="4" placeholder="{LNG_Provide additional information, such as preferred delivery time}"></textarea>
+              </span>
+            </div>
+          </fieldset>
+
+          <!-- Submit -->
+          <fieldset class="submit">
+            <button type="button" class="btn text icon-arrow-left" onclick="history.back()" data-i18n>Back</button>
+            <button type="submit" class="btn btn-primary btn-submit icon-valid" data-i18n>Confirm Order</button>
+            <input type="hidden" id="cart_items" name="cart_items">
+            <input type="hidden" id="total_amount" name="total_amount">
+            <input type="hidden" id="member_id" name="member_id" data-attr="value:id">
+          </fieldset>
+        </div>
+      </div>
+    </div>
+  </div>
+</form>

@@ -2,7 +2,7 @@
 /**
  * @filesource Gcms/Line.php
  *
- * @copyright 2016 Goragod.com
+ * @copyright 2026 Goragod.com
  * @license https://www.kotchasan.com/license/
  *
  * @see https://www.kotchasan.com/
@@ -20,56 +20,120 @@ namespace Gcms;
 class Line extends \Kotchasan\KBase
 {
     /**
-     * เมธอดส่งข้อความไปยัง LINE Notify
-     * คืนค่าข้อความว่างถ้าสำเร็จ หรือ คืนค่าข้อความผิดพลาด
+     * Verify an inbound LINE webhook request.
+     * LINE signs the RAW request body with HMAC-SHA256 using the channel
+     * secret and sends it base64-encoded in the X-Line-Signature header.
+     * Call this BEFORE json_decode-ing the body, on the exact received bytes.
      *
-     * @param string $message      ข้อความที่จะส่ง
-     * @param string $line_api_key
+     * @param string $rawBody   Raw request body (php://input)
+     * @param string $signature Value of the X-Line-Signature header
+     * @param string|null $channelSecret Override (defaults to config)
      *
-     * @return string
+     * @return bool True only if the signature is valid
      */
-    public static function send($message, $line_api_key = null)
+    public static function verifyWebhookSignature($rawBody, $signature, $channelSecret = null)
     {
-        if (empty($line_api_key)) {
-            $line_api_key = empty(self::$cfg->line_api_key) ? '' : self::$cfg->line_api_key;
+        $secret = $channelSecret !== null ? $channelSecret : (string) self::$cfg->line_channel_secret;
+        if ($secret === '' || !is_string($signature) || $signature === '') {
+            return false;
         }
-        return self::notify($message, $line_api_key);
+        $expected = base64_encode(hash_hmac('sha256', (string) $rawBody, $secret, true));
+        return hash_equals($expected, $signature);
     }
 
     /**
-     * เมธอดส่งข้อความไปยัง LINE Notify
-     * คืนค่าข้อความว่างถ้าสำเร็จ หรือ คืนค่าข้อความผิดพลาด
+     * Send a raw LINE Messaging API request.
      *
-     * @param string $message      ข้อความที่จะส่ง
-     * @param string $line_api_key
+     * @param string $url
+     * @param array  $datas
+     *
+     * @return array
+     */
+    private static function apiRequest($url, array $datas)
+    {
+        $headers = [
+            'Content-Type' => 'application/json',
+            'Authorization' => 'Bearer '.self::$cfg->line_channel_access_token
+        ];
+        $ch = new \Kotchasan\Curl();
+        $ch->setHeaders($headers);
+        $content = $ch->post($url, json_encode($datas));
+
+        return json_decode($content, true) ?: [];
+    }
+
+    /**
+     * Normalize text messages to LINE text payload items.
+     *
+     * @param string|array $message
+     *
+     * @return array
+     */
+    private static function normalizeTextMessages($message)
+    {
+        $messages = [];
+        foreach (is_array($message) ? $message : [$message] as $msg) {
+            if ($msg === null || $msg === '') {
+                continue;
+            }
+            $messages[] = [
+                'type' => 'text',
+                'text' => self::toText($msg)
+            ];
+        }
+
+        return $messages;
+    }
+
+    /**
+     * Send structured payload to one or many LINE users.
+     *
+     * @param string|array $uid
+     * @param array        $messages
      *
      * @return string
      */
-    public static function notify($message, $line_api_key)
+    public static function sendPayload($uid, array $messages)
     {
-        if (empty($line_api_key)) {
-            return 'API key can not be empty';
-        } elseif ($message == '') {
-            return 'message can not be blank';
-        } else {
-            // cUrl
-            $ch = new \Kotchasan\Curl();
-            $ch->setHeaders([
-                'Authorization' => 'Bearer '.$line_api_key
-            ]);
-            $result = $ch->post('https://notify-api.line.me/api/notify', [
-                'message' => self::toText($message)
-            ]);
-            if ($ch->error()) {
-                return $ch->errorMessage();
-            } else {
-                $result = json_decode($result, true);
-                if ($result['status'] != 200) {
-                    return $result['message'];
-                }
-            }
+        if (empty(self::$cfg->line_channel_access_token)) {
+            return 'Access token can not be empty';
         }
-        return '';
+        if (empty($uid) || empty($messages)) {
+            return 'message can not be blank';
+        }
+
+        $users = is_array($uid) ? $uid : [$uid];
+        $result = self::apiRequest('https://api.line.me/v2/bot/message/multicast', [
+            'to' => $users,
+            'messages' => array_values($messages)
+        ]);
+
+        return !empty($result['message']) ? $result['message'] : '';
+    }
+
+    /**
+     * Reply with a structured LINE payload.
+     *
+     * @param string $replyToken
+     * @param array  $messages
+     *
+     * @return string
+     */
+    public static function replyPayload($replyToken, array $messages)
+    {
+        if (empty(self::$cfg->line_channel_access_token)) {
+            return 'Access token can not be empty';
+        }
+        if ($replyToken === '' || empty($messages)) {
+            return 'message can not be blank';
+        }
+
+        $result = self::apiRequest('https://api.line.me/v2/bot/message/reply', [
+            'replyToken' => $replyToken,
+            'messages' => array_values($messages)
+        ]);
+
+        return !empty($result['message']) ? $result['message'] : '';
     }
 
     /**
@@ -82,38 +146,7 @@ class Line extends \Kotchasan\KBase
      */
     public static function sendTo($uid, $message)
     {
-        if (empty(self::$cfg->line_channel_access_token)) {
-            return 'Access token can not be empty';
-        } elseif (empty($message)) {
-            return 'message can not be blank';
-        } else {
-            $users = is_array($uid) ? $uid : [$uid];
-            $messages = [];
-            foreach (is_array($message) ? $message : [$message] as $msg) {
-                $messages[] = [
-                    'type' => 'text',
-                    'text' => self::toText($msg)
-                ];
-            }
-            $datas = [
-                'to' => $users,
-                'messages' => $messages
-            ];
-            $headers = [
-                'Content-Type' => 'application/json',
-                'Authorization' => 'Bearer '.self::$cfg->line_channel_access_token
-            ];
-            $url = 'https://api.line.me/v2/bot/message/multicast';
-            $ch = new \Kotchasan\Curl();
-            $ch->setHeaders($headers);
-            $content = $ch->post($url, json_encode($datas));
-            $result = json_decode($content, true);
-            if (empty($result['message'])) {
-                return '';
-            } else {
-                return $result['message'];
-            }
-        }
+        return self::sendPayload($uid, self::normalizeTextMessages($message));
     }
 
     /**
@@ -126,37 +159,7 @@ class Line extends \Kotchasan\KBase
      */
     public static function replyTo($replyToken, $message)
     {
-        if (empty(self::$cfg->line_channel_access_token)) {
-            return 'Access token can not be empty';
-        } elseif (empty($message)) {
-            return 'message can not be blank';
-        } else {
-            $messages = [];
-            foreach (is_array($message) ? $message : [$message] as $msg) {
-                $messages[] = [
-                    'type' => 'text',
-                    'text' => self::toText($msg)
-                ];
-            }
-            $datas = [
-                'replyToken' => $replyToken,
-                'messages' => $messages
-            ];
-            $headers = [
-                'Content-Type' => 'application/json',
-                'Authorization' => 'Bearer '.self::$cfg->line_channel_access_token
-            ];
-            $url = 'https://api.line.me/v2/bot/message/reply';
-            $ch = new \Kotchasan\Curl();
-            $ch->setHeaders($headers);
-            $content = $ch->post($url, json_encode($datas));
-            $result = json_decode($content, true);
-            if (empty($result['message'])) {
-                return '';
-            } else {
-                return $result['message'];
-            }
-        }
+        return self::replyPayload($replyToken, self::normalizeTextMessages($message));
     }
 
     /**

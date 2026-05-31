@@ -1,0 +1,41 @@
+<aside data-component="sidebar"></aside>
+<div class="main-content">
+  <!-- Category Form -->
+  <form data-form="tags" action="../api/index/widgets/save?widget=tags" method="post" data-ajax-submit="true" data-load-api="../api/index/widgets/get?widget=tags"
+        data-confirm="Confirm save">
+    <header data-component="topbar"></header>
+    <main class="content">
+      <div class="card-groups">
+        <header>
+          <div>
+            <h1 class="icon-tags" data-i18n>Tags</h1>
+            <p data-i18n>Manage the tags</p>
+          </div>
+        </header>
+        <div class="content-body">
+          <fieldset class="grid">
+            <div class="tablebody">
+              <table class="table border fullwidth" data-table="tags" data-editable-rows="true" data-attr="data:options" data-dynamic-columns="true">
+                <thead>
+                  <tr>
+                    <th data-field="id" class="center" data-cell-element="number" data-size="5">ID</th>
+                    <th data-field="tag" class="center" data-cell-element="text" data-i18n>{LNG_Tag}</th>
+                    <th data-field="count" class="center" data-cell-element="number" data-size="5" data-i18n>{LNG_Clicked}</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </fieldset>
+
+          <fieldset class="submit">
+            <button type="submit" class="btn btn-primary icon-save" data-i18n>Save</button>
+          </fieldset>
+        </div>
+      </div>
+    </main>
+  </form>
+</div>
+<footer class="footer">
+  <p class="center">&copy; 2026 GCMS - Powered by <a href="https://nowjs.net">Now.js</a></p>
+</footer>

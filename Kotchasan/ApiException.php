@@ -2,19 +2,30 @@
 /**
  * @filesource Kotchasan/ApiException.php
  *
- * @copyright 2016 Goragod.com
+ * @copyright 2026 Goragod.com
  * @license https://www.kotchasan.com/license/
- * @author Goragod Wiriya <admin@goragod.com>
- * @package Kotchasan
+ *
+ * API Exception for handling API-specific errors
  */
 
 namespace Kotchasan;
 
 /**
- * Exception class for handling API errors.
+ * API Exception class for handling API-specific errors.
  *
  * @see https://www.kotchasan.com/
  */
 class ApiException extends \Exception
 {
+    /**
+     * Constructor.
+     *
+     * @param string $message Exception message
+     * @param int $code Exception code
+     * @param \Throwable|null $previous Previous exception
+     */
+    public function __construct(string $message = '', int $code = 0,  ? \Throwable $previous = null)
+    {
+        parent::__construct($message, $code, $previous);
+    }
 }

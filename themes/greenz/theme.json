@@ -1,0 +1,54 @@
+{
+  "name": "Greenz",
+  "version": "1.0.0",
+  "author": "Goragod Wiriya",
+  "author_url": "https://goragod.com",
+  "description": "A modern single-column theme with a fresh green palette. Clean typography, full-width sections, and a minimal sidebar-free layout.",
+  "screenshot": "screenshot.svg",
+  "license": "MIT",
+  "layouts": [
+    "main",
+    "full-width",
+    "blank"
+  ],
+  "components": [
+    "header",
+    "hero",
+    "content",
+    "features",
+    "stats",
+    "cta",
+    "footer",
+    "breadcrumb",
+    "pagination"
+  ],
+  "colors": {
+    "primary": "#16a34a",
+    "primary_hover": "#15803d",
+    "primary_dark": "#14532d",
+    "primary_light": "#dcfce7",
+    "secondary": "#4b5563",
+    "accent": "#059669",
+    "background": "#f0fdf4",
+    "surface": "#ffffff",
+    "text": "#111827",
+    "text_secondary": "#4b5563",
+    "border": "#d1fae5",
+    "footer_bg": "#052e16",
+    "footer_text": "#bbf7d0"
+  },
+  "settings": {
+    "show_sidebar": false,
+    "sidebar_position": "none",
+    "footer_columns": 3,
+    "show_breadcrumb": true,
+    "show_search": true,
+    "header_style": "sticky",
+    "hero_style": "gradient",
+    "layout": "single-column"
+  },
+  "designer": {
+    "compatible": true,
+    "editable": true
+  }
+}

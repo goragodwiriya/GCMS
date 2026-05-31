@@ -1,19 +1,13 @@
 <?php
-/**
- * @filesource Kotchasan/Date.php
- *
- * @copyright 2016 Goragod.com
- * @license https://www.kotchasan.com/license/
- * @author Goragod Wiriya <admin@goragod.com>
- * @package Kotchasan
- */
-
 namespace Kotchasan;
 
 /**
- * Class for managing dates and times.
+ * Kotchasan Date Class
  *
- * @see https://www.kotchasan.com/
+ * This class provides methods for date manipulation, including calculating age,
+ * formatting dates, and converting dates to human-readable formats.
+ *
+ * @package Kotchasan
  */
 class Date
 {
@@ -40,11 +34,8 @@ class Date
      * Calculates the difference between two dates (e.g., age).
      * Returns the number of days (can be negative), years, months, and days [days, year, month, day].
      *
-     * @assert (mktime(0, 0, 0, 2, 1, 2016), mktime(0, 0, 0, 3, 1, 2016)) [==]  array('days' => 29, 'year' => 0,'month' => 0, 'day' => 29)
-     * @assert ('2016-3-1', '2016-2-1') [==]  array('days' => -29, 'year' => 0,'month' => 0, 'day' => 29)
-     *
      * @param string|int  $begin_date The start date or birth date (Unix timestamp or date in the format YYYY-m-d)
-     * @param istring|int $end_date   The end date or today's date (Unix timestamp or date in the format YYYY-m-d)
+     * @param string|int $end_date   The end date or today's date (Unix timestamp or date in the format YYYY-m-d)
      *
      * @return array
      */
@@ -94,10 +85,8 @@ class Date
     /**
      * Returns the time difference in milliseconds.
      *
-     * @assert ('08:00', '09:00') [==] 3600
-     *
-     * @param  $firstTime
-     * @param  $lastTime
+     * @param string|int $firstTime The start time (Unix timestamp or date in the format YYYY-m-d H:i:s)
+     * @param string|int $lastTime  The end time (Unix timestamp or date in the format YYYY-m-d H:i:s)
      *
      * @return int
      */
@@ -113,9 +102,6 @@ class Date
      * Converts a number to the name of the day in the current language.
      * Returns the name of the day (e.g., Sunday...Saturday).
      *
-     * @assert (0) [==] 'อา.'
-     * @assert (0, false) [==] 'อาทิตย์'
-     *
      * @param int  $date       0-6
      * @param bool $short_date true (default) for short day name format (e.g., อ.), false for full month name format (e.g., อาทิตย์)
      *
@@ -125,7 +111,7 @@ class Date
     {
         // create class
         if (!isset(self::$lang)) {
-            new static;
+            new static();
         }
         $var = $short_date ? self::$lang['DATE_SHORT'] : self::$lang['DATE_LONG'];
         return isset($var[$date]) ? $var[$date] : '';
@@ -134,10 +120,6 @@ class Date
     /**
      * Converts a time to a date in the specified format.
      * Returns the date and time in the specified format.
-     *
-     * @assert (0, 'y-m-d H:i:s') [==]  date('y-m-d H:i:s')
-     * @assert (null) [==]  ''
-     * @assert (1454259600, 'Y-m-d H:i:s') [==] '2559-02-01 00:00:00'
      *
      * @param int|string $time   int for Unix timestamp, string for Y-m-d or Y-m-d H:i:s format (if not specified or empty, it means today)
      * @param string     $format The desired format of the date (if not specified, it uses the format from the language file DATE_FORMAT)
@@ -159,40 +141,47 @@ class Date
         }
         // create class
         if (!isset(self::$lang)) {
-            new static;
+            new static();
         }
+        // allow special relative time formats
         $format = empty($format) ? 'DATE_FORMAT' : $format;
+        // if caller requested a relative/ago format, return result from timeAgo()
+        $lower = is_string($format) ? strtolower($format) : '';
+        if (in_array($lower, ['timeago', 'time_ago', 'relative', 'ago'])) {
+            return self::timeAgo(date('Y-m-d H:i:s', $time));
+        }
+
         $format = Language::get($format);
         if (preg_match_all('/(.)/u', $format, $match)) {
             $ret = '';
             foreach ($match[0] as $item) {
                 switch ($item) {
-                    case ' ':
-                    case ':':
-                    case '/':
-                    case '-':
-                    case '.':
-                    case ',':
-                        $ret .= $item;
-                        break;
-                    case 'l':
-                        $ret .= self::$lang['DATE_SHORT'][date('w', $time)];
-                        break;
-                    case 'L':
-                        $ret .= self::$lang['DATE_LONG'][date('w', $time)];
-                        break;
-                    case 'M':
-                        $ret .= self::$lang['MONTH_SHORT'][date('n', $time)];
-                        break;
-                    case 'F':
-                        $ret .= self::$lang['MONTH_LONG'][date('n', $time)];
-                        break;
-                    case 'Y':
-                        $ret .= (int) date('Y', $time) + (int) self::$lang['YEAR_OFFSET'];
-                        break;
-                    default:
-                        $ret .= trim($item) == '' ? ' ' : date($item, $time);
-                        break;
+                case ' ':
+                case ':':
+                case '/':
+                case '-':
+                case '.':
+                case ',':
+                    $ret .= $item;
+                    break;
+                case 'l':
+                    $ret .= self::$lang['DATE_SHORT'][date('w', $time)];
+                    break;
+                case 'L':
+                    $ret .= self::$lang['DATE_LONG'][date('w', $time)];
+                    break;
+                case 'M':
+                    $ret .= self::$lang['MONTH_SHORT'][date('n', $time)];
+                    break;
+                case 'F':
+                    $ret .= self::$lang['MONTH_LONG'][date('n', $time)];
+                    break;
+                case 'Y':
+                    $ret .= (int) date('Y', $time) + (int) self::$lang['YEAR_OFFSET'];
+                    break;
+                default:
+                    $ret .= trim($item) == '' ? ' ' : date($item, $time);
+                    break;
                 }
             }
         } else {
@@ -205,9 +194,6 @@ class Date
      * Converts a number to the name of the month in the current language.
      * Returns the name of the month (e.g., January...December).
      *
-     * @assert (1) [==] 'ม.ค.'
-     * @assert (1, false) [==] 'มกราคม'
-     *
      * @param int  $month       1-12
      * @param bool $short_month true (default) for short month name format (e.g., มค.), false for full month name format (e.g., มกราคม)
      *
@@ -217,7 +203,7 @@ class Date
     {
         // create class
         if (!isset(self::$lang)) {
-            new static;
+            new static();
         }
         $var = $short_month ? self::$lang['MONTH_SHORT'] : self::$lang['MONTH_LONG'];
         return isset($var[$month]) ? $var[$month] : '';
@@ -260,37 +246,36 @@ class Date
 
         // Check for the time difference in years
         if ($diff->y > 0) {
-            return $diff->y.' {LNG_year} {LNG_ago}';
+            return Language::trans($diff->y.' {LNG_year} {LNG_ago}');
         }
 
         // Check for the time difference in months
         if ($diff->m > 0) {
-            return $diff->m.' {LNG_month} {LNG_ago}';
+            return Language::trans($diff->m.' {LNG_month} {LNG_ago}');
         }
 
         // Check for the time difference in weeks if it's more than 7 days
         if ($diff->d > 7) {
             $week = floor($diff->d / 7);
-            return $week.' {LNG_week} {LNG_ago}';
+            return Language::trans($week.' {LNG_week} {LNG_ago}');
         }
 
         // Check for the time difference in days if it's more than 2 days
         if ($diff->d > 2) {
-            return $diff->d.' {LNG_days} {LNG_ago}';
+            return Language::trans($diff->d.' {LNG_days} {LNG_ago}');
         }
 
         // Check for the time difference in hours
         if ($diff->h > 0) {
-            return $diff->h.' {LNG_hours} {LNG_ago}';
+            return Language::trans($diff->h.' {LNG_hours} {LNG_ago}');
         }
 
         // Check for the time difference in minutes
         if ($diff->i > 0) {
-            return $diff->i.' {LNG_minutes} {LNG_ago}';
+            return Language::trans($diff->i.' {LNG_minutes} {LNG_ago}');
         }
 
         // If there is no significant time difference, return '{LNG_now}'
-        return '{LNG_now}';
+        return Language::get('now');
     }
-
 }

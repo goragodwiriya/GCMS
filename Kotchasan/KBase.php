@@ -1,19 +1,14 @@
 <?php
-/**
- * @filesource Kotchasan/KBase.php
- *
- * @copyright 2016 Goragod.com
- * @license https://www.kotchasan.com/license/
- * @author Goragod Wiriya <admin@goragod.com>
- * @package Kotchasan
- */
 
 namespace Kotchasan;
 
 /**
- * The base class for Kotchasan framework.
+ * Kotchasan KBase Class
  *
- * @see https://www.kotchasan.com/
+ * This class serves as a base class for Kotchasan applications.
+ * It provides properties for configuration and request handling.
+ *
+ * @package Kotchasan
  */
 #[\AllowDynamicProperties]
 class KBase

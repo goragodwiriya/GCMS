@@ -1,19 +1,14 @@
 <?php
-/**
- * @filesource Kotchasan/Grid.php
- *
- * @copyright 2016 Goragod.com
- * @license https://www.kotchasan.com/license/
- * @author Goragod Wiriya <admin@goragod.com>
- * @package Kotchasan
- */
 
 namespace Kotchasan;
 
 /**
- * This class represents a grid system used for layout purposes.
+ * Kotchasan Grid Class
  *
- * @see https://www.kotchasan.com/
+ * This class provides methods for managing a grid layout.
+ * It allows setting and getting the number of columns in the grid.
+ *
+ * @package Kotchasan
  */
 class Grid extends \Kotchasan\Template
 {

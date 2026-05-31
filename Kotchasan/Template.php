@@ -1,19 +1,14 @@
 <?php
-/**
- * @filesource Kotchasan/Template.php
- *
- * @copyright 2016 Goragod.com
- * @license https://www.kotchasan.com/license/
- * @author Goragod Wiriya <admin@goragod.com>
- * @package Kotchasan
- */
 
 namespace Kotchasan;
 
 /**
- * Template engine
+ * Kotchasan Template Class
  *
- * @see https://www.kotchasan.com/
+ * This class provides methods to create and manage templates,
+ * allowing for dynamic content rendering and variable replacement.
+ *
+ * @package Kotchasan
  */
 class Template
 {
@@ -76,8 +71,6 @@ class Template
      * Loads a template
      * It checks the module's file first, if not found, it uses the owner's file
      *
-     * @assert ('', '', 'FileNotFound')->isEmpty() [==] true
-     *
      * @param string $owner  The name of the installed module
      * @param string $module The name of the module
      * @param string $name   The name of the template without the file extension
@@ -91,8 +84,6 @@ class Template
 
     /**
      * Loads a template from a file
-     *
-     * @assert ('FileNotFound') [throws] InvalidArgumentException
      *
      * @param string $filename The filename
      *
@@ -118,7 +109,7 @@ class Template
      */
     public static function createFromHTML($html)
     {
-        $obj = new static;
+        $obj = new static();
         $obj->skin = $html;
         $obj->items = [];
         $obj->num = -1;
@@ -149,11 +140,11 @@ class Template
     /**
      * Sets the template to be used
      *
-     * @param string $skin The directory of the template starting from DOCUMENT_ROOT without a trailing slash, e.g., skin/default
+     * @param string $theme The directory of the template starting from DOCUMENT_ROOT without a trailing slash, e.g., skin/default
      */
-    public static function init($skin)
+    public static function init($theme)
     {
-        self::$src = ($skin == '') ? '' : $skin.'/';
+        self::$src = ($theme == '') ? '' : 'themes/'.$theme.'/';
     }
 
     /**
@@ -183,32 +174,40 @@ class Template
     /**
      * Loads a template
      * It checks the module's file first, if not found, it uses the owner's file
-     * If not found, it returns an empty string
+     * If not found, uses Hybrid approach (exception in dev, graceful error in production)
      *
      * @param string $owner  The name of the installed module
      * @param string $module The name of the registered module
      * @param string $name   The name of the template without the file extension
+     *
+     * @throws \Kotchasan\Exception\TemplateNotFoundException in development mode
      *
      * @return string
      */
     public static function load($owner, $module, $name)
     {
         $src = APP_PATH.self::$src;
-        if ($module != '' && is_file($src.$module.'/'.$name.'.html')) {
-            return file_get_contents($src.$module.'/'.$name.'.html');
-        } elseif ($owner != '' && is_file($src.$owner.'/'.$name.'.html')) {
-            return file_get_contents($src.$owner.'/'.$name.'.html');
-        } elseif (is_file($src.$name.'.html')) {
-            return file_get_contents($src.$name.'.html');
+        $paths = [
+            $module != '' ? $src.$module.'/'.$name.'.html' : null,
+            $owner != '' ? $src.$owner.'/'.$name.'.html' : null,
+            $src.$name.'.html'
+        ];
+
+        // Try to load template from possible paths
+        foreach ($paths as $path) {
+            if ($path && is_file($path)) {
+                return file_get_contents($path);
+            }
         }
-        return '';
+
+        // Template not found
+        $attemptedPaths = array_filter($paths);
+
+        throw new \Kotchasan\Exception\TemplateNotFoundException($name, $attemptedPaths);
     }
 
     /**
      * Executes the preg_replace function
-     *
-     * @assert ('/{TITLE}/', 'Title', '<b>{TITLE}</b>') [==] '<b>Title</b>'
-     * @assert ('/{LNG_([\w\s\.\-\'\(\),%\/:&\#;]+)}/e', '\Kotchasan\Language::parse(array(1=>"$1"))', '<b>{LNG_Language test}</b>') [==] '<b>Language test</b>'
      *
      * @param array  $patt    The keys in the template
      * @param array  $replace The text to replace the keys

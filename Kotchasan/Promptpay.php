@@ -1,20 +1,13 @@
 <?php
-/**
- * @filesource Kotchasan/Promptpay.php
- *
- * @copyright 2016 Goragod.com
- * @license https://www.kotchasan.com/license/
- * @author Goragod Wiriya <admin@goragod.com>
- * @package Kotchasan
- */
 
 namespace Kotchasan;
 
 /**
- * Promptpay QR Code Payment Payload Generator
- * based on EMV® QR Code Specification
+ * Kotchasan Promptpay Class
  *
- * @see https://www.kotchasan.com/
+ * This class generates a Promptpay QR code payload for payments in Thailand.
+ *
+ * @package Kotchasan
  */
 class Promptpay
 {

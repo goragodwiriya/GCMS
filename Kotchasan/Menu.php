@@ -1,19 +1,14 @@
 <?php
-/**
- * @filesource Kotchasan/Menu.php
- *
- * @copyright 2016 Goragod.com
- * @license https://www.kotchasan.com/license/
- * @author Goragod Wiriya <admin@goragod.com>
- * @package Kotchasan
- */
 
 namespace Kotchasan;
 
 /**
- * This class is responsible for rendering the standard menu of Kotchasan.
+ * Kotchasan Menu Class
  *
- * @see https://www.kotchasan.com/
+ * This class provides methods for rendering a menu from an array of items.
+ * It supports nested submenus and allows for customization of menu items.
+ *
+ * @package Kotchasan
  */
 class Menu
 {
@@ -62,13 +57,19 @@ class Menu
             $c = ' class="'.implode(' ', $c).'"';
         }
         if (!empty($item['url'])) {
-            $a = ['href="'.$item['url'].'"'];
+            // Reject dangerous URL schemes (javascript:, data:, vbscript:) and
+            // HTML-encode the href to prevent attribute-context XSS.
+            $url = (string) $item['url'];
+            if (preg_match('/^\s*(javascript|data|vbscript)\s*:/i', $url)) {
+                $url = '#';
+            }
+            $a = ['href="'.htmlspecialchars($url, ENT_QUOTES, 'UTF-8').'"'];
             if (!empty($item['target'])) {
-                $a[] = 'target="'.$item['target'].'"';
+                $a[] = 'target="'.htmlspecialchars((string) $item['target'], ENT_QUOTES, 'UTF-8').'"';
             }
         }
         if (!empty($item['text'])) {
-            $a[] = 'title="'.$item['text'].'"';
+            $a[] = 'title="'.htmlspecialchars((string) $item['text'], ENT_QUOTES, 'UTF-8').'"';
         }
         if ($arrow) {
             $a[] = 'class=menu-arrow';

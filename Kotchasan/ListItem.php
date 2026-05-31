@@ -1,21 +1,14 @@
 <?php
-/**
- * @filesource Kotchasan/ListItem.php
- *
- * @copyright 2016 Goragod.com
- * @license https://www.kotchasan.com/license/
- * @author Goragod Wiriya <admin@goragod.com>
- * @package Kotchasan
- */
 
 namespace Kotchasan;
 
 /**
- * Class ListItem
+ * Kotchasan ListItem Class
  *
- * This class handles array manipulation.
+ * This class provides methods for managing a list of items,
+ * including adding, deleting, and retrieving items.
  *
- * @see https://www.kotchasan.com/
+ * @package Kotchasan
  */
 class ListItem
 {

@@ -1,0 +1,86 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" width="400" height="300">
+  <defs>
+    <linearGradient id="heroBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#14532d"/>
+      <stop offset="50%" style="stop-color:#166534"/>
+      <stop offset="100%" style="stop-color:#15803d"/>
+    </linearGradient>
+    <linearGradient id="footerBg" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#14532d"/>
+      <stop offset="100%" style="stop-color:#166534"/>
+    </linearGradient>
+    <radialGradient id="leafDeco" cx="80%" cy="20%" r="40%">
+      <stop offset="0%" style="stop-color:rgba(74,222,128,0.2)"/>
+      <stop offset="100%" style="stop-color:transparent"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Page background -->
+  <rect width="400" height="300" fill="#fefce8"/>
+
+  <!-- Navbar -->
+  <rect width="400" height="36" fill="#14532d"/>
+  <rect x="12" y="12" width="72" height="12" rx="3" fill="#4ade80"/>
+  <rect x="200" y="14" width="28" height="8" rx="2" fill="rgba(255,255,255,0.3)"/>
+  <rect x="236" y="14" width="28" height="8" rx="2" fill="rgba(255,255,255,0.3)"/>
+  <rect x="272" y="14" width="28" height="8" rx="2" fill="rgba(255,255,255,0.3)"/>
+  <rect x="336" y="11" width="52" height="14" rx="7" fill="#4ade80"/>
+
+  <!-- Hero area -->
+  <rect y="36" width="400" height="110" fill="url(#heroBg)"/>
+  <!-- Leaf decoration blob -->
+  <ellipse cx="340" cy="60" rx="80" ry="60" fill="rgba(74,222,128,0.12)" style="border-radius:30% 70% 70% 30%"/>
+  <!-- Wave bottom of hero -->
+  <ellipse cx="200" cy="148" rx="260" ry="30" fill="#fefce8"/>
+  <!-- Badge -->
+  <rect x="140" y="50" width="120" height="14" rx="7" fill="rgba(255,255,255,0.2)"/>
+  <text x="200" y="61" font-family="sans-serif" font-size="7" fill="#bbf7d0" text-anchor="middle">🌿 Welcome</text>
+  <!-- Title -->
+  <text x="200" y="85" font-family="sans-serif" font-size="15" font-weight="bold" fill="white" text-anchor="middle">Build something</text>
+  <text x="200" y="103" font-family="sans-serif" font-size="15" font-weight="bold" fill="#86efac" text-anchor="middle">amazing</text>
+  <!-- CTA -->
+  <rect x="122" y="114" width="64" height="16" rx="8" fill="#4ade80"/>
+  <text x="154" y="126" font-family="sans-serif" font-size="7" fill="#14532d" font-weight="bold" text-anchor="middle">Explore</text>
+  <rect x="196" y="114" width="82" height="16" rx="8" fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="1.5"/>
+  <text x="237" y="126" font-family="sans-serif" font-size="7" fill="white" text-anchor="middle">Learn More</text>
+
+  <!-- Main 2-col: content + sidebar -->
+  <!-- Content column (left, wider) -->
+  <rect x="12" y="155" width="244" height="28" rx="6" fill="white" stroke="#bbf7d0" stroke-width="1"/>
+  <rect x="18" y="161" width="4" height="16" rx="2" fill="#166534"/>
+  <rect x="28" y="163" width="80" height="7" rx="2" fill="#e0f2e9"/>
+  <rect x="28" y="174" width="200" height="5" rx="2" fill="#f0fdf4"/>
+
+  <rect x="12" y="189" width="244" height="28" rx="6" fill="white" stroke="#bbf7d0" stroke-width="1"/>
+  <rect x="18" y="195" width="4" height="16" rx="2" fill="#166534"/>
+  <rect x="28" y="197" width="100" height="7" rx="2" fill="#e0f2e9"/>
+  <rect x="28" y="208" width="180" height="5" rx="2" fill="#f0fdf4"/>
+
+  <rect x="12" y="223" width="244" height="28" rx="6" fill="white" stroke="#bbf7d0" stroke-width="1"/>
+  <rect x="18" y="229" width="4" height="16" rx="2" fill="#166534"/>
+  <rect x="28" y="231" width="120" height="7" rx="2" fill="#e0f2e9"/>
+  <rect x="28" y="242" width="160" height="5" rx="2" fill="#f0fdf4"/>
+
+  <!-- Sidebar (right, narrower) -->
+  <rect x="264" y="155" width="124" height="28" rx="6" fill="white" stroke="#bbf7d0" stroke-width="1"/>
+  <rect x="264" y="155" width="124" height="7" rx="4" fill="#e0f2e9"/>
+  <rect x="270" y="167" width="80" height="6" rx="2" fill="#f0fdf4"/>
+  <rect x="270" y="176" width="100" height="4" rx="2" fill="#f0fdf4"/>
+
+  <rect x="264" y="189" width="124" height="28" rx="6" fill="white" stroke="#bbf7d0" stroke-width="1"/>
+  <rect x="264" y="189" width="124" height="7" rx="4" fill="#fef3c7"/>
+  <rect x="270" y="201" width="80" height="6" rx="2" fill="#f0fdf4"/>
+  <rect x="270" y="210" width="60" height="4" rx="2" fill="#f0fdf4"/>
+
+  <rect x="264" y="223" width="124" height="28" rx="6" fill="white" stroke="#bbf7d0" stroke-width="1"/>
+  <rect x="264" y="223" width="124" height="7" rx="4" fill="#e0f2e9"/>
+  <rect x="270" y="235" width="70" height="6" rx="2" fill="#f0fdf4"/>
+  <rect x="270" y="244" width="90" height="4" rx="2" fill="#f0fdf4"/>
+
+  <!-- Footer with polygon clip -->
+  <polygon points="0,275 400,258 400,300 0,300" fill="url(#footerBg)"/>
+  <rect x="12" y="278" width="55" height="7" rx="2" fill="rgba(255,255,255,0.3)"/>
+  <rect x="12" y="289" width="100" height="5" rx="2" fill="rgba(255,255,255,0.15)"/>
+  <rect x="290" y="278" width="98" height="7" rx="2" fill="rgba(255,255,255,0.3)"/>
+  <rect x="290" y="289" width="80" height="5" rx="2" fill="rgba(255,255,255,0.15)"/>
+</svg>

@@ -1,0 +1,73 @@
+<!-- My Orders Page -->
+<div class="my-orders-page" data-component="api" data-endpoint="{WEBURL}api/product/myorders" data-method="GET" data-url-params="true">
+
+  <header class="hero">
+    <h1 class="hero-title" data-i18n>{TOPIC}</h1>
+    <p class="hero-subtitle" data-i18n>{DETAIL}</p>
+  </header>
+
+  <section class="page-content">
+    <div class="container">
+      <!-- Status Filter -->
+      <nav class="category-buttons text-center" data-for="item of order_statuses">
+        <template>
+          <a href="{WEBURL}product/myorders?status={{item.value}}" class="cat-link" data-class="active:status == item.value" data-text="item.text"></a>
+        </template>
+      </nav>
+
+      <!-- Orders List -->
+      <div class="orders-list" data-for="order of orders">
+        <template>
+          <div class="order-card">
+            <div class="order-header">
+              <div class="order-info">
+                <h3 class="order-number">#<span data-text="order.order_no"></span></h3>
+                <span class="order-date" data-text="order.created_at" data-format="datetime"></span>
+              </div>
+              <span class="order-status-badge" data-text="order.order_status_text" data-attr="class:'order-status-badge status-' + order.order_status"></span>
+            </div>
+            <div class="order-body">
+              <div class="order-details">
+                <div class="detail-item">
+                  <span class="label" data-i18n>Order Date</span>
+                  <span class="value" data-text="order.created_at" data-format="date"></span>
+                </div>
+                <div class="detail-item">
+                  <span class="label" data-i18n>Total</span>
+                  <span class="value order-total" data-text="order.total" data-format="currency:THB"></span>
+                </div>
+                <div class="detail-item">
+                  <span class="label" data-i18n>Payment Method</span>
+                  <span class="value" data-text="order.payment_method" data-i18n></span>
+                </div>
+              </div>
+            </div>
+            <div class="order-footer">
+              <a class="btn btn-primary" data-attr="href:'../product/orderdetail?id=' + order.id" data-i18n>View Details</a>
+            </div>
+          </div>
+        </template>
+      </div>
+
+      <!-- Empty State -->
+      <div class="empty-state" data-if="!orders || orders.length === 0">
+        <svg class="empty-icon" viewBox="0 0 24 24" width="64" height="64">
+          <path fill="currentColor"
+                d="M16,18H8V17A1,1 0 0,1 9,16H15A1,1 0 0,1 16,17M18,16V14H20V11L19,7H5L4,11V14H6V16A2,2 0 0,0 8,18H16A2,2 0 0,0 18,16M19.5,3A0.5,0.5 0 0,1 20,3.5V5.5A0.5,0.5 0 0,1 19.5,6H4.5A0.5,0.5 0 0,1 4,5.5V3.5A0.5,0.5 0 0,1 4.5,3H19.5Z" />
+        </svg>
+        <h3 data-i18n>No Orders</h3>
+        <p data-i18n>You don't have any orders yet</p>
+        <a href="{WEBURL}product" class="btn btn-primary" data-i18n>Shop Now</a>
+      </div>
+
+      <!-- Pagination -->
+      <div class="pagination-wrapper" data-if="pagination && pagination.pages > 1">
+        <nav class="pagination" data-for="i of pagination.page_numbers">
+          <template>
+            <a href="{WEBURL}product/myorders?status={{status}}&page={{i}}" data-class="current:i === pagination.page" data-text="i"></a>
+          </template>
+        </nav>
+      </div>
+    </div>
+  </section>
+</div>

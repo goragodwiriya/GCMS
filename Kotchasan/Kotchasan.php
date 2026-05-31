@@ -1,19 +1,15 @@
 <?php
-/**
- * @filesource Kotchasan/Kotchasan.php
- *
- * @copyright 2016 Goragod.com
- * @license https://www.kotchasan.com/license/
- * @author Goragod Wiriya <admin@goragod.com>
- * @package Kotchasan
- */
 
 use Kotchasan\Http\Request;
 
 /**
- * The main class of the Kotchasan framework.
+ * Kotchasan Class
  *
- * @see https://www.kotchasan.com/
+ * This class serves as the main entry point for Kotchasan applications.
+ * It initializes the application with configuration settings and handles
+ * the request routing.
+ *
+ * @package Kotchasan
  */
 class Kotchasan extends Kotchasan\KBase
 {
@@ -107,6 +103,77 @@ class Kotchasan extends Kotchasan\KBase
         /* Custom site initialization */
         if (is_string($cfg) && method_exists($cfg, 'init')) {
             $cfg::init(self::$cfg);
+        }
+
+        // If JWT secret is configured, run JwtMiddleware early to populate request attributes
+        if (!empty(self::$cfg->jwt_secret)) {
+            try {
+                $jwtMw = new \Kotchasan\Http\Middleware\JwtMiddleware(self::$cfg->jwt_secret);
+                // handle may return Response or modified Request; we only need attributes populated
+                $jwtMw->handle(self::$request);
+            } catch (\Throwable $e) {
+                // ignore middleware failures to keep backward compatibility
+            }
+        }
+
+        // Initialize database query cache if enabled
+        if (defined('DB_CACHE') && DB_CACHE) {
+            // Define cache constants based on configuration if not already defined (default 3600 seconds)
+            if (!defined('CACHE_TTL')) {
+                define('CACHE_TTL', self::$cfg->cache_expire ?? 3600);
+            }
+
+            $this->initializeQueryCache();
+        }
+    }
+
+    /**
+     * Initialize query cache for database operations.
+     *
+     * @return void
+     */
+    protected function initializeQueryCache(): void
+    {
+        try {
+            $cacheConfig = [
+                'driver' => defined('CACHE_DRIVER') ? CACHE_DRIVER : 'file',
+                'ttl' => CACHE_TTL
+            ];
+
+            // Add driver-specific configuration
+            switch ($cacheConfig['driver']) {
+                case 'file':
+                    $cacheConfig['path'] = defined('ROOT_PATH') && defined('DATA_FOLDER')
+                    ? ROOT_PATH.DATA_FOLDER.'cache/'
+                    : null;
+                    break;
+
+                case 'redis':
+                    // Redis configuration from config if available
+                    if (isset(self::$cfg->redis_host)) {
+                        $cacheConfig['host'] = self::$cfg->redis_host;
+                    }
+                    if (isset(self::$cfg->redis_port)) {
+                        $cacheConfig['port'] = self::$cfg->redis_port;
+                    }
+                    if (isset(self::$cfg->redis_password)) {
+                        $cacheConfig['password'] = self::$cfg->redis_password;
+                    }
+                    if (isset(self::$cfg->redis_database)) {
+                        $cacheConfig['database'] = self::$cfg->redis_database;
+                    }
+                    break;
+            }
+
+            // Configure cache if Database is available
+            if (class_exists('\Kotchasan\Database')) {
+                \Kotchasan\Database::configureCache($cacheConfig, $cacheConfig['ttl']);
+            }
+        } catch (\Throwable $e) {
+            // Log error but don't fail - cache is optional
+            if (defined('DEBUG') && DEBUG > 0) {
+                error_log('Failed to initialize query cache: '.$e->getMessage());
+            }
         }
     }
 }

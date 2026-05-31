@@ -1,340 +1,291 @@
 <?php
-/**
- * @filesource Kotchasan/Http/Stream.php
- *
- * @copyright 2016 Goragod.com
- * @license https://www.kotchasan.com/license/
- * @author Goragod Wiriya <admin@goragod.com>
- * @package Kotchasan\Http
- */
 
 namespace Kotchasan\Http;
 
-use Psr\Http\Message\StreamInterface;
+use Kotchasan\Psr\Http\Message\StreamInterface;
 
 /**
- * PSR-7 compliant data stream class.
+ * HTTP Stream Class
+ * Implements PSR-7 StreamInterface
  *
- * Represents a stream of data as defined by the PSR-7 StreamInterface.
- *
- * @see https://www.kotchasan.com/
+ * @package Kotchasan\Http
  */
 class Stream implements StreamInterface
 {
     /**
-     * Stream metadata.
-     *
-     * @var array
+     * @var resource|null Stream resource
      */
-    protected $meta;
+    protected $resource;
 
     /**
-     * Flag indicating if the stream is readable.
-     *
-     * @var bool
-     */
-    protected $readable;
-
-    /**
-     * Flag indicating if the stream is seekable.
-     *
-     * @var bool
+     * @var bool Whether the stream is seekable
      */
     protected $seekable;
 
     /**
-     * Stream size.
-     *
-     * @var null|int
+     * @var bool Whether the stream is readable
      */
-    protected $size;
+    protected $readable;
 
     /**
-     * Stream resource.
-     *
-     * @var resource
-     */
-    protected $stream;
-
-    /**
-     * Flag indicating if the stream is writable.
-     *
-     * @var bool
+     * @var bool Whether the stream is writable
      */
     protected $writable;
 
     /**
-     * Creates a new Stream instance.
+     * @var array|mixed|null Stream metadata
+     */
+    protected $metadata;
+
+    /**
+     * @var int|null Stream size
+     */
+    protected $size;
+
+    /**
+     * Create a new Stream.
      *
-     * @param resource|string $stream The stream resource or a string representing a file path or URL.
-     * @param string $mode The mode in which to open the stream.
-     *
-     * @throws \InvalidArgumentException If the stream is not a valid resource.
+     * @param string|resource $stream Stream resource or string
+     * @param string $mode Mode for opening the stream
+     * @throws \InvalidArgumentException
      */
     public function __construct($stream, $mode = 'r')
     {
         if (is_string($stream)) {
-            set_error_handler(function ($e) use (&$error) {
-                $error = $e;
-            }, E_WARNING);
-            $stream = fopen($stream, $mode);
-            restore_error_handler();
+            $resource = @fopen($stream, $mode);
+            if ($resource === false) {
+                throw new \InvalidArgumentException('Could not open stream: '.$stream);
+            }
+            $this->resource = $resource;
+        } elseif (is_resource($stream)) {
+            $this->resource = $stream;
+        } else {
+            throw new \InvalidArgumentException('Invalid stream provided');
         }
 
-        if (!is_resource($stream)) {
-            throw new \InvalidArgumentException('Stream must be a resource');
-        }
-
-        $this->stream = $stream;
+        $this->metadata = stream_get_meta_data($this->resource);
+        $this->seekable = $this->metadata['seekable'];
+        $this->readable = strpos($mode, 'r') !== false || strpos($mode, '+') !== false;
+        $this->writable = strpos($mode, 'w') !== false || strpos($mode, 'a') !== false || strpos($mode, '+') !== false;
+        $this->size = null;
     }
 
     /**
-     * Gets the contents of the stream as a string.
-     *
-     * @throws \RuntimeException If unable to read the stream contents.
-     *
-     * @return string The stream contents.
+     * {@inheritDoc}
      */
     public function __toString()
     {
-        if (is_resource($this->stream)) {
-            try {
-                $this->rewind();
-                return $this->getContents();
-            } catch (\RuntimeException $e) {
-            }
+        if (!$this->isReadable()) {
+            return '';
         }
 
-        return '';
+        try {
+            $this->rewind();
+            return $this->getContents();
+        } catch (\Exception $e) {
+            return '';
+        }
     }
 
     /**
-     * Closes the stream and releases its resources.
-     *
-     * @return void
+     * {@inheritDoc}
      */
     public function close()
     {
-        if (isset($this->stream)) {
-            if (is_resource($this->stream)) {
-                fclose($this->stream);
-            }
-            $this->detach();
+        if ($this->resource) {
+            $resource = $this->detach();
+            fclose($resource);
         }
     }
 
     /**
-     * Detaches the stream resource and returns it.
-     *
-     * @return resource|null The detached stream resource.
+     * {@inheritDoc}
      */
     public function detach()
     {
-        $tmp = $this->stream;
-        $this->meta = null;
-        $this->readable = null;
-        $this->seekable = null;
+        $resource = $this->resource;
+        $this->resource = null;
         $this->size = null;
-        $this->stream = null;
-        $this->writable = null;
+        $this->metadata = null;
+        $this->readable = false;
+        $this->writable = false;
+        $this->seekable = false;
 
-        return $tmp;
+        return $resource;
     }
 
     /**
-     * Checks if the end of the stream has been reached.
-     *
-     * @return bool True if the end of the stream has been reached, false otherwise.
+     * {@inheritDoc}
+     */
+    public function getSize()
+    {
+        if ($this->size !== null) {
+            return $this->size;
+        }
+
+        if ($this->resource === null) {
+            return null;
+        }
+
+        $stats = fstat($this->resource);
+        $this->size = $stats['size'];
+
+        return $this->size;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function tell()
+    {
+        if ($this->resource === null) {
+            throw new \RuntimeException('Stream is detached');
+        }
+
+        $position = ftell($this->resource);
+        if ($position === false) {
+            throw new \RuntimeException('Could not get the position of the pointer in stream');
+        }
+
+        return $position;
+    }
+
+    /**
+     * {@inheritDoc}
      */
     public function eof()
     {
-        return is_resource($this->stream) ? feof($this->stream) : true;
+        return $this->resource === null || feof($this->resource);
     }
 
     /**
-     * Gets the contents of the stream as a string.
-     *
-     * @throws \RuntimeException If unable to read the stream contents.
-     *
-     * @return string The stream contents.
+     * {@inheritDoc}
+     */
+    public function isSeekable()
+    {
+        return $this->seekable;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function seek($offset, $whence = SEEK_SET)
+    {
+        if ($this->resource === null) {
+            throw new \RuntimeException('Stream is detached');
+        }
+
+        if (!$this->isSeekable()) {
+            throw new \RuntimeException('Stream is not seekable');
+        }
+
+        if (fseek($this->resource, $offset, $whence) === -1) {
+            throw new \RuntimeException('Could not seek in stream');
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function rewind()
+    {
+        $this->seek(0);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function isWritable()
+    {
+        return $this->writable;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function write($string)
+    {
+        if ($this->resource === null) {
+            throw new \RuntimeException('Stream is detached');
+        }
+
+        if (!$this->isWritable()) {
+            throw new \RuntimeException('Stream is not writable');
+        }
+
+        $bytes = fwrite($this->resource, $string);
+        if ($bytes === false) {
+            throw new \RuntimeException('Could not write to stream');
+        }
+
+        $this->size = null;
+
+        return $bytes;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function isReadable()
+    {
+        return $this->readable;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function read($length)
+    {
+        if ($this->resource === null) {
+            throw new \RuntimeException('Stream is detached');
+        }
+
+        if (!$this->isReadable()) {
+            throw new \RuntimeException('Stream is not readable');
+        }
+
+        $string = fread($this->resource, $length);
+        if ($string === false) {
+            throw new \RuntimeException('Could not read from stream');
+        }
+
+        return $string;
+    }
+
+    /**
+     * {@inheritDoc}
      */
     public function getContents()
     {
-        $contents = stream_get_contents($this->stream);
+        if ($this->resource === null) {
+            throw new \RuntimeException('Stream is detached');
+        }
 
+        if (!$this->isReadable()) {
+            throw new \RuntimeException('Stream is not readable');
+        }
+
+        $contents = stream_get_contents($this->resource);
         if ($contents === false) {
-            throw new \RuntimeException('Unable to read stream contents');
+            throw new \RuntimeException('Could not get contents of stream');
         }
 
         return $contents;
     }
 
     /**
-     * Gets the metadata of the stream or a specific key of the metadata.
-     *
-     * @param string|null $key The metadata key to retrieve.
-     *
-     * @return array|mixed|null The metadata as an array, a specific metadata value, or null if the key is not found.
+     * {@inheritDoc}
      */
     public function getMetadata($key = null)
     {
-        if ($this->meta === null) {
-            $this->meta = is_resource($this->stream) ? stream_get_meta_data($this->stream) : null;
+        if ($this->resource === null) {
+            return $key ? null : [];
         }
 
         if ($key === null) {
-            return $this->meta;
-        } else {
-            return isset($this->meta[$key]) ? $this->meta[$key] : null;
-        }
-    }
-
-    /**
-     * Gets the size of the stream in bytes.
-     *
-     * @return int|null The size of the stream in bytes, or null if the size is unknown.
-     */
-    public function getSize()
-    {
-        if ($this->size === null) {
-            if (is_resource($this->stream)) {
-                $stats = fstat($this->stream);
-                $this->size = isset($stats['size']) ? $stats['size'] : null;
-            } else {
-                $this->size = null;
-            }
+            return $this->metadata;
         }
 
-        return $this->size;
-    }
-
-    /**
-     * Checks if the stream is readable.
-     *
-     * @return bool True if the stream is readable, false otherwise.
-     */
-    public function isReadable()
-    {
-        if ($this->readable === null) {
-            $mode = $this->getMetadata('mode');
-            $this->readable = $mode === null ? false : (strstr($mode, 'r') || strstr($mode, '+'));
-        }
-
-        return $this->readable;
-    }
-
-    /**
-     * Checks if the stream is seekable.
-     *
-     * @return bool True if the stream is seekable, false otherwise.
-     */
-    public function isSeekable()
-    {
-        if ($this->seekable === null) {
-            $this->seekable = $this->getMetadata('seekable');
-        }
-
-        return $this->seekable;
-    }
-
-    /**
-     * Checks if the stream is writable.
-     *
-     * @return bool True if the stream is writable, false otherwise.
-     */
-    public function isWritable()
-    {
-        if ($this->writable === null) {
-            $mode = $this->getMetadata('mode');
-            $this->writable = $mode === null ? false : (strstr($mode, 'x') || strstr($mode, 'w') || strstr($mode, 'c') || strstr($mode, 'a') || strstr($mode, '+'));
-        }
-
-        return $this->writable;
-    }
-
-    /**
-     * Reads data from the stream.
-     *
-     * @param int $length The number of bytes to read.
-     *
-     * @throws \RuntimeException If unable to read the stream.
-     *
-     * @return string The data read from the stream.
-     */
-    public function read($length)
-    {
-        if (!$this->isReadable()) {
-            throw new \RuntimeException('Stream is not readable');
-        }
-
-        $data = fread($this->stream, $length);
-
-        if ($data === false) {
-            throw new \RuntimeException('Unable to read from stream');
-        }
-
-        return $data;
-    }
-
-    /**
-     * Seeks to a specific position in the stream.
-     *
-     * @throws \RuntimeException on failure
-     */
-    public function rewind()
-    {
-        return $this->seek(0);
-    }
-
-    /**
-     * เลื่อน pointer ไปยังตำแหน่งที่กำหนด
-     *
-     * @param int $offset ตำแหน่งของ pointer
-     * @param int $whence
-     *
-     * @throws \RuntimeException on failure
-     */
-    public function seek($offset, $whence = SEEK_SET)
-    {
-        if (fseek($this->stream, $offset, $whence) === -1) {
-            throw new \RuntimeException('Error seeking within stream');
-        }
-    }
-
-    /**
-     * คืนค่าตำแหน่งของ pointer ปัจจุบัน
-     *
-     * @throws \RuntimeException on error
-     *
-     * @return int
-     */
-    public function tell()
-    {
-        $position = is_resource($this->stream) ? ftell($this->stream) : false;
-        if ($position === false) {
-            throw new \RuntimeException('Unable to determine stream position');
-        }
-        return $position;
-    }
-
-    /**
-     * เขียนข้อมูลลงบน stream
-     * คืนค่าจำนวน byte ที่เขียน
-     *
-     * @param string $string ข้อมูลที่เขียน
-     *
-     * @throws \RuntimeException on failure
-     *
-     * @return int
-     */
-    public function write($string)
-    {
-        $result = is_resource($this->stream) ? fwrite($this->stream, $string) : false;
-        if ($result === false) {
-            throw new \RuntimeException('Unable to write to stream');
-        } else {
-            $this->size = null;
-        }
-        return $result;
+        return isset($this->metadata[$key]) ? $this->metadata[$key] : null;
     }
 }

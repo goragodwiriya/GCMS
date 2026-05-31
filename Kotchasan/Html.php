@@ -1,19 +1,15 @@
 <?php
-/**
- * @filesource Kotchasan/Html.php
- *
- * @copyright 2016 Goragod.com
- * @license https://www.kotchasan.com/license/
- * @author Goragod Wiriya <admin@goragod.com>
- * @package Kotchasan
- */
 
 namespace Kotchasan;
 
 /**
- * HTML class
+ * Kotchasan Html Class
  *
- * @see https://www.kotchasan.com/
+ * This class provides methods for creating and manipulating HTML elements.
+ * It supports adding various types of elements, including input groups,
+ * radio groups, checkbox groups, and more.
+ *
+ * @package Kotchasan
  */
 class Html extends \Kotchasan\KBase
 {
@@ -223,7 +219,7 @@ class Html extends \Kotchasan\KBase
         }
 
         if ($token) {
-            self::$form->rows[] = '<input type=hidden name=token id=token value="'.self::$request->createToken().'">';
+            self::$form->rows[] = '<input type=hidden name=token id=token value="'.self::$request->generateCsrfToken().'">';
         }
 
         if (isset($script)) {
@@ -316,8 +312,10 @@ class Html extends \Kotchasan\KBase
                     // If the key is an integer, only add the value
                     $attr[] = $value;
                 } else {
-                    // Otherwise, add the key-value pair as an attribute
-                    $attr[] = $key.'="'.$value.'"';
+                    // Otherwise, add the key-value pair as an attribute.
+                    // HTML-encode the value to prevent attribute-context XSS
+                    // (e.g. " breakout / event-handler injection).
+                    $attr[] = $key.'="'.htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8').'"';
                 }
             }
         }
@@ -484,15 +482,16 @@ class Html extends \Kotchasan\KBase
         if (isset($attributes['value']) && is_array($attributes['value'])) {
             if (isset($attributes['options'])) {
                 // If options are provided, create li elements for each value and its corresponding option
-                foreach ($attributes['value'] as $value) {
-                    if (isset($attributes['options'][$value])) {
-                        $li .= '<li id="'.$id.'_item_'.$value.'"><span>'.$attributes['options'][$value].'</span><button type="button">x</button><input type="hidden" name="'.$id.'[]" value="'.$value.'"></li>';
+                foreach ($attributes['value'] as $key) {
+                    if (isset($attributes['options'][$key])) {
+                        $value = $attributes['options'][$key];
+                        $li .= '<li id="'.$id.'_item_'.$key.'"><span>'.$value.'</span><button type="button">x</button><input type="hidden" name="'.$id.'['.$key.']" value="'.$value.'"></li>';
                     }
                 }
             } else {
                 // If options are not provided, create li elements with the values directly
-                foreach ($attributes['value'] as $k => $value) {
-                    $li .= '<li id="'.$id.'_item_'.$k.'"><span>'.$value.'</span><button type="button">x</button><input type="hidden" name="'.$id.'[]" value="'.$k.'"></li>';
+                foreach ($attributes['value'] as $key => $value) {
+                    $li .= '<li id="'.$id.'_item_'.$key.'"><span>'.$value.'</span><button type="button">x</button><input type="hidden" name="'.$id.'['.$key.']" value="'.$value.'"></li>';
                 }
             }
         }
@@ -599,7 +598,7 @@ class Html extends \Kotchasan\KBase
         }
 
         $div = $obj->add('div', [
-            'class' => 'g-input'
+            'class' => 'form-control'
         ]);
 
         $li = '<ul>';

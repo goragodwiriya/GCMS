@@ -1,0 +1,97 @@
+<!-- Order Detail Page -->
+<div class="fv-order-detail-container" data-component="api" data-endpoint="{WEBURL}api/product/myorders/view" data-method="GET" data-url-params="true">
+  <div class="container">
+    <!-- Order Header -->
+    <div class="fv-order-detail-header">
+      <div class="fv-order-title-section">
+        <h1 class="fv-order-title"><span data-i18n>Order</span> #<span data-text="order_no"></span></h1>
+        <span class="fv-order-status-badge" data-text="order_status_text" data-attr="class:'fv-order-status-badge status-' + order_status"></span>
+      </div>
+      <div class="fv-order-meta">
+        <div class="meta-item">
+          <span class="meta-label" data-i18n>Order Date</span>
+          <span class="meta-value" data-text="created_at" data-format="datetime"></span>
+        </div>
+        <div class="meta-item" data-if="payment_date">
+          <span class="meta-label" data-i18n>Payment Date</span>
+          <span class="meta-value" data-text="payment_date" data-format="datetime"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Order Details Grid -->
+    <div class="fv-order-details-grid">
+      <!-- Customer Information -->
+      <div class="fv-detail-card">
+        <h2 class="card-title" data-i18n>Customer information</h2>
+        <div class="info-group">
+          <div class="info-item">
+            <span class="info-label" data-i18n>Name</span>
+            <span class="info-value" data-text="name"></span>
+          </div>
+          <div class="info-item">
+            <span class="info-label" data-i18n>Phone</span>
+            <span class="info-value" data-text="phone"></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Shipping Address -->
+      <div class="fv-detail-card">
+        <h2 class="card-title" data-i18n>Shipping Address</h2>
+        <div class="info-group">
+          <p class="address-text">
+            <span data-text="address"></span>
+            <span data-i18n>Province</span> <span data-text="province"></span>
+            <span data-i18n>Zipcode</span> <span data-text="zipcode"></span>
+          </p>
+        </div>
+      </div>
+
+      <!-- Payment information -->
+      <div class="fv-detail-card">
+        <h2 class="card-title" data-i18n>Payment information</h2>
+        <div class="info-group">
+          <div class="info-item">
+            <span class="info-label" data-i18n>Payment Method</span>
+            <span class="info-value" data-text="payment_method" data-i18n></span>
+          </div>
+          <div class="info-item" data-if="payment_ref">
+            <span class="info-label" data-i18n>Reference No</span>
+            <span class="info-value" data-text="payment_ref"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Order Items -->
+    <div class="fv-detail-card">
+      <h2 class="card-title" data-i18n>Order Items</h2>
+      <table class="fv-details-table" style="width:100%">
+        <thead>
+          <tr>
+            <th data-i18n>Item</th>
+            <th data-i18n>Price</th>
+            <th data-i18n>Qty</th>
+            <th data-i18n>Total</th>
+          </tr>
+        </thead>
+        <tbody data-for="item of items">
+          <template>
+            <tr>
+              <td data-text="item.topic"></td>
+              <td data-text="item.price" data-format="currency:THB"></td>
+              <td data-text="item.quantity"></td>
+              <td data-text="item.total" data-format="currency:THB"></td>
+            </tr>
+          </template>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Back link -->
+    <div style="margin-top:1.5rem">
+      <a href="{WEBURL}product/myorders" class="fv-doc-btn-back">← กลับหน้ารายการ</a>
+    </div>
+  </div>
+</div>

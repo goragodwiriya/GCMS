@@ -10,7 +10,7 @@
 
 namespace Board\Sitemap;
 
-use Board\Index\Controller as Module;
+use Web\Gcms;
 
 /**
  * sitemap.xml
@@ -34,9 +34,10 @@ class Controller extends \Kotchasan\Controller
     {
         $result = [];
         foreach (\Board\Sitemap\Model::getStories($ids) as $item) {
+            $module = $modules[$item->module_id];
             $result[] = (object) [
-                'url' => Module::url($modules[$item->module_id], $item->id),
-                'date' => date('Y-m-d', ($item->comment_date == 0 ? $item->last_update : $item->comment_date))
+                'url' => Gcms::createUrl($module, '', 0, $item->id),
+                'date' => date('Y-m-d', strtotime(empty($item->comment_date) ? $item->updated_at : $item->comment_date))
             ];
         }
         return $result;

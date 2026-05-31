@@ -1,0 +1,18 @@
+<div class="board-reply-form-wrap" id="board-reply-form-wrap">
+  <h3 class="board-reply-form-title icon-comments">{LNG_Post a Reply}</h3>
+  <form data-form="boardReplyForm" novalidate action="{WEBURL}api/board/reply/save" method="post" data-ajax-submit="true">
+    <div>
+      <label for="detail">{LNG_Detail}</label>
+      <span class="form-control icon-file">
+        <textarea id="detail" name="detail" rows="10" placeholder="{LNG_Write your reply}...."></textarea>
+      </span>
+      <div class="comment" id="result_detail">{LNG_Please check that it is correct before sending.} {LNG_BBCode can be used.}</div>
+    </div>
+    <div class="board-reply-actions">
+      <input type="hidden" name="module_id" value="{MODULE_ID}">
+      <input type="hidden" name="id" value="0">
+      <input type="hidden" name="index_id" value="{ID}">
+      <button type="submit" class="btn btn-primary icon-reply">{LNG_Post a Reply}</button>
+    </div>
+  </form>
+</div>

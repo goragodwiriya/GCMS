@@ -10,9 +10,9 @@
 
 namespace Index\Sitemap;
 
-use Gcms\Gcms;
 use Kotchasan\Http\Request;
 use Kotchasan\Http\Response;
+use Web\Gcms;
 
 /**
  * sitemap.xml
@@ -24,13 +24,13 @@ use Kotchasan\Http\Response;
 class Controller extends \Kotchasan\Controller
 {
     /**
-     * แสดงผล sitemap.xml
+     * Display sitemap.xml
      *
      * @param Request $request
      */
     public function index(Request $request)
     {
-        // ตัวแปรป้องกันการเรียกหน้าเพจโดยตรง
+        // Variable to prevent direct page access
         define('MAIN_INIT', 'sitemap');
         // create Response
         $response = new Response();
@@ -40,13 +40,20 @@ class Controller extends \Kotchasan\Controller
         $content .= ' xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"';
         $content .= ' xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9';
         $content .= ' http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">';
-        // วันนี้
+        // Today's date
         $cdate = date('Y-m-d');
         // view
         $view = new \Index\Sitemap\View();
-        // หน้าหลัก
+        // Home page
+        $content .= $view->render(WEB_URL, $cdate);
         $content .= $view->render(WEB_URL.'index.php', $cdate);
-        // โมดูลที่ติดตั้งแล้ว
+        // เมนู
+        foreach (\Index\Menu\Model::queryAllMenus() as $item) {
+            if (!empty($item->module_name)) {
+                $content .= $view->render(Gcms::createUrl($item->module_name), $cdate);
+            }
+        }
+        // Installed modules
         $modules = [];
         $owners = [];
         foreach (\Index\Sitemap\Model::getModules() as $item) {
@@ -59,7 +66,7 @@ class Controller extends \Kotchasan\Controller
         $f = @opendir($dir);
         if ($f) {
             while (false !== ($owner = readdir($f))) {
-                if (!in_array($owner, ['.', '..', 'index', 'css', 'js']) && !empty($owners[$owner]) && is_file($dir.$owner.'/controllers/sitemap.php')) {
+                if (!in_array($owner, ['.', '..', 'index']) && !empty($owners[$owner]) && is_file($dir.$owner.'/controllers/sitemap.php')) {
                     include $dir.$owner.'/controllers/sitemap.php';
                     foreach (createClass(ucfirst($owner).'\Sitemap\Controller')->init($owners[$owner], $modules, $cdate) as $item) {
                         $content .= $view->render($item->url, $item->date);

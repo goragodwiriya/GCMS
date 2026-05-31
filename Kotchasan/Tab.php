@@ -1,19 +1,14 @@
 <?php
-/**
- * @filesource Kotchasan/Tab.php
- *
- * @copyright 2016 Goragod.com
- * @license https://www.kotchasan.com/license/
- * @author Goragod Wiriya <admin@goragod.com>
- * @package Kotchasan
- */
 
 namespace Kotchasan;
 
 /**
- * Tab class to handle the creation and rendering of tabs.
+ * Kotchasan Tab Class
  *
- * @see https://www.kotchasan.com/
+ * This class provides a simple way to create and manage tabs in a web application.
+ * It allows adding tab items with titles, URLs, and targets, and generates HTML for rendering.
+ *
+ * @package Kotchasan
  */
 class Tab
 {

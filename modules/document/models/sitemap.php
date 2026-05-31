@@ -11,30 +11,29 @@
 namespace Document\Sitemap;
 
 /**
- * บทความทั้งหมด
+ * All articles
  *
  * @author Goragod Wiriya <admin@goragod.com>
  *
  * @since 1.0
  */
-class Model extends \Kotchasan\Model
+class Model
 {
     /**
-     * บทความทั้งหมด
+     * All articles
      *
-     * @param array  $ids  แอเรย์ของ module_id
-     * @param string $date วันที่วันนี้
+     * @param array  $ids  Array of module_id
+     * @param string $date Today's date
      *
      * @return array
      */
     public static function getStories($ids, $date)
     {
-        $model = new static;
-        return $model->db()->createQuery()
-            ->select('id', 'module_id', 'alias', 'create_date')
-            ->from('index')
-            ->where([['module_id', $ids], ['index', 0], ['published', 1], ['published_date', '<=', $date]])
-            ->cacheOn()
-            ->execute();
+        return \Kotchasan\DB::create()->select(
+            'index',
+            [['module_id', $ids], ['index', 0], ['published', 1], ['published_date', '<=', $date]],
+            ['cache' => true],
+            ['id', 'module_id', 'alias', 'published_date']
+        );
     }
 }

@@ -1,22 +1,22 @@
 <?php
-/**
- * @filesource Kotchasan/Csv.php
- *
- * @copyright 2016 Goragod.com
- * @license https://www.kotchasan.com/license/
- * @author Goragod Wiriya <admin@goragod.com>
- * @package Kotchasan
- */
 
 namespace Kotchasan;
 
 /**
- * CSV Utility Class
+ * Kotchasan CSV Class
  *
- * @see https://www.kotchasan.com/
+ * This class provides methods for importing and exporting CSV data.
+ *
+ * @package Kotchasan
  */
 class Csv
 {
+    private const DELIMITER = ',';
+
+    private const ENCLOSURE = '"';
+
+    private const ESCAPE = '\\';
+
     /**
      * @var mixed
      */
@@ -46,7 +46,7 @@ class Csv
      */
     public static function import($csv, $columns, $keys = null, $charset = 'UTF-8')
     {
-        $obj = new static;
+        $obj = new static();
         $obj->columns = $columns;
         $obj->datas = [];
         $obj->charset = strtoupper($charset);
@@ -62,12 +62,14 @@ class Csv
      * @param callable $onRow     Callback function to be executed for each row of data
      * @param array    $headers   Array of expected header values for validation (optional)
      * @param string   $charset   Character encoding of the CSV file (default: UTF-8)
+     * @param callable $onBeforeRead  Callback function to be executed before processing rows (optional)
+     * @param mixed    $args      Additional arguments to be passed to the callback functions (optional)
      *
      * @throws \Exception If an error occurs, such as an invalid CSV header or missing column
      *
      * @return void
      */
-    public static function read($file, $onRow, $headers = null, $charset = 'UTF-8')
+    public static function read($file, $onRow, $headers = null, $charset = 'UTF-8', $onBeforeRead = null, $args = null)
     {
         $columns = [];
         $f = @fopen($file, 'r');
@@ -75,7 +77,7 @@ class Csv
             // Convert charset to uppercase
             $charset = strtoupper($charset);
 
-            while (($data = fgetcsv($f)) !== false) {
+            while (($data = fgetcsv($f, 0, self::DELIMITER, self::ENCLOSURE, self::ESCAPE)) !== false) {
                 if (empty($columns)) {
                     if (is_array($headers)) {
                         if (count($headers) != count($data)) {
@@ -100,6 +102,10 @@ class Csv
                         }
                     }
                     $columns = $data;
+                    if (is_callable($onBeforeRead)) {
+                        // Call the provided callback function before processing rows
+                        call_user_func($onBeforeRead, $columns, $args);
+                    }
                 } else {
                     $items = [];
                     foreach ($data as $k => $v) {
@@ -113,8 +119,10 @@ class Csv
                         }
                     }
 
-                    // Call the provided callback function with the processed row data
-                    call_user_func($onRow, $items);
+                    if (is_callable($onRow)) {
+                        // Call the provided callback function with the processed row data
+                        call_user_func($onRow, $items, $args);
+                    }
                 }
             }
 
@@ -127,44 +135,79 @@ class Csv
      *
      * @param string $file     File name (without extension)
      * @param array  $header   Array of header values for the CSV file
-     * @param array  $datas    Array of data rows for the CSV file
+     * @param iterable $datas  Array or Iterator of data rows for the CSV file
      * @param string $charset  Character encoding of the CSV file (default: UTF-8)
      * @param bool   $bom      Whether to include the Byte Order Mark (BOM) in the CSV file (default: true)
      *
-     * @return bool  Returns true if successful, false otherwise
+     * @throws \Exception If headers already sent or invalid input
+     * @return void
      */
     public static function send($file, $header, $datas, $charset = 'UTF-8', $bom = true)
     {
-        // Set response headers for the CSV file download
-        header('Content-Type: text/csv;charset="'.$charset.'"');
-        header('Content-Disposition: attachment;filename="'.$file.'.csv"');
-
-        // Create a stream for output
-        $f = fopen('php://output', 'w');
-
-        // Add BOM for UTF-8 if requested
-        if ($charset == 'UTF-8' && $bom) {
-            fwrite($f, "\xEF\xBB\xBF");
+        // Allow Iterator for large datasets (checking iterable instead of is_array)
+        if (!is_array($datas) && !($datas instanceof \Traversable)) {
+            throw new \Exception('Data must be an array or traversable');
         }
 
-        // Convert charset to uppercase
-        $charset = strtoupper($charset);
-
-        // Write the CSV header if it's not empty
-        if (!empty($header)) {
-            fputcsv($f, self::convert($header, $charset));
+        // Header must be an array
+        if (!is_array($header)) {
+            throw new \Exception('Header must be an array');
         }
 
-        // Write the CSV content row by row
-        foreach ($datas as $item) {
-            fputcsv($f, self::convert($item, $charset));
+        // Clear output buffer
+        while (ob_get_level()) {
+            ob_end_clean();
         }
 
-        // Close the stream
-        fclose($f);
+        // Check if headers have already been sent
+        if (headers_sent($filename, $line)) {
+            throw new \Exception("Headers already sent in {$filename} on line {$line}");
+        }
 
-        // Return success
-        return true;
+        // Sanitizing filename (Optional: Keep basic sanitization but allow Thai if handled by browser)
+        // Usually, modern browsers handle UTF-8 filenames in Content-Disposition better with the filename* syntax
+        $encodedFile = rawurlencode($file.'.csv');
+
+        try {
+            // Set response headers
+            header('Content-Type: text/csv; charset='.$charset);
+            // Support UTF-8 Filename correctly
+            header("Content-Disposition: attachment; filename=\"{$file}.csv\"; filename*=UTF-8''{$encodedFile}");
+            header('Cache-Control: max-age=0');
+            header('Pragma: public');
+
+            // Create a stream for output
+            $f = fopen('php://output', 'w');
+            if ($f === false) {
+                throw new \Exception('Failed to open output stream');
+            }
+
+            // Add BOM for UTF-8 if requested
+            if (strtoupper($charset) === 'UTF-8' && $bom) {
+                fwrite($f, "\xEF\xBB\xBF");
+            }
+
+            $charset = strtoupper($charset);
+
+            // Write Header
+            if (!empty($header)) {
+                fputcsv($f, self::convert($header, $charset), self::DELIMITER, self::ENCLOSURE, self::ESCAPE);
+            }
+
+            // Write Data
+            foreach ($datas as $item) {
+                fputcsv($f, self::convert($item, $charset), self::DELIMITER, self::ENCLOSURE, self::ESCAPE);
+            }
+
+            fclose($f);
+            exit();
+
+        } catch (\Exception $e) {
+            if (ob_get_length()) {
+                ob_end_clean();
+            }
+            throw $e;
+        }
     }
 
     /**

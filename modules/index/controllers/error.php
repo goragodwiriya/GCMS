@@ -20,7 +20,7 @@ use Kotchasan\Template;
  *
  * @since 1.0
  */
-class Controller extends \Kotchasan\Controller
+class Controller extends \Web\Controller
 {
     /**
      * แสดงข้อผิดพลาด (เช่น 404 page not found)

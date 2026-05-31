@@ -1,0 +1,107 @@
+<!-- Hero -->
+<section class="vi-hero">
+  {WIDGET_TEXTLINKS_hero}
+  <div class="container">
+    <span class="vi-hero-badge">{LNG_Welcome}</span>
+    <h1 class="vi-hero-title">
+      {LNG_Build something} <span>{LNG_amazing}</span>
+    </h1>
+    <p class="vi-hero-subtitle">{LNG_A modern content management system built for the future}</p>
+    <div class="vi-hero-actions">
+      <a href="#content" class="vi-btn vi-btn-primary">{LNG_Explore}</a>
+      <a href="{WEBURL}about" class="vi-btn vi-btn-outline">{LNG_Learn More}</a>
+    </div>
+  </div>
+</section>
+
+<div id="content" class="page-content" data-editor-container="content">
+
+  <!-- Banner -->
+  <section class="vi-section" style="padding-bottom:0" data-block-type="widget-banner" data-editor-id="block-banner" data-editor-label="Banner">
+    <div class="container">
+      {WIDGET_TEXTLINKS_banner}
+    </div>
+  </section>
+
+  <!-- Featured / Detail -->
+  <section class="vi-section vi-section-alt" data-block-type="detail" data-editor-id="block-detail" data-editor-label="เนื้อหาหน้าแรก">
+    <div class="container">
+      <div class="vi-section-header">
+        <span class="vi-badge">{LNG_Featured}</span>
+        <h2 class="vi-section-title">{LNG_Featured Content}</h2>
+        <p class="vi-section-subtitle">{LNG_Discover our latest content and updates}</p>
+      </div>
+      <div class="section-bg">
+        {DETAIL}
+      </div>
+    </div>
+  </section>
+
+  <!-- Latest Articles -->
+  <section class="vi-section" data-block-type="widget-document" data-editor-id="block-news" data-editor-label="ข่าวประชาสัมพันธ์">
+    <div class="container">
+      <div class="vi-section-header">
+        <span class="vi-badge">{LNG_Latest Articles}</span>
+        <h2 class="vi-section-title">ข่าวประชาสัมพันธ์</h2>
+        <p class="vi-section-subtitle">ข่าวสารและบทความล่าสุด</p>
+      </div>
+      {WIDGET_DOCUMENT module=news;layout=carousel;limit=6;mobile=1;tablet=2;desktop=3}
+    </div>
+  </section>
+
+  <!-- Highlight News -->
+  <section class="vi-section vi-section-alt" data-block-type="widget-document" data-editor-id="block-news-highlight" data-editor-label="ข่าวเด่น">
+    <div class="container">
+      <div class="vi-section-header">
+        <span class="vi-badge vi-badge-accent">{LNG_Hot}</span>
+        <h2 class="vi-section-title">ข่าวเด่น</h2>
+        <p class="vi-section-subtitle">ข่าวสารที่คัดสรรมาเพื่อคุณ</p>
+      </div>
+      {WIDGET_DOCUMENT module=news;layout=highlight;limit=5}
+    </div>
+  </section>
+
+  <!-- All Documents -->
+  <section class="vi-section" data-block-type="widget-document" data-editor-id="block-news-list" data-editor-label="บทความทั้งหมด">
+    <div class="container">
+      <div class="vi-section-header">
+        <h2 class="vi-section-title">บทความทั้งหมด</h2>
+      </div>
+      {WIDGET_DOCUMENT module=news}
+    </div>
+  </section>
+
+  <!-- Gallery -->
+  <section class="vi-section vi-section-alt" data-block-type="widget-gallery" data-editor-id="block-gallery" data-editor-label="อัลบั้มภาพ">
+    <div class="container">
+      <div class="vi-section-header">
+        <h2 class="vi-section-title">อัลบั้มภาพ</h2>
+        <p class="vi-section-subtitle">ภาพบรรยากาศกิจกรรมต่าง ๆ</p>
+      </div>
+      {WIDGET_GALLERY module=gallery;count=4}
+    </div>
+  </section>
+
+  <!-- Board -->
+  <section class="vi-section" data-block-type="widget-board" data-editor-id="block-board" data-editor-label="เว็บบอร์ด">
+    <div class="container">
+      <div class="vi-section-header">
+        <h2 class="vi-section-title">เว็บบอร์ด</h2>
+        <p class="vi-section-subtitle">กระทู้ล่าสุดจากชุมชนของเรา</p>
+      </div>
+      {WIDGET_BOARD module=forum;limit=5}
+    </div>
+  </section>
+
+  <!-- Dark CTA -->
+  <section class="vi-section-dark" data-block-type="widget-facebook" data-editor-id="block-facebook" data-editor-label="Facebook">
+    <div class="container" style="text-align:center">
+      <h2 class="vi-section-title" style="color:#e9d5ff;margin-bottom:var(--space-4)">ติดตามเรา</h2>
+      <p class="vi-section-subtitle" style="color:#c4b5fd;margin-bottom:var(--space-8)">รับข่าวสารและอัปเดตใหม่ ๆ ก่อนใคร</p>
+      <div>{WIDGET_FACEBOOK}</div>
+    </div>
+  </section>
+
+  <section class="flex center" data-block-type="widget-tags" data-editor-id="block-tags" data-editor-label="แท็ก">{WIDGET_TAGS}</section>
+
+</div>

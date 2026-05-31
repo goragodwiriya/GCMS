@@ -1,19 +1,14 @@
 <?php
-/**
- * @filesource Kotchasan/HtmlTable.php
- *
- * @copyright 2016 Goragod.com
- * @license https://www.kotchasan.com/license/
- * @author Goragod Wiriya <admin@goragod.com>
- * @package Kotchasan
- */
 
 namespace Kotchasan;
 
 /**
- * HTML table class
+ * Kotchasan HtmlTable Class
  *
- * @see https://www.kotchasan.com/
+ * This class provides methods for creating and rendering HTML tables.
+ * It supports adding headers, footers, and rows with various attributes.
+ *
+ * @package Kotchasan
  */
 class HtmlTable
 {

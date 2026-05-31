@@ -1,19 +1,13 @@
 <?php
-/**
- * @filesource Kotchasan/Controller.php
- *
- * @copyright 2016 Goragod.com
- * @license https://www.kotchasan.com/license/
- * @author Goragod Wiriya <admin@goragod.com>
- * @package Kotchasan
- */
 
 namespace Kotchasan;
 
 /**
- * Controller base class
+ * Kotchasan Controller Class
  *
- * @see https://www.kotchasan.com/
+ * This class serves as a base controller for the Kotchasan framework.
+ *
+ * @package Kotchasan
  */
 class Controller extends \Kotchasan\KBase
 {
@@ -24,6 +18,6 @@ class Controller extends \Kotchasan\KBase
      */
     public static function create()
     {
-        return new static;
+        return new static();
     }
 }

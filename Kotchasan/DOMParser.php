@@ -1,19 +1,14 @@
 <?php
-/**
- * @filesource Kotchasan/DOMParser.php
- *
- * @copyright 2016 Goragod.com
- * @license https://www.kotchasan.com/license/
- * @author Goragod Wiriya <admin@goragod.com>
- * @package Kotchasan
- */
 
 namespace Kotchasan;
 
 /**
- * Class for DOM Parsing.
+ * Kotchasan DOMParser Class
  *
- * @see https://www.kotchasan.com/
+ * This class provides methods for parsing HTML code into a DOM structure.
+ * It supports basic HTML parsing and allows for manipulation of nodes.
+ *
+ * @package Kotchasan
  */
 class DOMParser
 {
@@ -48,7 +43,7 @@ class DOMParser
         if (strtolower($charset) != 'utf-8') {
             $html = iconv('utf-8', $charset, $html);
         }
-
+        // Split the HTML code into nodes.
         $node = null;
         foreach (preg_split('/<(.*)>/U', $html, -1, PREG_SPLIT_DELIM_CAPTURE) as $i => $e) {
             if ($e != '') {

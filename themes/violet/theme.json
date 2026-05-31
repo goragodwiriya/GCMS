@@ -1,0 +1,51 @@
+{
+  "name": "Violet Theme",
+  "version": "1.0.0",
+  "author": "GCMS Designer",
+  "author_url": "https://www.kotchasan.com",
+  "description": "Modern magazine/blog theme — Violet + Rose. Full-width 1-column layout, bold typography, colorful category badges.",
+  "screenshot": "screenshot.svg",
+  "license": "MIT",
+  "layouts": [
+    "main",
+    "full-width",
+    "blank"
+  ],
+  "components": [
+    "header",
+    "hero",
+    "content",
+    "footer",
+    "breadcrumb",
+    "pagination"
+  ],
+  "colors": {
+    "primary": "#7c3aed",
+    "primary_hover": "#6d28d9",
+    "primary_dark": "#4c1d95",
+    "primary_light": "#ede9fe",
+    "secondary": "#6b7280",
+    "accent": "#e11d48",
+    "background": "#faf5ff",
+    "surface": "#ffffff",
+    "text": "#0f0a1e",
+    "text_secondary": "#4b5563",
+    "border": "#ddd6fe",
+    "footer_bg": "#1e1b4b",
+    "footer_text": "#ddd6fe"
+  },
+  "settings": {
+    "show_sidebar": false,
+    "sidebar_position": "none",
+    "footer_columns": 3,
+    "show_breadcrumb": true,
+    "show_search": true,
+    "header_style": "sticky",
+    "hero_style": "gradient",
+    "layout": "single-column"
+  },
+  "designer": {
+    "compatible": true,
+    "editable": true
+  }
+}

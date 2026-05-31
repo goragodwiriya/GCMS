@@ -1,0 +1,138 @@
+/* GCMS Designer – Canvas Context Menu
+ * @filesource js/designer/styles/context-menu.css
+ */
+#gcms-ctx-menu {
+  display: none;
+  position: fixed;
+  z-index: 99998;
+  min-width: 10rem;
+  padding: .35rem 0;
+  background: var(--color-surface-bg, #fff);
+  border: 1px solid var(--color-border, #e2e8f0);
+  border-radius: .6rem;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .14), 0 2px 6px rgba(0, 0, 0, .08);
+  user-select: none;
+  font-size: .85rem;
+}
+#gcms-ctx-menu button {
+  display: flex;
+  align-items: center;
+  gap: .5em;
+  width: 100%;
+  padding: .45em 1em;
+  border: none;
+  background: transparent;
+  color: var(--color-text, #1e293b);
+  cursor: pointer;
+  text-align: left;
+  font-size: inherit;
+  line-height: 1.4;
+  transition: background .1s;
+}
+#gcms-ctx-menu button[disabled] {
+  opacity: .38;
+  cursor: not-allowed;
+}
+#gcms-ctx-menu button:not([disabled]):hover {
+  background: var(--color-surface-hover, rgba(0, 0, 0, .05));
+}
+#gcms-ctx-menu button.danger {
+  color: var(--color-danger, #dc2626);
+}
+#gcms-ctx-menu button.danger:not([disabled]):hover {
+  background: color-mix(in srgb, var(--color-danger, #dc2626) 8%, transparent);
+}
+#gcms-ctx-menu button::before {
+  font-size: 1em;
+  opacity: .72;
+  flex-shrink: 0;
+}
+.gcms-ctx-sep {
+  height: 1px;
+  margin: .3rem .5rem;
+  background: var(--color-border, #e2e8f0);
+}
+/* ── Edit-HTML modal ── */
+.gcms-html-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  background: rgba(0, 0, 0, .45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.gcms-html-modal-inner {
+  color: var(--dialog-text);
+  background-color: var(--dialog-bg);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--dialog-shadow);
+  width: min(92vw, 48rem);
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.gcms-html-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: .7rem 1rem;
+  border-bottom: 1px solid var(--color-border, #e2e8f0);
+  font-weight: 600;
+  font-size: .9rem;
+  flex-shrink: 0;
+}
+.gcms-html-modal-header button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: .2rem .3rem;
+  opacity: .6;
+  line-height: 1;
+}
+.gcms-html-modal-header button:hover {
+  opacity: 1;
+}
+.gcms-html-modal-textarea {
+  flex: 1;
+  resize: none;
+  border: none;
+  padding: 1rem;
+  font-family: 'Consolas', 'Monaco', monospace;
+  font-size: .8rem;
+  line-height: 1.65;
+  min-height: 22rem;
+  outline: none;
+  background: var(--color-surface-bg, #f8fafc);
+  color: var(--color-text, #1e293b);
+  overflow-y: auto;
+}
+.gcms-html-modal-footer {
+  display: flex;
+  gap: .5rem;
+  justify-content: flex-end;
+  padding: .7rem 1rem;
+  border-top: 1px solid var(--color-border, #e2e8f0);
+  flex-shrink: 0;
+}
+.gcms-html-modal-footer button {
+  padding: .45em 1.2em;
+  border-radius: .5rem;
+  border: 1px solid var(--color-border, #e2e8f0);
+  cursor: pointer;
+  font-size: .85rem;
+  background: var(--color-surface, #fff);
+  color: var(--color-text, #1e293b);
+}
+.gcms-html-modal-footer button.primary {
+  background: var(--color-primary, #2563eb);
+  color: #fff;
+  border-color: transparent;
+}
+.gcms-html-modal-footer button:hover:not(.primary) {
+  background: var(--color-surface-hover, rgba(0, 0, 0, .05));
+}
+.gcms-html-modal-footer button.primary:hover {
+  background: color-mix(in srgb, var(--color-primary, #2563eb) 85%, #000);
+}

@@ -1,21 +1,16 @@
 <?php
-/**
- * @filesource Kotchasan/Login.php
- *
- * @copyright 2016 Goragod.com
- * @license https://www.kotchasan.com/license/
- * @author Goragod Wiriya <admin@goragod.com>
- * @package Kotchasan
- */
 
 namespace Kotchasan;
 
 use Kotchasan\Http\Request;
 
 /**
- * This class is responsible for handling user login functionality.
+ * Kotchasan Login Class
  *
- * @see https://www.kotchasan.com/
+ * This class handles user login functionality, including login validation,
+ * session management, and user authentication.
+ *
+ * @package Kotchasan
  */
 class Login extends KBase
 {
@@ -28,7 +23,7 @@ class Login extends KBase
 
     /**
      * The name of the input field to be focused.
-     * Can be 'login_username' or 'login_password'.
+     * Can be 'username' or 'password'.
      *
      * @var string
      */
@@ -49,50 +44,49 @@ class Login extends KBase
     public static $login_params = [];
 
     /**
-     * Validates the login request and performs the login process.
+     * Creates a new instance of the Login class.
      *
      * @param Request $request The HTTP request object.
-     * @return static
+     *
+     * @return static A new instance of the Login class.
      */
     public static function create(Request $request)
     {
-        try {
-            $obj = new static;
-            self::$login_params['username'] = $request->post('login_username')->username();
+        $key = static::sessionKey();
 
-            if (empty(self::$login_params['username'])) {
-                if (isset($_SESSION['login'])) {
-                    if (isset($_SESSION['login']['username'])) {
-                        self::$login_params['username'] = Text::username($_SESSION['login']['username']);
-                    }
-                    if (isset($_SESSION['login']['password'])) {
-                        self::$login_params['password'] = Text::password($_SESSION['login']['password']);
-                    }
-                }
-                self::$from_submit = $request->post('login_username')->exists();
-            } elseif ($request->post('login_password')->exists()) {
-                self::$login_params['password'] = $request->post('login_password')->password();
-                self::$from_submit = true;
-            }
+        $obj = new static();
 
-            $action = $request->request('action')->toString();
-            if ($action === 'logout' && !self::$from_submit) {
-                $obj->logout($request);
-            } elseif ($action === 'forgot') {
-                $obj->forgot($request);
-            } else {
-                if (empty(self::$login_params['username']) && self::$from_submit) {
-                    self::$login_message = Language::get('Please fill up this form');
-                    self::$login_input = 'login_username';
-                } elseif (empty(self::$login_params['password']) && self::$from_submit) {
-                    self::$login_message = Language::get('Please fill up this form');
-                    self::$login_input = 'login_password';
-                } elseif (!self::$from_submit || (self::$from_submit && $request->isReferer())) {
-                    $obj->login($request, self::$login_params);
+        self::$login_params['username'] = $request->post('username')->username();
+
+        if (empty(self::$login_params['username'])) {
+            if (isset($_SESSION[$key])) {
+                if (isset($_SESSION[$key]->username)) {
+                    self::$login_params['username'] = Text::username($_SESSION[$key]->username);
                 }
+                // Password is intentionally not restored from the session — it is
+                // never persisted there (avoids storing/replaying credentials).
             }
-        } catch (InputItemException $e) {
-            self::$login_message = $e->getMessage();
+            self::$from_submit = $request->post('username')->exists();
+        } elseif ($request->post('password')->exists()) {
+            self::$login_params['password'] = $request->post('password')->password();
+            self::$from_submit = true;
+        }
+
+        $action = $request->request('action')->toString();
+        if ($action === 'logout' && !self::$from_submit) {
+            $obj->logout($request);
+        } elseif ($action === 'forgot') {
+            $obj->forgot($request);
+        } else {
+            if (empty(self::$login_params['username']) && self::$from_submit) {
+                self::$login_message = Language::get('Please fill up this form');
+                self::$login_input = 'username';
+            } elseif (empty(self::$login_params['password']) && self::$from_submit) {
+                self::$login_message = Language::get('Please fill up this form');
+                self::$login_input = 'password';
+            } elseif (!self::$from_submit || (self::$from_submit && $request->isReferer())) {
+                $obj->login($request, self::$login_params);
+            }
         }
 
         return $obj;
@@ -106,7 +100,8 @@ class Login extends KBase
      */
     public function logout(Request $request)
     {
-        unset($_SESSION['login']);
+        $key = static::sessionKey();
+        unset($_SESSION[$key]);
         self::$login_message = Language::get('Logout successful');
         self::$login_params = [];
     }
@@ -119,7 +114,8 @@ class Login extends KBase
      */
     public function forgot(Request $request)
     {
-        // Password recovery logic goes here
+        // Password recovery logic
+        // Implementation depends on your application's requirements
     }
 
     /**
@@ -132,66 +128,164 @@ class Login extends KBase
      */
     public function login(Request $request, $loginParams)
     {
+        $key = static::sessionKey();
+        $username = $loginParams['username'] ?? '';
+        $clientIp = $request->getClientIp();
+        $userAgent = (string) $request->server('HTTP_USER_AGENT', '');
+
+        // Brute-force protection (same DB-backed store as the API login path).
+        if (class_exists('\Gcms\LoginAttempt') && \Gcms\LoginAttempt::isLocked($username, $clientIp)) {
+            self::$login_input = 'username';
+            self::$login_message = Language::get('Too many failed login attempts. Please try again later.');
+            if (isset($_SESSION[$key])) {
+                unset($_SESSION[$key]);
+            }
+            return;
+        }
+
         // Check login against the database
         $login_result = $this->checkLogin($loginParams);
+
         if (is_array($login_result)) {
+            // Prevent session fixation: issue a fresh session ID on successful auth
+            if (session_status() === PHP_SESSION_ACTIVE) {
+                session_regenerate_id(true);
+            }
             // Save login session
-            $_SESSION['login'] = $login_result;
+            $_SESSION[$key] = $login_result;
+            // Successful login clears the failed-attempt counter for this user.
+            if (class_exists('\Gcms\LoginAttempt')) {
+                \Gcms\LoginAttempt::clear($username, $clientIp);
+            }
         } else {
+            // Login failed
             if (is_string($login_result)) {
                 // Error message
-                self::$login_input = self::$login_input == 'password' ? 'login_password' : 'login_username';
+                self::$login_input = self::$login_input === 'password' ? 'password' : 'username';
                 self::$login_message = $login_result;
             }
+            // Record the failed attempt for brute-force throttling.
+            if (class_exists('\Gcms\LoginAttempt')) {
+                \Gcms\LoginAttempt::record($username, $clientIp, $userAgent);
+            }
             // Logout: remove session and cookie
-            unset($_SESSION['login']);
+            if (isset($_SESSION[$key])) {
+                unset($_SESSION[$key]);
+            }
         }
     }
 
     /**
      * Validates the login credentials against the configured username and password.
+     * Override this method in your implementation to check against a database.
      *
      * @param array $loginParams The login parameters. e.g., array('username' => '', 'password' => '');
      *
-     * @return string|array Returns a string error message if login fails, or an array with login information.
+     * @return string|object Returns a string error message if login fails, or an object with login information.
      */
     public function checkLogin($loginParams)
     {
-        if ($loginParams['username'] !== self::$cfg->get('username')) {
-            self::$login_input = 'username';
-            return 'not a registered user';
-        } elseif ($loginParams['password'] !== self::$cfg->get('password')) {
-            self::$login_input = 'password';
-            return 'password incorrect';
+        $username = $loginParams['username'] ?? '';
+        $password = $loginParams['password'] ?? '';
+        $expectedUser = (string) self::$cfg->get('username');
+        $expectedPass = (string) self::$cfg->get('password');
+
+        // Verify the password in a timing-safe way. If the configured password
+        // is a password_hash() digest use password_verify(); otherwise compare
+        // plaintext with hash_equals (constant time) for backward compatibility.
+        if (preg_match('/^\$(2[aby]|argon2)/', $expectedPass)) {
+            $passwordOk = password_verify($password, $expectedPass);
+        } else {
+            $passwordOk = hash_equals($expectedPass, (string) $password);
         }
-        // Return the logged-in user information
-        return [
-            'username' => $loginParams['username'],
-            'password' => $loginParams['password'],
+        // Always evaluate both checks so the response time / message does not
+        // reveal which field was wrong (prevents username enumeration).
+        $userOk = hash_equals($expectedUser, (string) $username);
+
+        if (!$userOk || !$passwordOk) {
+            self::$login_input = 'username';
+            return 'Username or password is invalid';
+        }
+        // Return the logged-in user information (password is NOT persisted)
+        return (object) [
+            'username' => $username,
             // Status: Admin
             'status' => 1
         ];
     }
 
     /**
+     * Check permission
+     *
+     * @param string|array $permission
+     * @param object|null $login The login information.
+     * @param bool $checkAdmin Check if you are an admin or not. If you're an admin, you don't need to check your permissions and restore them immediately.
+     *
+     * @return object|null Returns the login information if the user has permission, or null otherwise.
+     */
+    public static function hasPermission($permission, $login = null, $checkAdmin = true)
+    {
+        $login = $login ?? self::isMember();
+
+        if (!$login) {
+            return null;
+        }
+
+        if ($checkAdmin && $login->status === 1) {
+            // Admin has all rights.
+            return $login;
+        } elseif (!empty($permission)) {
+            if (is_array($permission)) {
+                foreach ($permission as $item) {
+                    if (in_array($item, $login->permission)) {
+                        // Found rights
+                        return $login;
+                    }
+                }
+            } elseif (in_array($permission, $login->permission)) {
+                // Found rights
+                return $login;
+            }
+        }
+        // Permission not found
+        return null;
+    }
+
+    /**
+     * Check if the user is a super admin
+     *
+     * @param object|null $login The login information.
+     *
+     * @return object|null Returns the login information if the user is a super admin, or null otherwise.
+     */
+    public static function isSuperAdmin($login = null)
+    {
+        $login = $login ?? self::isMember();
+        return $login && $login->id === 1 ? $login : null;
+    }
+
+    /**
      * Checks if the user is an admin.
      *
-     * @return array|null Returns the login information if the user is an admin, or null otherwise.
+     * @param object|null $login The login information.
+     *
+     * @return object|null Returns the login information if the user is an admin, or null otherwise.
      */
-    public static function isAdmin()
+    public static function isAdmin($login = null)
     {
-        $login = self::isMember();
-        return isset($login['status']) && $login['status'] == 1 ? $login : null;
+        $login = $login ?? self::isMember();
+        return isset($login->status) && $login->status === 1 ? $login : null;
     }
 
     /**
      * Checks if the user is a member.
      *
-     * @return array|null Returns the login information if the user is a member, or null otherwise.
+     * @return object|null Returns the login information if the user is a member, or null otherwise.
      */
     public static function isMember()
     {
-        return empty($_SESSION['login']) ? null : $_SESSION['login'];
+        $key = static::sessionKey();
+        return empty($_SESSION[$key]) ? null : $_SESSION[$key];
     }
 
     /**
@@ -200,26 +294,49 @@ class Login extends KBase
      * If the login is empty or the status does not match the provided statuses,
      * null is returned. If the status matches, the login is returned.
      *
-     * @param array $login    The login information.
-     * @param mixed $statuses The allowed status(es) to check against.
+     * @param object $login    The login information.
+     * @param object $config    The module configuration.
+     * @param string|array $statuses The allowed status(es) to check against.
      *
-     * @return array|null The login information if the status matches, null otherwise.
+     * @return object|null The login information if the status matches, null otherwise.
      */
-    public static function checkStatus($login, $statuses)
+    public static function checkStatus($login, $config, $statuses)
     {
-        if (!empty($login)) {
-            if ($login['status'] == 1) {
-                // Admin
-                return $login;
-            } elseif (is_array($statuses)) {
-                if (in_array($login['status'], $statuses)) {
-                    return $login;
-                }
-            } elseif ($login['status'] == $statuses) {
+        // Return null when there is no login information
+        if (empty($login)) {
+            return null;
+        }
+        if ($login->status === 1) {
+            // Admin
+            return $login;
+        } elseif (is_array($config->$statuses)) {
+            if (in_array($login->status, $config->$statuses)) {
                 return $login;
             }
+        } elseif ($login->status === $config->$statuses) {
+            return $login;
         }
         // No privileges
         return null;
+    }
+
+    /**
+     * Session key used to store login information.
+     * Can be overridden by configuration (e.g. self::$cfg->session_key) or
+     * by subclasses overriding this method.
+     *
+     * @return string
+     */
+    public static function sessionKey()
+    {
+        if (isset(self::$cfg)) {
+            if (!empty(self::$cfg->session_key)) {
+                return (string) self::$cfg->session_key;
+            }
+            if (!empty(self::$cfg->session_prefix)) {
+                return (string) self::$cfg->session_prefix.'login';
+            }
+        }
+        return 'login';
     }
 }

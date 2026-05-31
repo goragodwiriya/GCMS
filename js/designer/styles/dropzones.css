@@ -1,0 +1,261 @@
+/* GCMS Designer – Drop Zones & Column Layout
+ * @filesource js/designer/styles/dropzones.css
+ */
+/* ── Drag ghost (pointer-drag) ── */
+.gcms-drag-ghost {
+    position: fixed;
+    pointer-events: none;
+    z-index: 99999;
+    padding: .35em .75em;
+    background: var(--color-primary, #2563eb);
+    color: #fff;
+    border-radius: .5rem;
+    font-size: .8rem;
+    font-weight: 600;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, .25);
+    white-space: nowrap;
+    user-select: none;
+    transform: rotate(-2deg);
+    opacity: .9;
+}
+/* ── Pick mode: dim the canvas, make zones the focal point ── */
+body.gcms-pick-mode {
+    cursor: crosshair !important;
+}
+body.gcms-pick-mode [data-editor-container] * {
+    pointer-events: none;
+}
+/* Section pick: between-block zones only */
+body.gcms-pick-mode.gcms-pick-type-section .gcms-drop-zone--between {
+    pointer-events: auto !important;
+    display: flex !important;
+    cursor: crosshair;
+    min-height: 3.5rem;
+    border-style: solid;
+    background: color-mix(in srgb, var(--color-primary, #2563eb) 10%, transparent);
+}
+body.gcms-pick-mode.gcms-pick-type-section .gcms-drop-zone--between:hover {
+    min-height: 4rem;
+    background: color-mix(in srgb, var(--color-primary, #2563eb) 22%, transparent) !important;
+    border-color: var(--color-primary, #2563eb);
+    border-style: solid !important;
+}
+body.gcms-pick-mode.gcms-pick-type-section .gcms-drop-zone--between .gcms-dz-label {
+    opacity: 1;
+    font-size: .85rem;
+}
+/* Element / widget pick: intra-zone dividers across all drop-zone containers */
+body.gcms-pick-mode.gcms-pick-type-element .gcms-intra-zone,
+body.gcms-pick-mode.gcms-pick-type-widget .gcms-intra-zone {
+    pointer-events: auto !important;
+    display: flex !important;
+    cursor: row-resize;
+    min-height: 1.25rem;
+    margin: .15rem 0;
+    border-width: 2px;
+    border-style: dashed;
+    border-color: var(--color-primary, #2563eb);
+    border-radius: .4rem;
+    background: color-mix(in srgb, var(--color-primary, #2563eb) 8%, transparent);
+}
+body.gcms-pick-mode.gcms-pick-type-element .gcms-intra-zone:hover,
+body.gcms-pick-mode.gcms-pick-type-widget .gcms-intra-zone:hover {
+    min-height: 2rem;
+    background: color-mix(in srgb, var(--color-primary, #2563eb) 20%, transparent) !important;
+    border-style: solid;
+}
+body.gcms-pick-mode.gcms-pick-type-element .gcms-intra-zone .gcms-dz-label,
+body.gcms-pick-mode.gcms-pick-type-widget .gcms-intra-zone .gcms-dz-label {
+    opacity: 1;
+    font-size: .7rem;
+}
+/* Pick mode dismiss hint bar */
+.gcms-pick-hint {
+    position: fixed;
+    bottom: 1rem;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 99990;
+    padding: .5em 1.25em;
+    background: var(--color-text, #1e293b);
+    color: #fff;
+    border-radius: 2rem;
+    font-size: .8rem;
+    font-weight: 500;
+    pointer-events: none;
+    opacity: 0;
+    animation: gcmsHintFade 4s ease forwards;
+}
+@keyframes gcmsHintFade {
+    0% {
+        opacity: 0;
+        transform: translateX(-50%) translateY(.5rem);
+    }
+    10% {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
+    80% {
+        opacity: 1;
+    }
+    100% {
+        opacity: 0;
+    }
+}
+/* ── Drop zones on canvas ── */
+.gcms-drop-zone {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    margin: .3rem 0;
+    min-height: 2.5rem;
+    border: 2px dashed var(--color-primary, #2563eb);
+    border-radius: .75rem;
+    background: color-mix(in srgb, var(--color-primary, #2563eb) 6%, transparent);
+    transition: background .15s, border-color .15s, min-height .15s;
+    cursor: copy;
+    position: relative;
+    z-index: 10;
+}
+/* Section drag: between-block zones only */
+body.gcms-insert-dragging.gcms-drag-type-section .gcms-drop-zone--between {
+    display: flex;
+}
+/* Element/widget drag: intra-zone dividers only */
+body.gcms-insert-dragging.gcms-drag-type-element .gcms-intra-zone,
+body.gcms-insert-dragging.gcms-drag-type-widget .gcms-intra-zone {
+    display: flex;
+}
+.gcms-dz-label {
+    font-size: .75rem;
+    color: var(--color-primary, #2563eb);
+    font-weight: 600;
+    opacity: .65;
+    pointer-events: none;
+    user-select: none;
+}
+.gcms-drop-zone--over {
+    background: color-mix(in srgb, var(--color-primary, #2563eb) 18%, transparent) !important;
+    border-style: solid;
+    min-height: 4rem;
+}
+.gcms-drop-zone--over .gcms-dz-label {
+    opacity: 1;
+}
+/* Column drop zones – always visible in edit mode */
+.gcms-drop-zone--column {
+    display: flex;
+    min-height: 3rem;
+    margin: .25rem;
+}
+body.gcms-insert-dragging .gcms-drop-zone--column {
+    min-height: 4rem;
+}
+/* ── Column container block ── */
+.gcms-columns {
+    display: grid;
+    gap: 1rem;
+}
+.gcms-columns-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.gcms-columns-3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.gcms-columns-4 {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.gcms-column {
+    display: flex;
+    flex-direction: column;
+    gap: .75rem;
+    min-height: 4rem;
+}
+body.gcms-home-edit-mode .gcms-column {
+    border: 1px dashed var(--color-border, #cbd5e1);
+    border-radius: .6rem;
+    padding: .5rem;
+    min-height: 5rem;
+}
+body.gcms-home-edit-mode .gcms-column:hover {
+    border-color: color-mix(in srgb, var(--color-primary, #2563eb) 50%, transparent);
+}
+/* Column items – hover delete button */
+body.gcms-home-edit-mode .gcms-col-item {
+    position: relative;
+}
+body.gcms-home-edit-mode .gcms-col-item > .gcms-col-item-remove {
+    position: absolute;
+    top: .25rem;
+    right: .25rem;
+    display: none;
+    padding: .2em .4em;
+    background: var(--color-danger, #dc2626);
+    color: #fff;
+    border: none;
+    border-radius: .4rem;
+    cursor: pointer;
+    font-size: .7rem;
+    line-height: 1;
+    z-index: 20;
+    opacity: .85;
+}
+body.gcms-home-edit-mode .gcms-col-item > .gcms-col-item-remove:hover {
+    opacity: 1;
+}
+body.gcms-home-edit-mode .gcms-col-item:hover > .gcms-col-item-remove {
+    display: block;
+}
+@media (max-width: 768px) {
+    .gcms-columns-2,
+    .gcms-columns-3,
+    .gcms-columns-4 {
+        grid-template-columns: 1fr;
+    }
+}
+/* ── Block-pick mode (click a block to target it for element/widget insertion) ── */
+body.gcms-block-pick-mode {
+    cursor: default !important;
+}
+body.gcms-block-pick-mode [data-editor-container] * {
+    pointer-events: none;
+}
+body.gcms-block-pick-mode .gcms-block-pick-target {
+    pointer-events: auto !important;
+    cursor: pointer !important;
+    outline: 3px dashed var(--color-primary, #2563eb) !important;
+    outline-offset: 4px;
+    transition: outline-color .15s, background .15s;
+}
+body.gcms-block-pick-mode .gcms-block-pick-target:hover {
+    outline-style: solid !important;
+    background: color-mix(in srgb, var(--color-primary, #2563eb) 8%, transparent) !important;
+}
+/* ── Intra-block pick mode (click a position divider inside a block) ── */
+body.gcms-intra-pick-mode {
+    cursor: default !important;
+}
+body.gcms-intra-pick-mode [data-editor-container] * {
+    pointer-events: none;
+}
+body.gcms-intra-pick-mode .gcms-intra-zone {
+    pointer-events: auto !important;
+    display: flex !important;
+    cursor: row-resize;
+    min-height: 1.25rem;
+    margin: .15rem 0;
+    border-width: 2px;
+    border-style: dashed;
+    border-color: var(--color-primary, #2563eb);
+    border-radius: .4rem;
+    background: color-mix(in srgb, var(--color-primary, #2563eb) 8%, transparent);
+}
+body.gcms-intra-pick-mode .gcms-intra-zone:hover {
+    min-height: 2rem;
+    background: color-mix(in srgb, var(--color-primary, #2563eb) 20%, transparent) !important;
+    border-style: solid;
+}
+body.gcms-intra-pick-mode .gcms-intra-zone .gcms-dz-label {
+    opacity: 1;
+    font-size: .7rem;
+}

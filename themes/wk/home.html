@@ -1,0 +1,77 @@
+<div class="homepage">
+  {WIDGET_TEXTLINKS_hero}
+
+  <div class="container">
+    <div class="sidebar-right sidebar-top-mobile gap home-layout">
+      <aside class="sidebar home-sidebar" id="home-sidebar">
+        <section class="home-panel__bg">
+          <div class="home-panel__header">
+            <h2>บุคลากร</h2>
+          </div>
+          {WIDGET_PERSONNEL cat=1;menu=1}
+        </section>
+
+        <section class="home-panel__bg">
+          <div class="home-panel__header">
+            <h2>ระบบงานออนไลน์</h2>
+          </div>
+          <nav class="sidemenu">
+            <ul>{WIDGET_TEXTLINKS_online}</ul>
+          </nav>
+        </section>
+
+        <section class="home-panel__bg">{WIDGET_FACEBOOK}</section>
+      </aside>
+
+      <div class="content home-content">
+        <section>{WIDGET_TEXTLINKS_banner}</section>
+
+        <section class="home-section__bg">{DETAIL}</section>
+
+        <section class="home-section__bg">
+          <div class="home-section__header">
+            <div>
+              <h2>ข่าวประชาสัมพันธ์</h2>
+            </div>
+          </div>
+          <div class="home-section__content">
+            {WIDGET_DOCUMENT module=news}
+          </div>
+        </section>
+
+        <section class="home-section__bg">
+          <div class="home-section__header">
+            <div>
+              <h2>ข่าวเด่น</h2>
+            </div>
+          </div>
+          <div class="home-section__content">
+            {WIDGET_DOCUMENT module=news;layout=highlight;limit=5}
+          </div>
+        </section>
+
+        <section class="home-section__bg">
+          <div class="home-section__header">
+            <div>
+              <h2>บทความล่าสุด</h2>
+            </div>
+          </div>
+          <div class="home-section__content">
+            {WIDGET_DOCUMENT module=news;layout=carousel;limit=6;mobile=1;tablet=2;desktop=3}
+          </div>
+        </section>
+
+        <section class="home-section__bg">
+          <div class="home-section__header">
+            <div>
+              <h2>กิจกรรม</h2>
+            </div>
+          </div>
+          <div class="home-section__content">
+            {WIDGET_GALLERY module=gallery;count=4}
+          </div>
+        </section>
+      </div>
+    </div>
+  </div>
+</div>

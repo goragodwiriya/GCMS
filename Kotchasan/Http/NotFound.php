@@ -1,12 +1,4 @@
 <?php
-/**
- * @filesource Kotchasan/Http/NotFound.php
- *
- * @copyright 2016 Goragod.com
- * @license https://www.kotchasan.com/license/
- * @author Goragod Wiriya <admin@goragod.com>
- * @package Kotchasan\Http
- */
 
 namespace Kotchasan\Http;
 
@@ -32,7 +24,7 @@ class NotFound extends Response
         parent::__construct($code);
         $response = $this->withProtocolVersion('1.0');
         if ($message) {
-            $response->withContent($message);
+            $response = $response->withContent($message);
         }
         $response->send();
         exit;

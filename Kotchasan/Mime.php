@@ -1,19 +1,14 @@
 <?php
-/**
- * @filesource Kotchasan/Mime.php
- *
- * @copyright 2016 Goragod.com
- * @license https://www.kotchasan.com/license/
- * @author Goragod Wiriya <admin@goragod.com>
- * @package Kotchasan
- */
 
 namespace Kotchasan;
 
 /**
- * Class responsible for handling MIME types and file extensions.
+ * Kotchasan Mime Class
  *
- * @see https://www.kotchasan.com/
+ * This class provides methods for handling MIME types,
+ * including retrieving MIME types by file extension and checking MIME type validity.
+ *
+ * @package Kotchasan
  */
 class Mime
 {

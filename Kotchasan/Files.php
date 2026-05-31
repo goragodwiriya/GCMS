@@ -1,22 +1,17 @@
 <?php
-/**
- * @filesource Kotchasan/Files.php
- *
- * @copyright 2016 Goragod.com
- * @license https://www.kotchasan.com/license/
- * @author Goragod Wiriya <admin@goragod.com>
- * @package Kotchasan
- */
 
 namespace Kotchasan;
 
 use Kotchasan\Http\UploadedFile;
 
 /**
- * Class Files
- * An array-based collection of files.
+ * Kotchasan File Class
  *
- * @see https://www.kotchasan.com/
+ * This class provides methods for file and directory management,
+ * including copying directories, getting file extensions, listing files,
+ * creating directories, and removing directories.
+ *
+ * @package Kotchasan
  */
 class Files implements \Iterator
 {
@@ -53,7 +48,7 @@ class Files implements \Iterator
     {
         $this->datas[] = [
             $name,
-            new UploadedFile($path, $originalName, $mimeType, $size, $error)
+            new UploadedFile($path, $size, $error, $originalName, $mimeType)
         ];
     }
 

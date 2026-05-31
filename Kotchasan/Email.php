@@ -1,19 +1,14 @@
 <?php
-/**
- * @filesource Kotchasan/Email.php
- *
- * @copyright 2016 Goragod.com
- * @license https://www.kotchasan.com/license/
- * @author Goragod Wiriya <admin@goragod.com>
- * @package Kotchasan
- */
 
 namespace Kotchasan;
 
 /**
- * Email class for sending emails.
+ * Kotchasan Email Class
  *
- * @see https://www.kotchasan.com/
+ * This class provides methods for sending emails with various configurations.
+ * It supports both PHP's mail function and PHPMailer for sending emails.
+ *
+ * @package Kotchasan
  */
 class Email extends \Kotchasan\KBase
 {
@@ -56,7 +51,7 @@ class Email extends \Kotchasan\KBase
      */
     public static function send($mailto, $replyto, $subject, $msg, $cc = '', $bcc = '')
     {
-        $obj = new static;
+        $obj = new static();
         $obj->error = [];
 
         $charset = empty(self::$cfg->email_charset) ? 'utf-8' : strtolower(self::$cfg->email_charset);

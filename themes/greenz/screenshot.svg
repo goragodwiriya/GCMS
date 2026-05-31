@@ -1,0 +1,115 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 500" width="800" height="500">
+  <defs>
+    <linearGradient id="heroGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#052e16"/>
+      <stop offset="50%" style="stop-color:#14532d"/>
+      <stop offset="100%" style="stop-color:#16a34a"/>
+    </linearGradient>
+    <linearGradient id="btnGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#16a34a"/>
+      <stop offset="100%" style="stop-color:#15803d"/>
+    </linearGradient>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#f9fffe"/>
+      <stop offset="100%" style="stop-color:#f0fdf4"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Page background -->
+  <rect width="800" height="500" fill="url(#bgGrad)"/>
+
+  <!-- Header -->
+  <rect width="800" height="54" fill="#ffffff"/>
+  <rect y="54" width="800" height="1" fill="#d1fae5"/>
+  <!-- Logo dot -->
+  <circle cx="36" cy="27" r="14" fill="#16a34a" opacity="0.15"/>
+  <circle cx="36" cy="27" r="8" fill="#16a34a"/>
+  <!-- Logo text -->
+  <rect x="56" y="18" width="80" height="10" rx="5" fill="#16a34a" opacity="0.85"/>
+  <rect x="56" y="32" width="52" height="6" rx="3" fill="#4b5563" opacity="0.4"/>
+  <!-- Nav items -->
+  <rect x="520" y="22" width="44" height="10" rx="5" fill="#374151" opacity="0.35"/>
+  <rect x="574" y="22" width="44" height="10" rx="5" fill="#374151" opacity="0.35"/>
+  <rect x="628" y="22" width="44" height="10" rx="5" fill="#374151" opacity="0.35"/>
+  <rect x="682" y="19" width="80" height="16" rx="8" fill="#16a34a" opacity="0.15"/>
+  <rect x="686" y="21" width="72" height="12" rx="6" fill="#16a34a"/>
+  <rect x="690" y="24" width="64" height="6" rx="3" fill="#ffffff" opacity="0.8"/>
+
+  <!-- Hero Section -->
+  <rect y="55" width="800" height="210" fill="url(#heroGrad)"/>
+  <!-- Decorative circles -->
+  <circle cx="680" cy="60" r="120" fill="#16a34a" opacity="0.12"/>
+  <circle cx="720" cy="130" r="80" fill="#059669" opacity="0.08"/>
+  <circle cx="80" cy="200" r="70" fill="#16a34a" opacity="0.08"/>
+  <!-- Badge -->
+  <rect x="340" y="85" width="120" height="20" rx="10" fill="rgba(255,255,255,0.12)"/>
+  <rect x="344" y="89" width="112" height="12" rx="6" fill="rgba(134,239,172,0.5)"/>
+  <!-- Hero title lines -->
+  <rect x="220" y="118" width="360" height="20" rx="5" fill="#ffffff" opacity="0.95"/>
+  <rect x="270" y="145" width="260" height="14" rx="5" fill="#86efac" opacity="0.8"/>
+  <!-- Hero subtitle -->
+  <rect x="200" y="176" width="400" height="8" rx="4" fill="rgba(255,255,255,0.5)"/>
+  <rect x="240" y="190" width="320" height="8" rx="4" fill="rgba(255,255,255,0.4)"/>
+  <!-- CTA Buttons -->
+  <rect x="260" y="216" width="110" height="34" rx="8" fill="#16a34a"/>
+  <rect x="262" y="218" width="106" height="30" rx="7" fill="#22c55e" opacity="0.6"/>
+  <rect x="275" y="228" width="80" height="8" rx="4" fill="#ffffff"/>
+  <rect x="382" y="216" width="110" height="34" rx="8" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="2"/>
+  <rect x="397" y="228" width="80" height="8" rx="4" fill="rgba(255,255,255,0.7)"/>
+
+  <!-- Section 1 — Latest Articles -->
+  <rect y="265" width="800" height="110" fill="#ffffff"/>
+  <!-- Section header -->
+  <rect x="360" y="282" width="80" height="10" rx="5" fill="#111827" opacity="0.8"/>
+  <rect x="380" y="296" width="40" height="3" rx="2" fill="#16a34a"/>
+  <!-- Cards -->
+  <rect x="40" y="315" width="220" height="50" rx="10" fill="#f9fffe" stroke="#d1fae5" stroke-width="1"/>
+  <rect x="290" y="315" width="220" height="50" rx="10" fill="#f9fffe" stroke="#d1fae5" stroke-width="1"/>
+  <rect x="540" y="315" width="220" height="50" rx="10" fill="#f9fffe" stroke="#d1fae5" stroke-width="1"/>
+  <!-- Card image blocks -->
+  <rect x="48" y="323" width="36" height="34" rx="6" fill="#d1fae5"/>
+  <rect x="52" y="327" width="28" height="26" rx="4" fill="#86efac" opacity="0.6"/>
+  <rect x="298" y="323" width="36" height="34" rx="6" fill="#d1fae5"/>
+  <rect x="302" y="327" width="28" height="26" rx="4" fill="#86efac" opacity="0.6"/>
+  <rect x="548" y="323" width="36" height="34" rx="6" fill="#d1fae5"/>
+  <rect x="552" y="327" width="28" height="26" rx="4" fill="#86efac" opacity="0.6"/>
+  <!-- Card text lines -->
+  <rect x="94" y="327" width="140" height="7" rx="3" fill="#374151" opacity="0.5"/>
+  <rect x="94" y="340" width="100" height="5" rx="2" fill="#6b7280" opacity="0.35"/>
+  <rect x="94" y="352" width="60" height="5" rx="2" fill="#16a34a" opacity="0.5"/>
+  <rect x="344" y="327" width="140" height="7" rx="3" fill="#374151" opacity="0.5"/>
+  <rect x="344" y="340" width="100" height="5" rx="2" fill="#6b7280" opacity="0.35"/>
+  <rect x="344" y="352" width="60" height="5" rx="2" fill="#16a34a" opacity="0.5"/>
+  <rect x="594" y="327" width="140" height="7" rx="3" fill="#374151" opacity="0.5"/>
+  <rect x="594" y="340" width="100" height="5" rx="2" fill="#6b7280" opacity="0.35"/>
+  <rect x="594" y="352" width="60" height="5" rx="2" fill="#16a34a" opacity="0.5"/>
+
+  <!-- Stats Bar -->
+  <rect y="375" width="800" height="72" fill="url(#btnGrad)"/>
+  <!-- Stat items -->
+  <rect x="100" y="394" width="60" height="14" rx="4" fill="#ffffff" opacity="0.9"/>
+  <rect x="110" y="412" width="40" height="6" rx="3" fill="rgba(255,255,255,0.5)"/>
+  <rect x="300" y="394" width="60" height="14" rx="4" fill="#ffffff" opacity="0.9"/>
+  <rect x="310" y="412" width="40" height="6" rx="3" fill="rgba(255,255,255,0.5)"/>
+  <rect x="500" y="394" width="60" height="14" rx="4" fill="#ffffff" opacity="0.9"/>
+  <rect x="510" y="412" width="40" height="6" rx="3" fill="rgba(255,255,255,0.5)"/>
+  <rect x="680" y="394" width="60" height="14" rx="4" fill="#ffffff" opacity="0.9"/>
+  <rect x="690" y="412" width="40" height="6" rx="3" fill="rgba(255,255,255,0.5)"/>
+
+  <!-- Footer -->
+  <rect y="447" width="800" height="53" fill="#052e16"/>
+  <!-- Footer cols -->
+  <rect x="40" y="460" width="80" height="6" rx="3" fill="#bbf7d0" opacity="0.5"/>
+  <rect x="40" y="472" width="60" height="4" rx="2" fill="#bbf7d0" opacity="0.25"/>
+  <rect x="40" y="480" width="50" height="4" rx="2" fill="#bbf7d0" opacity="0.25"/>
+  <rect x="280" y="460" width="80" height="6" rx="3" fill="#bbf7d0" opacity="0.5"/>
+  <rect x="280" y="472" width="60" height="4" rx="2" fill="#bbf7d0" opacity="0.25"/>
+  <rect x="540" y="460" width="80" height="6" rx="3" fill="#bbf7d0" opacity="0.5"/>
+  <rect x="540" y="472" width="60" height="4" rx="2" fill="#bbf7d0" opacity="0.25"/>
+  <!-- Footer bottom line -->
+  <rect x="200" y="488" width="400" height="4" rx="2" fill="#bbf7d0" opacity="0.15"/>
+
+  <!-- Theme label overlay -->
+  <rect x="20" y="455" width="94" height="22" rx="6" fill="#16a34a" opacity="0.9"/>
+  <text x="67" y="470" font-family="'Segoe UI', Arial, sans-serif" font-size="11" font-weight="700" fill="#ffffff" text-anchor="middle">GREENZ</text>
+</svg>

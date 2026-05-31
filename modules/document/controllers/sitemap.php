@@ -34,12 +34,8 @@ class Controller extends \Kotchasan\Controller
         foreach (\Document\Sitemap\Model::getStories($ids, $date) as $item) {
             $module = $modules[$item->module_id];
             $result[] = (object) [
-                'url' => \Document\Index\Controller::url($module, $item->alias, $item->id, false),
-                'date' => date('Y-m-d', $item->create_date)
-            ];
-            $result[] = (object) [
-                'url' => WEB_URL.'amp.php?module='.$module.'&amp;id='.$item->id,
-                'date' => date('Y-m-d', $item->create_date)
+                'url' => \Document\Index\Controller::url($module, $item->alias, $item->id),
+                'date' => date('Y-m-d', strtotime($item->published_date))
             ];
         }
         return $result;

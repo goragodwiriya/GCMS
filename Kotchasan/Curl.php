@@ -1,19 +1,13 @@
 <?php
-/**
- * @filesource Kotchasan/Curl.php
- *
- * @copyright 2016 Goragod.com
- * @license https://www.kotchasan.com/license/
- * @author Goragod Wiriya <admin@goragod.com>
- * @package Kotchasan
- */
 
 namespace Kotchasan;
 
 /**
- * Curl Class
+ * Kotchasan Curl Class
  *
- * @see https://www.kotchasan.com/
+ * This class provides methods for making HTTP requests using cURL.
+ *
+ * @package Kotchasan
  */
 class Curl
 {
@@ -63,10 +57,15 @@ class Curl
         ];
         $this->options = [
             CURLOPT_TIMEOUT => 30,
+            CURLOPT_CONNECTTIMEOUT => 10,
             CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_USERAGENT => 'Googlebot/2.1 (+http://www.google.com/bot.html)',
-            CURLOPT_SSL_VERIFYHOST => false,
-            CURLOPT_SSL_VERIFYPEER => false
+            CURLOPT_USERAGENT => 'KotchasanBot/1.0',
+            // Verify TLS certificates by default. Sending requests (with API
+            // keys / bearer tokens) over an unverified connection allows MITM
+            // credential theft. Use disableSslVerify() only for trusted local
+            // testing — never against public endpoints.
+            CURLOPT_SSL_VERIFYHOST => 2,
+            CURLOPT_SSL_VERIFYPEER => true
         ];
     }
 
@@ -289,6 +288,20 @@ class Curl
         foreach ($options as $key => $value) {
             $this->options[$key] = $value;
         }
+        return $this;
+    }
+
+    /**
+     * Explicitly disable TLS certificate verification.
+     * ONLY for trusted local endpoints (e.g. http://localhost Ollama/LM Studio)
+     * during development. Never use against public/remote endpoints.
+     *
+     * @return $this
+     */
+    public function disableSslVerify()
+    {
+        $this->options[CURLOPT_SSL_VERIFYHOST] = 0;
+        $this->options[CURLOPT_SSL_VERIFYPEER] = false;
         return $this;
     }
 

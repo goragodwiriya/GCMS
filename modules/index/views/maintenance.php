@@ -10,8 +10,6 @@
 
 namespace Index\Maintenance;
 
-use Kotchasan\Language;
-
 /**
  * intro page
  *
@@ -19,7 +17,7 @@ use Kotchasan\Language;
  *
  * @since 1.0
  */
-class View extends \Gcms\View
+class View extends \Web\View
 {
     /**
      * ส่งออกเป็น HTML
@@ -29,16 +27,19 @@ class View extends \Gcms\View
     public function renderHTML($template = null)
     {
         // maintenance detail
-        $template = ROOT_PATH.DATA_FOLDER.'maintenance.'.Language::name().'.php';
+        $template = ROOT_PATH.DATA_FOLDER.'maintenance.'.LANGUAGE.'.html';
         if (is_file($template)) {
             $template = trim(preg_replace('/<\?php exit([\(\);])?\?>/', '', file_get_contents($template)));
         } else {
             $template = '<p style="padding: 20px; text-align: center; font-weight: bold;">Website Temporarily Closed for Maintenance, Please try again in a few minutes.<br>ปิดปรับปรุงเว็บไซต์ชั่วคราวเพื่อบำรุงรักษา กรุณาลองใหม่ในอีกสักครู่</p>';
         }
+        $favicon = is_file(ROOT_PATH.DATA_FOLDER.'image/favicon.ico') ? WEB_URL.DATA_FOLDER.'image/favicon.ico' : WEB_URL.'favicon.ico';
         parent::setContents([
             '/{TITLE}/' => self::$cfg->web_title,
-            '/{CONTENT}/' => $template
+            '/{CONTENT}/' => $template,
+            '/{FAVICON}/' => $favicon,
+            '/{LANGUAGE}/' => LANGUAGE
         ]);
-        return parent::renderHTML(file_get_contents(ROOT_PATH.'skin/empty.html'));
+        return parent::renderHTML(file_get_contents(ROOT_PATH.'themes/empty.html'));
     }
 }

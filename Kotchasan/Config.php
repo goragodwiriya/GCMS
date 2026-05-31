@@ -1,20 +1,13 @@
 <?php
-/**
- * @filesource Kotchasan/Config.php
- *
- * @copyright 2016 Goragod.com
- * @license https://www.kotchasan.com/license/
- * @author Goragod Wiriya <admin@goragod.com>
- * @package Kotchasan
- */
 
 namespace Kotchasan;
 
 /**
- * Configuration class for loading and managing config settings.
- * This class is responsible for loading and managing configuration settings.
+ * Kotchasan Config Class
  *
- * @see https://www.kotchasan.com/
+ * This class provides configuration settings for the Kotchasan framework.
+ *
+ * @package Kotchasan
  */
 #[\AllowDynamicProperties]
 class Config
@@ -159,7 +152,7 @@ class Config
     public static function create()
     {
         if (null === self::$instance) {
-            self::$instance = new static;
+            self::$instance = new static();
         }
         return self::$instance;
     }

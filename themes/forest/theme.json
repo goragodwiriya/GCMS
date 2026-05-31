@@ -1,0 +1,77 @@
+{
+  "name": "Forest Theme",
+  "version": "1.0.0",
+  "author": "GCMS Designer",
+  "author_url": "https://www.kotchasan.com",
+  "description": "Theme ธรรมชาติสีเขียว — sidebar ขวา, โทนดิน-ป่า, รูปทรงออร์แกนิก",
+  "screenshot": "screenshot.svg",
+  "license": "MIT",
+  "layouts": [
+    {
+      "id": "main",
+      "name": "Main Layout",
+      "template": "index.html"
+    },
+    {
+      "id": "auth",
+      "name": "Auth Layout",
+      "template": "login.html"
+    },
+    {
+      "id": "blank",
+      "name": "Blank",
+      "template": "main.html"
+    },
+    {
+      "id": "full-width",
+      "name": "Full Width",
+      "template": "main.html"
+    }
+  ],
+  "components": [
+    {
+      "id": "header",
+      "name": "Header",
+      "template": "index.html#header"
+    },
+    {
+      "id": "footer",
+      "name": "Footer",
+      "template": "index.html#footer"
+    },
+    {
+      "id": "navbar",
+      "name": "Navigation",
+      "template": "index.html#nav"
+    },
+    {
+      "id": "sidebar",
+      "name": "Sidebar",
+      "template": "index.html#sidebar"
+    }
+  ],
+  "colors": {
+    "primary": "#166534",
+    "primary_hover": "#14532d",
+    "secondary": "#a16207",
+    "accent": "#4ade80",
+    "background": "#fefce8",
+    "surface": "#f0fdf4",
+    "text": "#14532d",
+    "text_secondary": "#365314",
+    "border": "#bbf7d0",
+    "footer_bg": "#14532d"
+  },
+  "settings": {
+    "show_sidebar": true,
+    "sidebar_position": "right",
+    "footer_columns": 3,
+    "sticky_header": true,
+    "hero_style": "wave",
+    "columns": 2
+  },
+  "designer": {
+    "compatible": true,
+    "editable": true
+  }
+}

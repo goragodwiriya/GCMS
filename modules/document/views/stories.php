@@ -2,142 +2,118 @@
 /**
  * @filesource modules/document/views/stories.php
  *
- * @copyright 2016 Goragod.com
+ * @copyright 2026 Goragod.com
  * @license https://www.kotchasan.com/license/
- *
- * @see https://www.kotchasan.com/
  */
 
 namespace Document\Stories;
 
-use Document\Index\Controller;
-use Gcms\Gcms;
-use Kotchasan\Grid;
-use Kotchasan\Http\Request;
 use Kotchasan\Template;
+use Kotchasan\Text;
+use Web\Gcms;
 
 /**
- * แสดงรายการบทความ
+ * Document Frontend Views
  *
  * @author Goragod Wiriya <admin@goragod.com>
  *
  * @since 1.0
  */
-class View extends \Gcms\View
+class View extends \Web\View
 {
     /**
-     * แสดงรายการบทความ
+     * Render article listing page
      *
-     * @param Request $request
-     * @param object  $index   ข้อมูลโมดูล
+     * @param object $index Module data
      *
      * @return object
      */
-    public function index(Request $request, $index)
+    public function render($index)
     {
-        // วันที่สำหรับเครื่องหมาย new
-        $valid_date = time() - $index->new_date;
-        // /document/listitem.html
-        $listitem = Grid::create('document', $index->module, 'listitem');
-        // รูปภาพ defalt
-        if (is_file(ROOT_PATH.DATA_FOLDER.'document/default_icon.png')) {
-            $default_icon = WEB_URL.DATA_FOLDER.'document/default_icon.png';
-        } elseif (isset($index->default_icon) && is_file(ROOT_PATH.$index->default_icon)) {
-            $default_icon = WEB_URL.$index->default_icon;
+        if (!empty($index->category_id) && count($index->category_id) === 1) {
+            $category = $index->categories->get('category', $index->category_id[0]);
+            if ($category) {
+                $index->topic = $category->topic;
+                $index->description = $category->detail;
+            }
+        }
+
+        if (Gcms::$menu->isHomeMenu($index->index_id)) {
+            $index->canonical = WEB_URL.'index.php';
         } else {
-            $default_icon = WEB_URL.'modules/document/img/default_icon.png';
-        }
-        // ลิสต์รายการ
-        foreach ($index->items as $item) {
-            if (!empty($item->picture) && is_file(ROOT_PATH.DATA_FOLDER.'document/'.$item->picture)) {
-                $thumb = WEB_URL.DATA_FOLDER.'document/'.$item->picture;
-            } elseif (!empty($index->icon) && is_file(ROOT_PATH.DATA_FOLDER.'document/'.$index->icon)) {
-                $thumb = WEB_URL.DATA_FOLDER.'document/'.$index->icon;
-            } else {
-                $thumb = $default_icon;
-            }
-            if ((int) $item->create_date > $valid_date && empty($item->comment_date)) {
-                $icon = ' new';
-            } elseif ((int) $item->last_update > $valid_date || (int) $item->comment_date > $valid_date) {
-                $icon = ' update';
-            } else {
-                $icon = '';
-            }
-            $listitem->add([
-                '/{ID}/' => $item->id,
-                '/{PICTURE}/' => $thumb,
-                '/{URL}/' => Controller::url($item->module, $item->alias, $item->id),
-                '/{TOPIC}/' => $item->topic,
-                '/{DATE}/' => $item->create_date,
-                '/{COMMENTS}/' => number_format($item->comments),
-                '/{VISITED}/' => number_format($item->visited),
-                '/{DETAIL}/' => $item->description,
-                '/{ICON}/' => $icon
-            ]);
-        }
-        if (isset($index->tag)) {
-            // breadcrumb ของ tags
-            $index->canonical = Gcms::createUrl('tag', $index->tag);
-            Gcms::$view->addBreadcrumb($index->canonical, $index->topic);
-        } elseif (isset($index->d)) {
-            // breadcrumb ของ calendar
-            $index->canonical = Gcms::createUrl('calendar', $index->alias);
-            Gcms::$view->addBreadcrumb($index->canonical, $index->topic);
-        } else {
-            // breadcrumb ของโมดูล
-            if (!empty($index->category_id) && is_array($index->category_id)) {
-                // แสดงหลายหมวด
-                $index->canonical = Gcms::createUrl($index->module, '', 0, 0, 'cat='.implode(',', $index->category_id));
-            } else {
-                // ไม่มีหมวด หรือ มีหมวดเดียว
-                $index->canonical = Gcms::createUrl($index->module);
-            }
-            if (!Gcms::$menu->isHome($index->index_id)) {
-                $menu = Gcms::$menu->findTopLevelMenu($index->index_id);
-                if ($menu) {
-                    // ใช้ข้อความจากเมนู
-                    Gcms::$view->addBreadcrumb($index->canonical, $menu->menu_text, $menu->menu_tooltip);
-                } else {
-                    // โมดูล
-                    Gcms::$view->addBreadcrumb($index->canonical, $index->topic);
-                }
-            } elseif (!empty($index->category_id) && is_array($index->category_id)) {
-                // โมดูล
-                Gcms::$view->addBreadcrumb($index->canonical, $index->topic);
-            }
-        }
-        if (!empty($index->category_id) && !is_array($index->category_id)) {
-            // หมวดหมู่เดียว แสดงตามหมวดหมู่ที่เลือก
-            $index->topic = $index->category;
-            $index->description = $index->category_description;
-            $index->canonical = Gcms::createUrl($index->module, '', $index->category_id);
-            // หมวดหมู่
+            $index->canonical = \Document\Index\Controller::url($index->module, $index->category_id);
             Gcms::$view->addBreadcrumb($index->canonical, $index->topic, $index->description);
         }
-        // current URL
+
+        // listitem.html
+        $listitem = Template::create($index->owner, $index->module, 'listitem');
+
+        // Picture of default module
+        if (!empty($index->config->default_icon) && file_exists(ROOT_PATH.$index->config->default_icon)) {
+            $default_icon = WEB_URL.$index->config->default_icon;
+        } else {
+            $default_icon = WEB_URL.'images/no-image.webp';
+        }
+
+        foreach ($index->items as $item) {
+            if (!empty($item->picture) && file_exists(ROOT_PATH.DATA_FOLDER.'document/'.$item->picture)) {
+                $image = WEB_URL.DATA_FOLDER.'document/'.$item->picture;
+            } else {
+                $image = $default_icon;
+            }
+
+            $url = \Document\Index\Controller::url($index->module, $item->alias, $item->id);
+
+            $cat = $index->categories->get('category', $item->category_id);
+
+            $listitem->add([
+                '/{URL}/' => $url,
+                '/{ID}/' => $item->id,
+                '/{TOPIC}/' => Text::htmlspecialchars($item->topic),
+                '/{IMAGE}/' => $image,
+                '/{DESCRIPTION}/' => Text::htmlspecialchars($item->description),
+                '/{DATE}/' => $item->published_date,
+                '/{CATEGORY}/' => $cat ? Text::htmlspecialchars($cat->topic) : '',
+                '/{CATEGORY_ID}/' => $item->category_id
+            ]);
+        }
+
+        // list.html template
+        $template = Template::create($index->owner, $index->module, 'list');
+
         $uri = \Kotchasan\Http\Uri::createFromUri($index->canonical);
-        // list.html หรือ empty.html ถ้าไม่มีข้อมูล
-        $template = Template::create('document', $index->module, $listitem->hasItem() ? 'list' : 'empty');
+
+        // Build category filter links
+        $catLinks = '';
+        if (empty($index->config->category_display)) {
+            $url = \Document\Index\Controller::url($index->module);
+            $catLinks .= '<a href="'.$url.'" class="cat-link'.(empty($index->category_id) ? ' active' : '').'">{LNG_All}</a>';
+            foreach ($index->categories->all('category') as $cat => $text) {
+                $active = in_array($cat, $index->category_id) ? ' active' : '';
+                $url = \Document\Index\Controller::url($index->module, $cat);
+                $catLinks .= '<a href="'.$url.'" class="cat-link'.$active.'">'.Text::htmlspecialchars($text->topic).'</a>';
+            }
+        }
+
+        if ($listitem->hasItem()) {
+            $list = $listitem->render();
+        } else {
+            $list = '<div class="list-empty"><div class="list-empty-icon icon-file"></div><h3>{LNG_No articles found}</h3></div>';
+        }
+
         $template->add([
-            '/{TOPIC}/' => $index->topic,
-            '/{DETAIL}/' => $index->detail,
-            '/{LIST}/' => $listitem->render(),
-            '/{COLS}/' => $index->cols,
-            '/{STYLE}/' => empty($index->style) ? 'iconview' : $index->style,
-            '/{SPLITPAGE}/' => $uri->pagination($index->totalpage, $index->page),
+            '/{LIST}/' => $list,
+            '/{PAGINATION}/' => $uri->pagination($index->total_pages, $index->page),
+            '/{TOPIC}/' => Text::htmlspecialchars($index->topic),
+            '/{DESCRIPTION}/' => Text::htmlspecialchars($index->description),
             '/{MODULE}/' => $index->module,
-            '/{CATID}/' => empty($index->category_id) ? 0 : (is_array($index->category_id) ? implode(',', $index->category_id) : $index->category_id)
+            '/{MODULE_ID}/' => (int) $index->module_id,
+            '/{CATEGORY_LINKS}/' => $catLinks,
+            '/{COLS}/' => self::columnsToGridSize($index->config->cols)
         ]);
-        // JSON-LD (Index)
-        Gcms::$view->setJsonLd(\Index\Jsonld\View::webpage($index));
-        // คืนค่า
-        return (object) [
-            'canonical' => $index->canonical,
-            'module' => $index->module,
-            'topic' => $index->topic,
-            'description' => $index->description,
-            'keywords' => $index->keywords,
-            'detail' => $template->render()
-        ];
+
+        $index->detail = $template->render();
+
+        return $index;
     }
 }

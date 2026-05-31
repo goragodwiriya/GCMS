@@ -1,0 +1,162 @@
+<aside data-component="sidebar"></aside>
+<div class="main-content">
+  <div>
+    <header data-component="topbar"></header>
+    <main class="content">
+      <div class="card-groups">
+        <header>
+          <div>
+            <h1 class="icon-ads" data-text="id ? '{LNG_Edit} {LNG_Text Link}' : '{LNG_Create} {LNG_Text Link}'"></h1>
+            <p data-i18n>Manage text links</p>
+          </div>
+        </header>
+
+        <div class="content-body">
+          <!-- API Settings -->
+          <form data-form="textlink" data-validate="true" data-reset="false" action="../api/index/widgets/save?widget=textlinks" method="post" data-ajax-submit="true"
+                data-load-query-params="true" data-load-api="../api/index/widgets/get?widget=textlinks" data-on-load="initWidgetTextlink" autocomplete="off">
+            <fieldset>
+              <legend class="icon-cog" data-i18n>Settings</legend>
+
+              <div>
+                <label for="name" data-i18n>Name</label>
+                <em id="name_demo">{WIDGET_TEXTLINKS}</em>
+                <span class="form-control icon-edit">
+                  <input type="text" id="name" name="name" data-attr="value:name">
+                </span>
+                <div class="comment" id="result_name" data-i18n>
+                  Enter the name of Textlink english lowercase letters and numbers. Used for grouping similar position.
+                </div>
+              </div>
+
+              <div>
+                <label for="description" data-i18n>Description</label>
+                <span class="form-control icon-edit">
+                  <input type="text" id="description" name="description" placeholder="{DESCRIPTION}" data-attr="value:description">
+                </span>
+                <div class="comment" id="result_description" data-i18n>
+                  Notes or short description of the link
+                </div>
+              </div>
+
+              <div>
+                <label for="type" data-i18n>Type</label>
+                <span class="form-control icon-menus">
+                  <select id="type" name="type" placeholder="Type" data-attr="value:type" data-options-key="type">
+                    <option value="custom" data-i18n>Enter custom code, such as advertising.</option>
+                    <option value="text" data-i18n>Link text</option>
+                    <option value="menu" data-i18n>Link text, such as Menu</option>
+                    <option value="image" data-i18n>Image Banner, show all</option>
+                    <option value="banner" data-i18n>Image Banner, show theme one by one loop</option>
+                    <option value="hero" data-i18n>Hero Section, Image with site title and description</option>
+                    <option value="slideshow" data-i18n>Banner Slideshow</option>
+                  </select>
+                </span>
+                <div class="comment" id="result_type" data-i18n>
+                  Select the type of link you want, or select the top entry . If you want to link this on their own , such as Adsense.
+                </div>
+              </div>
+
+              <div>
+                <label for="template" data-i18n>Template</label>
+                <span class="form-control icon-detail">
+                  <textarea id="template" name="template" placeholder="<HTML>" rows="value:template"></textarea>
+                </span>
+                <div class="comment" id="result_template" data-i18n>
+                  Fill HTML code for this link You can choose to enter the code from another source , such as Adsense code or description of the links below.
+                </div>
+              </div>
+            </fieldset>
+
+            <fieldset>
+              <legend class="icon-info" data-i18n>Details</legend>
+
+              <div>
+                <label for="text" data-i18n>Text</label>
+                <span class="form-control icon-edit">
+                  <input type="text" id="text" name="text" placeholder="{TITLE}" data-attr="value:text">
+                </span>
+                <div class="comment" id="result_text" data-i18n>
+                  Message on the link can be used to force &lt;br&gt; a new text line
+                </div>
+              </div>
+
+              <div>
+                <label for="url" data-i18n>URL</label>
+                <span class="form-control icon-link">
+                  <input type="url" id="url" name="url" placeholder="https://" data-attr="value:url">
+                </span>
+                <div class="comment" id="result_url" data-i18n>
+                  Links for this item, which will open this page when click on it
+                </div>
+              </div>
+
+              <div>
+                <label for="target" data-i18n>Open Link In</label>
+                <span class="form-control icon-forward">
+                  <select id="target" name="target" data-attr="value:target">
+                    <option value="" data-i18n>Open link in same page (default)</option>
+                    <option value="_blank" data-i18n>Open link in new page (_blank)</option>
+                  </select>
+                </span>
+                <div class="comment" id="result_target" data-i18n>
+                  Determine how to turn the page when a link is clicked
+                </div>
+              </div>
+
+              <div>
+                <label for="logo" data-i18n>Browse</label>
+                <span class="form-control icon-image">
+                  <input type="file" id="logo" name="logo" data-files="logo" data-preview="true" data-allow-remove-existing="true"
+                         data-action-url="../api/index/widgets/remove?widget=textlinks&type=logo" data-file-reference="url" accept="image/*">
+                </span>
+                <div class="comment" id="result_logo" data-i18n>
+                  {LNG_Browse image uploaded, type} jpg, jpeg, png, webp
+                </div>
+              </div>
+            </fieldset>
+
+            <fieldset>
+              <legend class="icon-visited" data-i18n>Publish this item</legend>
+
+              <div>
+                <input type="checkbox" class="switch" id="dateless" name="dateless" value="1" data-attr="check:dateless">
+                <label for="dateless" data-i18n>Dateless</label>
+              </div>
+
+              <div>
+                <div class="form-group">
+                  <div>
+                    <label for="publish_start" data-i18n>Start date</label>
+                    <span class="form-control icon-calendar">
+                      <input type="date" id="publish_start" name="publish_start" data-attr="value:publish_start">
+                    </span>
+                  </div>
+
+                  <div>
+                    <label for="publish_end" data-i18n>End date</label>
+                    <span class="form-control icon-calendar">
+                      <input type="date" id="publish_end" name="publish_end" data-attr="value:publish_end">
+                    </span>
+                  </div>
+                </div>
+                <div class="comment" id="result_publish_start" data-i18n>
+                  The date of the start and end of the link. (Links are performed within a given time automatically.)
+                </div>
+              </div>
+            </fieldset>
+
+            <!-- Submit Button -->
+            <fieldset class="submit">
+              <button type="submit" class="btn btn-primary icon-save" data-i18n>Save</button>
+              <input type="hidden" name="id" data-attr="value:id">
+              <input type="hidden" id="styles" data-attr="value:styles">
+            </fieldset>
+          </form>
+        </div>
+      </div>
+    </main>
+  </div>
+  <footer class="footer">
+    <p class="center">&copy; 2026 GCMS - Powered by <a href="https://nowjs.net">Now.js</a></p>
+  </footer>

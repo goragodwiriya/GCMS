@@ -10,8 +10,6 @@
 
 namespace Index\Intro;
 
-use Kotchasan\Language;
-
 /**
  * intro page
  *
@@ -19,7 +17,7 @@ use Kotchasan\Language;
  *
  * @since 1.0
  */
-class View extends \Gcms\View
+class View extends \Web\View
 {
     /**
      * ส่งออกเป็น HTML
@@ -29,16 +27,19 @@ class View extends \Gcms\View
     public function renderHTML($template = null)
     {
         // intro detail
-        $template = ROOT_PATH.DATA_FOLDER.'intro.'.Language::name().'.php';
+        $template = ROOT_PATH.DATA_FOLDER.'intro.'.LANGUAGE.'.html';
         if (is_file($template)) {
-            $template = trim(preg_replace('/<\?php exit([\(\);])?\?>/', '', file_get_contents($template)));
+            $template = trim(preg_replace(['/<\?php exit([\(\);])?\?>/', '/&\#x007B;/', '/&\#x007D;/'], ['', '{', '}'], file_get_contents($template)));
         } else {
             $template = '<p style="padding: 20px; text-align: center; font-weight: bold;"><a href="index.php">Welcome<br>ยินดีต้อนรับ</a></p>';
         }
+        $favicon = is_file(ROOT_PATH.DATA_FOLDER.'image/favicon.ico') ? WEB_URL.DATA_FOLDER.'image/favicon.ico' : WEB_URL.'favicon.ico';
         parent::setContents([
             '/{TITLE}/' => self::$cfg->web_title,
-            '/{CONTENT}/' => $template
+            '/{CONTENT}/' => $template,
+            '/{FAVICON}/' => $favicon,
+            '/{LANGUAGE}/' => LANGUAGE
         ]);
-        return parent::renderHTML(file_get_contents(ROOT_PATH.'skin/empty.html'));
+        return parent::renderHTML(file_get_contents(ROOT_PATH.'themes/empty.html'));
     }
 }

@@ -11,13 +11,13 @@
 namespace Index\Login;
 
 /**
- * Controller หลัก สำหรับแสดง frontend ของ GCMS
+ * สำหรับแสดงกรอบ Login
  *
  * @author Goragod Wiriya <admin@goragod.com>
  *
  * @since 1.0
  */
-class Controller extends \Kotchasan\Controller
+class Controller extends \Web\Controller
 {
     /**
      * แสดงผลกรอบ login
@@ -30,9 +30,9 @@ class Controller extends \Kotchasan\Controller
     {
         // ฟอร์ม
         if ($login) {
-            return createClass('Index\Login\View')->member($login);
+            return \Index\Login\View::create()->member($login);
         } else {
-            return createClass('Index\Login\View')->login();
+            return \Index\Login\View::create()->login();
         }
     }
 }

@@ -2,162 +2,111 @@
 /**
  * @filesource modules/document/models/stories.php
  *
- * @copyright 2016 Goragod.com
+ * @copyright 2026 Goragod.com
  * @license https://www.kotchasan.com/license/
- *
- * @see https://www.kotchasan.com/
  */
 
 namespace Document\Stories;
 
-use Kotchasan\Date;
-use Kotchasan\Http\Request;
-use Kotchasan\Language;
-
 /**
- * ลิสต์รายการ บทความ
+ * Document Lists Model
+ *
+ * Used by frontend pagination and widget
  *
  * @author Goragod Wiriya <admin@goragod.com>
  *
  * @since 1.0
  */
-class Model extends \Kotchasan\Model
+class Model extends \Kotchasan\KBase
 {
     /**
-     * ลิสต์รายการ บทความ
-     *
-     * @param Request $request
-     * @param object  $index
-     *
-     * @return object
+     * @var mixed
      */
-    public static function stories(Request $request, $index)
-    {
-        if (isset($index->module_id)) {
-            $where = [['D.module_id', (int) $index->module_id]];
-            if (!empty($index->category_id)) {
-                $where[] = ['I.category_id', is_array($index->category_id) ? $index->category_id : (int) $index->category_id];
-            }
-            $where[] = ['D.language', [Language::name(), '']];
-            // คืนค่า
-            return self::execute($request, $index, $where);
-        }
-        return null;
-    }
+    private $instance = null;
 
     /**
-     * ลิสต์รายการบทความตาม tag
+     * Create a new instance with params
      *
-     * @param Request $request
-     * @param object  $index
+     * @param object $index
      *
-     * @return object
+     * @return static
      */
-    public static function tags(Request $request, $index)
+    public static function create($index)
     {
-        // query
+        $obj = new static();
+
         $where = [
-            ['D.language', [Language::name(), '']],
-            ['D.relate', 'LIKE', '%'.$index->tag.'%']
+            ['I.module_id', $index->module_id],
+            ['I.index', 0],
+            ['I.published', 1],
+            ['I.published_date', '<=', date('Y-m-d')],
+            ['D.language', ['', LANGUAGE]]
         ];
-        // คืนค่า
-        return self::execute($request, $index, $where);
+        if (!empty($index->category_id)) {
+            $where[] = ['I.category_id', $index->category_id];
+        }
+
+        $query = \Kotchasan\Model::createQuery()
+            ->from('index I')
+            ->join('index_detail D', [['D.id', 'I.id'], ['D.module_id', 'I.module_id']])
+            ->where($where)
+            ->cacheOn();
+
+        $obj->instance = $query;
+
+        return $obj;
     }
 
     /**
-     * ลิสต์รายการบทความตามวันที่
+     * Count total
      *
-     * @param Request $request
-     * @param object  $index
-     *
-     * @return object
+     * @return int
      */
-    public static function calendar(Request $request, $index)
+    public function count(): int
     {
-        if (preg_match('/^([0-3]?[0-9])[\-|\s]([0-1]?[0-9])[\-|\s]([0-9]{4,4})$/', $index->alias, $ds)) {
-            // วันที่
-            $selday = mktime(0, 0, 0, $ds[2], $ds[1], (int) $ds[3]);
-            // แปลงวันที่จากปฏิทินเป็นวันที่ของ SQL
-            $index->d = date('Y-m-d', $selday);
-            // query
-            $where = [
-                ['D.language', [Language::name(), '']],
-                ['I.create_date', '>=', $selday],
-                ['I.create_date', '<=', $selday + 86400]
-            ];
-            // คืนค่า
-            return self::execute($request, $index, $where);
-        }
-        return null;
+        $query = clone $this->instance;
+        $row = $query->selectCount()->first();
+        return $row ? (int) $row->count : 0;
     }
 
     /**
-     * Query
+     * Paginate articles
      *
-     * @param Request $request
-     * @param object  $index
-     * @param array   $where
+     * @param int $page
+     * @param int $limit
      *
-     * @return object
+     * @return array Pagination info + items
      */
-    private static function execute(Request $request, $index, $where)
+    public function paginate($page, $limit)
     {
-        // Model
-        $model = new static;
-        // query
-        $query = $model->db()->createQuery()
-            ->from('index_detail D')
-            ->join('modules M', 'INNER', ['M.id', 'D.module_id'])
-            ->join('index I', 'INNER', [['I.id', 'D.id'], ['I.module_id', 'D.module_id'], ['I.index', 0], ['I.published', 1], ['I.published_date', '<=', date('Y-m-d')]])
-            ->where($where);
-        // จำนวน
-        $index->total = $query->cacheOn()->count();
-        // ข้อมูลแบ่งหน้า
-        if (empty($index->rows)) {
-            $index->rows = 20;
-        }
-        if (empty($index->cols)) {
-            $index->cols = 1;
-        }
-        $list_per_page = $index->rows * $index->cols;
-        $index->page = $request->request('page')->toInt();
-        $index->totalpage = ceil($index->total / $list_per_page);
-        $index->page = max(1, ($index->page > $index->totalpage ? $index->totalpage : $index->page));
-        $index->start = $list_per_page * ($index->page - 1);
-        // query (sort, split)
-        $select = [
-            'I.id',
-            'D.topic',
-            'I.alias',
-            'D.description',
-            'I.last_update',
-            'I.create_date',
-            'I.comment_date',
-            'I.visited',
-            'I.comments',
-            'I.picture',
-            'I.member_id',
-            'U.status',
-            'U.displayname',
-            'U.email',
-            'M.module'
+        $total = $this->count();
+        $total_pages = $limit > 0 ? (int) ceil($total / $limit) : 1;
+        $page = max(1, min($page, max(1, $total_pages)));
+        $offset = ($page - 1) * $limit;
+
+        $query = clone $this->instance;
+        $items = $query
+            ->select(
+                'I.id',
+                'D.topic',
+                'D.description',
+                'I.alias',
+                'I.picture',
+                'I.published_date',
+                'I.created_at',
+                'I.visited',
+                'I.category_id'
+            )
+            ->orderBy('I.published_date', 'DESC')
+            ->orderBy('I.id', 'DESC')
+            ->limit($limit, $offset)
+            ->fetchAll();
+
+        return [
+            'page' => $page,
+            'total_pages' => $total_pages,
+            'total' => $total,
+            'items' => $items
         ];
-        // เรียงลำดับ
-        $sorts = [
-            ['I.last_update DESC', 'I.id DESC'],
-            ['I.create_date DESC', 'I.id DESC'],
-            ['I.published_date DESC', 'I.last_update DESC'],
-            ['I.id DESC']
-        ];
-        if (empty($index->sort) || !isset($sorts[$index->sort])) {
-            $index->sort = 0;
-        }
-        $query->select($select)
-            ->join('user U', 'LEFT', ['U.id', 'I.member_id'])
-            ->order(isset($sorts[$index->sort]) ? $sorts[$index->sort] : $sorts[0])
-            ->limit($list_per_page, $index->start);
-        $index->items = $query->cacheOn()->execute();
-        // คืนค่า
-        return $index;
     }
 }

@@ -22,19 +22,17 @@ class Controller extends \Kotchasan\Controller
     /**
      * แสดงผล sitemap.xml
      *
-     * @param array  $ids     แอเรย์ของ module_id
-     * @param array  $modules แอเรย์ของ module ที่ติดตั้งแล้ว
-     * @param string $date    วันที่วันนี้
+     * @param string $cdate วันที่แก้ไขล่าสุด
      *
      * @return array
      */
-    public function init($ids, $modules, $date)
+    public function init($cdate)
     {
         $result = [];
-        foreach (\Gallery\Sitemap\Model::getAll($ids) as $item) {
+        foreach (\Gallery\Lists\Model::create()->sitemap() as $item) {
             $result[] = (object) [
-                'url' => \Gallery\Index\Controller::url($modules[$item->module_id], $item->id),
-                'date' => date('Y-m-d', $item->last_update)
+                'url' => \Gallery\Index\Controller::url('gallery', $item->id),
+                'date' => date('Y-m-d', strtotime($item->created_at))
             ];
         }
         return $result;

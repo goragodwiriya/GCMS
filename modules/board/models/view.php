@@ -2,19 +2,14 @@
 /**
  * @filesource modules/board/models/view.php
  *
- * @copyright 2016 Goragod.com
+ * @copyright 2026 Goragod.com
  * @license https://www.kotchasan.com/license/
- *
- * @see https://www.kotchasan.com/
  */
 
 namespace Board\View;
 
-use Kotchasan\Database\Sql;
-use Kotchasan\Http\Request;
-
 /**
- * อ่านข้อมูลโมดูล
+ * Board Topic Detail Model — Frontend single topic with replies
  *
  * @author Goragod Wiriya <admin@goragod.com>
  *
@@ -23,60 +18,87 @@ use Kotchasan\Http\Request;
 class Model extends \Kotchasan\Model
 {
     /**
-     * อ่านกระทู้ที่เลือก
+     * Get a single topic with its replies for frontend display
+     * Also increments visited counter
      *
-     * @param object $index ข้อมูลที่ส่งมา
+     * @param object $index Module data (mutated in place)
      *
-     * @return object ข้อมูล object ไม่พบคืนค่า null
+     * @return object|null
      */
-    public static function get(Request $request, $index)
+    public static function get($index)
     {
-        // model
-        $model = new static;
-        // select
-        $fields = [
-            'I.*',
-            'U.status',
-            'U.id member_id',
-            'C.config',
-            'C.topic category',
-            'C.detail cat_tooltip',
-            Sql::create("(CASE WHEN ISNULL(U.`id`) THEN (CASE WHEN I.`sender`='' THEN I.`email` ELSE I.`sender` END) WHEN U.`displayname`='' THEN U.`email` ELSE U.`displayname` END) AS `name`")
-        ];
-        $query = $model->db()->createQuery()
-            ->from('board_q I')
-            ->join('user U', 'LEFT', ['U.id', 'I.member_id'])
-            ->join('category C', 'LEFT', [['C.category_id', 'I.category_id'], ['C.module_id', 'I.module_id']])
-            ->where(['I.id', $index->id])
-            ->toArray();
-        if (!$request->request('visited')->exists()) {
-            $query->cacheOn(false);
+        $query = static::createQuery()
+            ->select(
+                'Q.id',
+                'Q.module_id',
+                'Q.category_id',
+                'Q.topic',
+                'Q.detail',
+                'Q.published',
+                'Q.pin',
+                'Q.locked',
+                'U.name sender',
+                'Q.member_id',
+                'Q.created_at',
+                'Q.updated_at',
+                'Q.visited',
+                'Q.comments',
+                'C.topic AS category_name'
+            )
+            ->from('board_q Q')
+            ->join('user U', ['U.id', 'Q.member_id'], 'LEFT')
+            ->join('category C', [['C.category_id', 'Q.category_id'], ['C.module_id', 'Q.module_id'], ['C.type', "category"]], 'LEFT')
+            ->where([
+                ['Q.id', $index->id],
+                ['Q.module_id', $index->module_id],
+                ['Q.published', 1]
+            ])
+            ->cacheOn(false);
+        $result = $query->first();
+
+        if (!$result) {
+            return null;
         }
-        $result = $query->first($fields);
-        if ($result) {
-            // อัปเดตการเยี่ยมชม
-            ++$result['visited'];
-            $model->db()->update($model->getTableName('board_q'), $result['id'], ['visited' => $result['visited']]);
-            $model->db()->cacheSave([$result]);
-            // อัปเดตตัวแปร
-            foreach ($result as $key => $value) {
-                switch ($key) {
-                    case 'config':
-                        $config = @unserialize($value);
-                        if (is_array($config)) {
-                            foreach ($config as $k => $v) {
-                                $index->$k = $v;
-                            }
-                        }
-                        break;
-                    default:
-                        $index->$key = $value;
-                        break;
-                }
-            }
-            // คืนค่าข้อมูลบทความ
-            return $index;
+
+        $result->visited++; // Increment visited count for cache
+        $query->saveCache($result);
+
+        // Restore stored entities
+        $result->detail = str_replace(
+            ['&#x007B;', '&#x007D;', '&#92;', '{WEBURL}'],
+            ['{', '}', '\\', WEB_URL],
+            $result->detail
+        );
+        $categories = json_decode($result->category_name, true) ?: '';
+        $result->category_name = $categories[LANGUAGE] ?? $categories[''] ?? '';
+
+        // Increment view counter atomically to avoid race conditions
+        \Kotchasan\DB::create()->increment('board_q', ['id', $result->id], ['visited']);
+
+        // Get all replies
+        $replies = static::createQuery()
+            ->select(
+                'R.id',
+                'R.member_id',
+                'U.name sender',
+                'R.detail',
+                'R.updated_at'
+            )
+            ->from('board_r R')
+            ->join('user U', ['U.id', 'R.member_id'], 'LEFT')
+            ->where(['R.index_id', $index->id])
+            ->orderBy('R.updated_at', 'ASC')
+            ->fetchAll();
+
+        foreach ($replies as $reply) {
+            $reply->detail = str_replace('{WEBURL}', WEB_URL, $reply->detail);
         }
-        return null;
+
+        $index->replies = $replies;
+
+        // Copy meta to index object
+        $index->topic_data = $result;
+
+        return $index;
     }
 }

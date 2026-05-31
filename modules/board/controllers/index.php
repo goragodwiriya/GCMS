@@ -2,19 +2,18 @@
 /**
  * @filesource modules/board/controllers/index.php
  *
- * @copyright 2016 Goragod.com
+ * @copyright 2026 Goragod.com
  * @license https://www.kotchasan.com/license/
- *
- * @see https://www.kotchasan.com/
  */
 
 namespace Board\Index;
 
-use Gcms\Gcms;
+use Kotchasan\ArrayTool;
 use Kotchasan\Http\Request;
+use Web\Gcms;
 
 /**
- * Controller หลัก สำหรับแสดง frontend ของ GCMS
+ * Frontend Controller for Board module
  *
  * @author Goragod Wiriya <admin@goragod.com>
  *
@@ -23,46 +22,67 @@ use Kotchasan\Http\Request;
 class Controller extends \Kotchasan\Controller
 {
     /**
-     * Controller หลักของโมดูล ใช้เพื่อตรวจสอบว่าจะเรียกหน้าไหนมาแสดงผล
+     * Main controller for the module
      *
      * @param Request $request
-     * @param object  $index   ข้อมูลโมดูล
+     * @param object  $index   Module data
      *
      * @return object
      */
     public function init(Request $request, $index)
     {
-        // ตรวจสอบโมดูลและอ่านข้อมูลโมดูล
-        $module = \Board\Module\Model::get($request, $index);
-        if ($module && MAIN_INIT === 'indexhtml') {
-            if ($request->request('wbid')->exists() || $request->request('id')->exists()) {
-                // หน้าแสดงกระทู้
-                $page = createClass('Board\View\View')->index($request, $module);
-            } elseif (!empty($module->category_id) || empty($module->categories) || empty($module->category_display)) {
-                // เลือกหมวดมา หรือไม่มีหมวด หรือปิดการแสดงผลหมวดหมู่ แสดงรายการกระทู้
-                $page = createClass('Board\Stories\View')->index($request, $module);
+        $index->id = $request->get('wbid')->toInt();
+        $index->category_id = $request->get('cat')->filter('0-9,');
+        if ($index->id > 0) {
+            // Single topic view
+            $data = \Board\View\Model::get($index);
+            if ($data !== null) {
+                return \Board\View\View::create()->render($data);
+            }
+        } elseif (MAIN_INIT === 'indexhtml') {
+            // normalize category_id to array of ints and remove zeros
+            $index->category_id = array_values(array_filter(array_map('intval', explode(',', $index->category_id))));
+            // Get categories
+            $index->categories = \Web\Category::create($index->module_id);
+
+            if (!empty($index->category_id) || empty($index->categories) || empty($index->config->category_display)) {
+                // Select category or no category? or turn off category display Show a list of articles
+                $page = max(1, $request->get('page')->toInt());
+                $listModel = \Board\Stories\Model::create($index);
+                $pagination = $listModel->paginate($page, $index->config->list_per_page);
+                $index = ArrayTool::replace($index, $pagination);
+                // Article listing view
+                return \Board\Stories\View::create()->render($index);
             } else {
-                // หน้าแสดงรายการหมวดหมู่
-                $page = createClass('Board\Categories\View')->index($request, $module);
+                // Category listing view
+                return \Board\Categories\View::create()->render($request, $index);
             }
         }
-        if (empty($page)) {
-            // ไม่พบหน้าที่เรียก (board)
-            $page = createClass('Index\Error\Controller')->init('board');
-        }
-        return $page;
+        // Not found
+        return \Index\Error\Controller::create()->init('document');
     }
 
     /**
-     * ฟังก์ชั่นสร้าง URL
+     * URL generation function
      *
-     * @param string $module
-     * @param int    $id
+     * @param string $module Module name
+     * @param string|array $category Category ID
+     * @param int    $id     ID of the topic
      *
      * @return string
      */
-    public static function url($module, $id)
+    public static function url($module, $category = '', $id = 0)
     {
-        return Gcms::createUrl($module, '', 0, 0, 'wbid='.$id);
+        $params = [];
+        if (!empty($category)) {
+            if (is_array($category)) {
+                $category = implode(',', $category);
+            }
+            $params['cat'] = $category;
+        }
+        if (!empty($id)) {
+            $params['wbid'] = $id;
+        }
+        return Gcms::createUrl($module, '', 0, 0, http_build_query($params));
     }
 }

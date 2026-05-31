@@ -1,0 +1,117 @@
+<div class="homepage">
+  {WIDGET_TEXTLINKS_hero}
+
+  <div class="container">
+    <div class="sidebar-left gap home-layout">
+
+      <!-- ── Left Sidebar ── -->
+      <aside class="sidebar home-sidebar" data-editor-container="sidebar">
+
+        <div class="widget__bg" data-block-type="widget-personnel" data-editor-id="block-personnel" data-editor-label="บุคลากร">
+          <header class="widget__header">
+            <h2>บุคลากร</h2>
+          </header>
+          <div class="widget__body">
+            {WIDGET_PERSONNEL cat=1;menu=1}
+          </div>
+        </div>
+
+        <div class="widget__bg" data-block-type="widget-online" data-editor-id="block-online" data-editor-label="ระบบงานออนไลน์">
+          <header class="widget__header">
+            <h2>ระบบงานออนไลน์</h2>
+          </header>
+          <div class="widget__body">
+            <nav class="sidemenu">
+              <ul>{WIDGET_TEXTLINKS_online}</ul>
+            </nav>
+          </div>
+        </div>
+
+        <div class="widget__bg" data-block-type="widget-document" data-editor-id="block-news-listview" data-editor-label="ข่าวด่วน">
+          <header class="widget__header">
+            headerh2>ข่าวด่วน</h2>
+        </div>
+        <div class="widget__body">
+          {WIDGET_DOCUMENT module=news;layout=listview;limit=8}
+        </div>
+    </div>
+
+    <div class="widget__bg" data-block-type="widget-facebook" data-editor-id="block-facebook" data-editor-label="ติดตามเรา">
+      <header class="widget__header">
+        <h2>ติดตามเรา</h2>
+      </header>
+      <div class="widget__body">
+        {WIDGET_FACEBOOK}
+      </div>
+    </div>
+
+    <div class="widget__bg" data-block-type="widget-tags" data-editor-id="block-tags" data-editor-label="แท็กยอดนิยม">
+      <header class="widget__header">
+        <h2>แท็กยอดนิยม</h2>
+      </header>
+      <div class="widget__body">
+        {WIDGET_TAGS}
+      </div>
+    </div>
+
+    </aside>
+
+    <!-- ── Main Content ── -->
+    <div class="content home-content" data-editor-container="content">
+
+      <section data-block-type="widget-banner" data-editor-id="block-banner" data-editor-label="Banner">
+        {WIDGET_TEXTLINKS_banner}
+      </section>
+
+      <section class="section-bg" data-block-type="detail" data-editor-id="block-detail" data-editor-label="Page Content">
+        {DETAIL}
+      </section>
+
+      <section class="section-bg" data-block-type="widget-document" data-editor-id="block-news" data-editor-label="ข่าวประชาสัมพันธ์">
+        <header class="section-title">
+          <h2>ข่าวประชาสัมพันธ์</h2>
+        </header>
+        <div class="page-content">
+          {WIDGET_DOCUMENT module=news}
+        </div>
+      </section>
+
+      <section class="section-bg" data-block-type="widget-document" data-editor-id="block-news-highlight" data-editor-label="ข่าวเด่น">
+        <header class="section-title">
+          <h2>ข่าวเด่น</h2>
+        </header>
+        <div class="page-content">
+          {WIDGET_DOCUMENT module=news;layout=highlight;limit=5}
+        </div>
+      </section>
+
+      <section class="section-bg" data-block-type="widget-document" data-editor-id="block-news-carousel" data-editor-label="บทความล่าสุด">
+        <header class="section-title">
+          <h2>บทความล่าสุด</h2>
+        </header>
+        <div class="page-content">
+          {WIDGET_DOCUMENT module=news;layout=carousel;limit=6;mobile=1;tablet=2;desktop=3}
+        </div>
+      </section>
+
+      <section class="section-bg" data-block-type="widget-board" data-editor-id="block-board" data-editor-label="เว็บบอร์ด">
+        <header class="section-title">
+          <h2>เว็บบอร์ด</h2>
+        </header>
+        <div class="page-content">
+          {WIDGET_BOARD module=forum;limit=5}
+        </div>
+      </section>
+
+      <section class="section-bg" data-block-type="widget-gallery" data-editor-id="block-gallery" data-editor-label="อัลบั้มภาพ">
+        <header class="section-title">
+          <h2>อัลบั้มภาพ</h2>
+        </header>
+        <div class="page-content">
+          {WIDGET_GALLERY module=gallery;count=4}
+        </div>
+      </section>
+    </div>
+  </div>
+</div>
+</div>

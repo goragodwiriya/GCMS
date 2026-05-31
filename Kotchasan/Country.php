@@ -1,19 +1,13 @@
 <?php
-/**
- * @filesource Kotchasan/Country.php
- *
- * @copyright 2016 Goragod.com
- * @license https://www.kotchasan.com/license/
- * @author Goragod Wiriya <admin@goragod.com>
- * @package Kotchasan
- */
 
 namespace Kotchasan;
 
 /**
- * Country Names sorted by Thai name.
+ * Kotchasan Country Class
  *
- * @see https://www.kotchasan.com/
+ * This class provides a list of countries with their names in Thai, English, and local languages.
+ *
+ * @package Kotchasan
  */
 class Country
 {
@@ -287,8 +281,6 @@ class Country
     /**
      * Get country name based on ISO code and language.
      * Returns an empty string if not found.
-     *
-     * @assert ('TH') [==] 'ไทย'
      *
      * @param string $iso
      *

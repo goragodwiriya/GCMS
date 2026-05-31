@@ -1,0 +1,139 @@
+<div class="homepage">
+  <!-- Hero Banner (Slideshow area via textlinks) -->
+  <div class="swcm-hero">
+    <div class="container">
+      {WIDGET_TEXTLINKS_hero}
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="sidebar-left sidebar-top-mobile gap home-layout">
+
+      <!-- Left Sidebar -->
+      <aside class="sidebar home-sidebar" id="home-sidebar" data-editor-container="sidebar">
+        <section class="widget__bg" data-block-type="widget-personnel" data-editor-id="block-personnel" data-editor-label="ผู้อำนวยการโรงเรียน">
+          <div class="widget__header">
+            <h2>ผู้อำนวยการโรงเรียน</h2>
+          </div>
+          {WIDGET_PERSONNEL cat=1;menu=1}
+        </section>
+
+        <section class="widget__bg" data-block-type="widget-online" data-editor-id="block-online" data-editor-label="ระบบงานออนไลน์">
+          <div class="widget__header">
+            <h2>ระบบงานออนไลน์</h2>
+          </div>
+          <nav class="sidemenu">
+            <ul>{WIDGET_TEXTLINKS_online}</ul>
+          </nav>
+        </section>
+
+        <section class="widget__bg" data-block-type="widget-download" data-editor-id="block-download" data-editor-label="ดาวน์โหลด">
+          <div class="widget__header">
+            <h2>ดาวน์โหลด</h2>
+          </div>
+          <div style="padding: var(--space-3)">
+            {WIDGET_DOCUMENT module=download;layout=list;limit=6}
+          </div>
+        </section>
+
+        <section class="widget__bg" data-block-type="widget-facebook" data-editor-id="block-facebook" data-editor-label="ติดตามเรา">
+          <div class="widget__header">
+            <h2>ติดตามเรา</h2>
+          </div>
+          <div style="padding: var(--space-3)">
+            {WIDGET_FACEBOOK}
+          </div>
+        </section>
+
+        <section data-block-type="widget-tags" data-editor-id="block-tags" data-editor-label="Tags">
+          {WIDGET_TAGS}
+        </section>
+      </aside>
+
+      <!-- Main Content -->
+      <div class="content home-content" data-editor-container="content">
+        <!-- Banner Links -->
+        <section class="section-bg" data-block-type="widget-banner" data-editor-id="block-banner" data-editor-label="Banner">
+          {WIDGET_TEXTLINKS_banner}
+        </section>
+
+        <!-- School Introduction -->
+        <section class="section-bg" data-block-type="detail" data-editor-id="block-detail" data-editor-label="เกี่ยวกับโรงเรียน">
+          <div class="section-title">
+            <div>
+              <h2>เกี่ยวกับโรงเรียน</h2>
+            </div>
+          </div>
+          <div class="page-content">
+            {DETAIL}
+          </div>
+        </section>
+
+        <!-- ข่าวสารทั่วไป/ประชาสัมพันธ์ -->
+        <section class="section-bg" data-block-type="widget-document" data-editor-id="block-news" data-editor-label="ข่าวสารทั่วไป / ประชาสัมพันธ์">
+          <div class="section-title">
+            <div>
+              <h2>ข่าวสารทั่วไป / ประชาสัมพันธ์</h2>
+            </div>
+            <a href="{WEBURL}news">ดูทั้งหมด »</a>
+          </div>
+          <div class="page-content">
+            {WIDGET_DOCUMENT module=news;limit=8}
+          </div>
+        </section>
+
+        <!-- ข่าวเด่น / Highlight -->
+        <section class="section-bg" data-block-type="widget-document" data-editor-id="block-news-highlight" data-editor-label="ข่าวเด่น">
+          <div class="section-title">
+            <div>
+              <h2>ข่าวเด่น</h2>
+            </div>
+          </div>
+          <div class="page-content">
+            {WIDGET_DOCUMENT module=news;layout=highlight;limit=4}
+          </div>
+        </section>
+
+        <!-- ผลงานทางวิชาการ -->
+        <section class="section-bg" data-block-type="widget-document" data-editor-id="block-knowledge" data-editor-label="ผลงานทางวิชาการ">
+          <div class="section-title">
+            <div>
+              <h2>ผลงานทางวิชาการ</h2>
+            </div>
+            <a href="{WEBURL}knowledge">ดูทั้งหมด »</a>
+          </div>
+          <div class="page-content">
+            {WIDGET_DOCUMENT module=knowledge;layout=carousel;limit=6;mobile=1;tablet=2;desktop=3}
+          </div>
+        </section>
+
+        <!-- ประมวลภาพกิจกรรม (Gallery) -->
+        <section class="section-bg" data-block-type="widget-gallery" data-editor-id="block-gallery" data-editor-label="ประมวลภาพกิจกรรม">
+          <div class="section-title">
+            <div>
+              <h2>ประมวลภาพกิจกรรม</h2>
+            </div>
+            <a href="{WEBURL}gallery">ดูทั้งหมด »</a>
+          </div>
+          <div class="page-content">
+            {WIDGET_GALLERY module=gallery;count=4}
+          </div>
+        </section>
+
+        <!-- เว็บบอร์ด -->
+        <section class="section-bg" data-block-type="widget-board" data-editor-id="block-board" data-editor-label="เว็บบอร์ด">
+          <div class="section-title">
+            <div>
+              <h2>เว็บบอร์ด</h2>
+            </div>
+            <a href="{WEBURL}forum">ดูทั้งหมด »</a>
+          </div>
+          <div class="page-content">
+            {WIDGET_BOARD module=forum;limit=5}
+          </div>
+        </section>
+      </div>
+
+    </div>
+  </div>
+</div>

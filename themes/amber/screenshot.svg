@@ -1,0 +1,109 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" width="400" height="300">
+  <defs>
+    <linearGradient id="heroBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#78350f"/>
+      <stop offset="50%" style="stop-color:#b45309"/>
+      <stop offset="100%" style="stop-color:#d97706"/>
+    </linearGradient>
+    <linearGradient id="panelHdr" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#78350f"/>
+      <stop offset="100%" style="stop-color:#d97706"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Page background — warm cream -->
+  <rect width="400" height="300" fill="#fffbeb"/>
+  <!-- Paper texture lines -->
+  <line x1="0" y1="50" x2="400" y2="50" stroke="#fcd34d" stroke-width="0.5" opacity="0.4"/>
+  <line x1="0" y1="100" x2="400" y2="100" stroke="#fcd34d" stroke-width="0.5" opacity="0.4"/>
+  <line x1="0" y1="150" x2="400" y2="150" stroke="#fcd34d" stroke-width="0.5" opacity="0.4"/>
+  <line x1="0" y1="200" x2="400" y2="200" stroke="#fcd34d" stroke-width="0.5" opacity="0.4"/>
+  <line x1="0" y1="250" x2="400" y2="250" stroke="#fcd34d" stroke-width="0.5" opacity="0.4"/>
+
+  <!-- Header -->
+  <rect width="400" height="36" fill="#ffffff"/>
+  <rect y="34" width="400" height="3" fill="#d97706"/>
+  <!-- Logo circle -->
+  <circle cx="22" cy="18" r="11" fill="#fef3c7" stroke="#d97706" stroke-width="2"/>
+  <circle cx="22" cy="18" r="7" fill="#d97706" opacity="0.7"/>
+  <rect x="40" y="12" width="65" height="5" rx="2" fill="#78350f" opacity="0.8"/>
+  <rect x="40" y="21" width="45" height="3" rx="1" fill="#78716c" opacity="0.6"/>
+  <!-- Nav items -->
+  <rect x="200" y="13" width="30" height="9" rx="3" fill="#fef3c7" stroke="#fcd34d" stroke-width="1"/>
+  <rect x="236" y="13" width="30" height="9" rx="3" fill="#fef3c7" stroke="#fcd34d" stroke-width="1"/>
+  <rect x="272" y="13" width="30" height="9" rx="3" fill="#fef3c7" stroke="#fcd34d" stroke-width="1"/>
+  <rect x="308" y="13" width="30" height="9" rx="3" fill="#d97706"/>
+  <rect x="213" y="16" width="17" height="3" rx="1" fill="#78350f" opacity="0.7"/>
+  <rect x="249" y="16" width="17" height="3" rx="1" fill="#78350f" opacity="0.7"/>
+  <rect x="285" y="16" width="17" height="3" rx="1" fill="#78350f" opacity="0.7"/>
+  <rect x="314" y="16" width="18" height="3" rx="1" fill="#fff" opacity="0.9"/>
+
+  <!-- Hero -->
+  <rect x="0" y="39" width="400" height="60" fill="url(#heroBg)"/>
+  <!-- Bottom stripe -->
+  <rect x="0" y="95" width="400" height="4" fill="#fbbf24"/>
+  <rect x="120" y="50" width="160" height="10" rx="4" fill="#fef3c7" opacity="0.95"/>
+  <rect x="140" y="66" width="120" height="5" rx="2" fill="#fde68a" opacity="0.8"/>
+  <rect x="170" y="76" width="60" height="12" rx="4" fill="#f59e0b"/>
+  <rect x="178" y="79" width="44" height="6" rx="2" fill="#78350f" opacity="0.8"/>
+
+  <!-- Body — sidebar-left + content -->
+  <!-- Left Sidebar (narrow) -->
+  <!-- Panel 1 -->
+  <rect x="8" y="107" width="100" height="58" rx="5" fill="#ffffff" stroke="#fcd34d" stroke-width="1"/>
+  <rect x="8" y="107" width="100" height="22" rx="5" fill="url(#panelHdr)"/>
+  <rect x="8" y="119" width="100" height="10" rx="0" fill="url(#panelHdr)"/>
+  <rect x="16" y="112" width="55" height="5" rx="2" fill="#fef3c7" opacity="0.95"/>
+  <rect x="16" y="136" width="82" height="4" rx="2" fill="#78716c" opacity="0.6"/>
+  <rect x="16" y="144" width="65" height="4" rx="2" fill="#78716c" opacity="0.5"/>
+  <rect x="16" y="152" width="74" height="4" rx="2" fill="#78716c" opacity="0.4"/>
+
+  <!-- Panel 2 -->
+  <rect x="8" y="170" width="100" height="58" rx="5" fill="#ffffff" stroke="#fcd34d" stroke-width="1"/>
+  <rect x="8" y="170" width="100" height="22" rx="5" fill="url(#panelHdr)"/>
+  <rect x="8" y="182" width="100" height="10" rx="0" fill="url(#panelHdr)"/>
+  <rect x="16" y="175" width="60" height="5" rx="2" fill="#fef3c7" opacity="0.95"/>
+  <rect x="16" y="199" width="82" height="4" rx="2" fill="#78716c" opacity="0.6"/>
+  <rect x="16" y="207" width="65" height="4" rx="2" fill="#78716c" opacity="0.5"/>
+  <rect x="16" y="215" width="74" height="4" rx="2" fill="#78716c" opacity="0.4"/>
+
+  <!-- Panel 3 -->
+  <rect x="8" y="233" width="100" height="54" rx="5" fill="#ffffff" stroke="#fcd34d" stroke-width="1"/>
+  <rect x="8" y="233" width="100" height="22" rx="5" fill="url(#panelHdr)"/>
+  <rect x="8" y="245" width="100" height="10" rx="0" fill="url(#panelHdr)"/>
+  <rect x="16" y="238" width="50" height="5" rx="2" fill="#fef3c7" opacity="0.95"/>
+  <rect x="16" y="262" width="82" height="4" rx="2" fill="#78716c" opacity="0.5"/>
+  <rect x="16" y="270" width="65" height="4" rx="2" fill="#78716c" opacity="0.4"/>
+  <rect x="16" y="278" width="74" height="4" rx="2" fill="#78716c" opacity="0.3"/>
+
+  <!-- Main Content (right) -->
+  <!-- Card 1 -->
+  <rect x="116" y="107" width="274" height="52" rx="5" fill="#ffffff" stroke="#fcd34d" stroke-width="1"/>
+  <rect x="116" y="107" width="4" height="52" rx="2" fill="#d97706"/>
+  <rect x="128" y="116" width="80" height="6" rx="2" fill="#78350f" opacity="0.8"/>
+  <rect x="128" y="127" width="240" height="4" rx="2" fill="#78716c" opacity="0.5"/>
+  <rect x="128" y="135" width="200" height="4" rx="2" fill="#78716c" opacity="0.4"/>
+  <rect x="128" y="143" width="220" height="4" rx="2" fill="#78716c" opacity="0.3"/>
+
+  <!-- Card 2 -->
+  <rect x="116" y="165" width="274" height="60" rx="5" fill="#ffffff" stroke="#fcd34d" stroke-width="1"/>
+  <rect x="116" y="165" width="4" height="60" rx="2" fill="#d97706"/>
+  <rect x="128" y="174" width="90" height="6" rx="2" fill="#78350f" opacity="0.8"/>
+  <!-- Mini cards inside -->
+  <rect x="128" y="185" width="80" height="30" rx="4" fill="#fffbeb" stroke="#fcd34d" stroke-width="1"/>
+  <rect x="216" y="185" width="80" height="30" rx="4" fill="#fffbeb" stroke="#fcd34d" stroke-width="1"/>
+  <rect x="304" y="185" width="78" height="30" rx="4" fill="#fffbeb" stroke="#fcd34d" stroke-width="1"/>
+
+  <!-- Card 3 -->
+  <rect x="116" y="231" width="274" height="56" rx="5" fill="#ffffff" stroke="#fcd34d" stroke-width="1"/>
+  <rect x="116" y="231" width="4" height="56" rx="2" fill="#d97706"/>
+  <rect x="128" y="240" width="70" height="6" rx="2" fill="#78350f" opacity="0.8"/>
+  <rect x="128" y="251" width="240" height="4" rx="2" fill="#78716c" opacity="0.5"/>
+  <rect x="128" y="259" width="200" height="4" rx="2" fill="#78716c" opacity="0.4"/>
+  <rect x="128" y="267" width="220" height="4" rx="2" fill="#78716c" opacity="0.3"/>
+  <rect x="128" y="275" width="180" height="4" rx="2" fill="#78716c" opacity="0.2"/>
+
+  <!-- Label -->
+  <rect x="130" y="287" width="140" height="11" rx="4" fill="#fef3c7" stroke="#fcd34d" stroke-width="1"/>
+  <text x="200" y="295" font-family="system-ui,sans-serif" font-size="7" fill="#78350f" text-anchor="middle" font-weight="600">AMBER — Warm Government Theme</text>
+</svg>

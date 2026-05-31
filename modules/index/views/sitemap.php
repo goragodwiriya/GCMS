@@ -17,7 +17,7 @@ namespace Index\Sitemap;
  *
  * @since 1.0
  */
-class View extends \Gcms\View
+class View extends \Web\View
 {
     /**
      * สร้างรายการ sitemap

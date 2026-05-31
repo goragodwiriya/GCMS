@@ -2,78 +2,113 @@
 /**
  * @filesource modules/board/models/stories.php
  *
- * @copyright 2016 Goragod.com
+ * @copyright 2026 Goragod.com
  * @license https://www.kotchasan.com/license/
- *
- * @see https://www.kotchasan.com/
  */
 
 namespace Board\Stories;
 
-use Kotchasan\Database\Sql;
-use Kotchasan\Http\Request;
-
 /**
- * ลิสต์รายการบทความ
+ * Board Lists Model — frontend pagination + widget
  *
  * @author Goragod Wiriya <admin@goragod.com>
  *
  * @since 1.0
  */
-class Model extends \Kotchasan\Model
+class Model extends \Kotchasan\KBase
 {
     /**
-     * ลิสต์รายการกระทู้
-     *
-     * @param Request $request
-     * @param object  $index
-     *
-     * @return object
+     * @var mixed
      */
-    public static function get(Request $request, $index)
+    private $instance = null;
+
+    /**
+     * Create a new instance with params
+     *
+     * @param object $index
+     *
+     * @return static
+     */
+    public static function create($index)
     {
-        if (isset($index->module_id)) {
-            // query
-            $where = [['Q.module_id', (int) $index->module_id]];
-            if (!empty($index->category_id)) {
-                $where[] = ['Q.category_id', is_array($index->category_id) ? $index->category_id : (int) $index->category_id];
-            }
-            // Model
-            $model = new static;
-            // query
-            $query = $model->db()->createQuery()
-                ->from('board_q Q')
-                ->where($where);
-            // จำนวน
-            $index->total = $query->cacheOn()->count();
-            // ข้อมูลแบ่งหน้า
-            $index->page = $request->request('page')->toInt();
-            $index->totalpage = ceil($index->total / $index->list_per_page);
-            $index->page = max(1, ($index->page > $index->totalpage ? $index->totalpage : $index->page));
-            $index->start = $index->list_per_page * ($index->page - 1);
-            // query pin
-            $select = [
-                'Q.*',
-                'U1.status',
-                'U2.status replyer_status',
-                Sql::create('(CASE WHEN Q.`comment_date` > 0 THEN Q.`comment_date` ELSE Q.`last_update` END) AS `d`'),
-                Sql::create("(CASE WHEN ISNULL(U1.`id`) THEN Q.`email` WHEN U1.`displayname`='' THEN U1.`email` ELSE U1.`displayname` END) AS `sender`"),
-                Sql::create("(CASE WHEN ISNULL(U2.`id`) THEN Q.`commentator` WHEN U2.`displayname`='' THEN U2.`email` ELSE U2.`displayname` END) AS `commentator`")
-            ];
-            $query->select($select)
-                ->join('user U1', 'LEFT', ['U1.id', 'Q.member_id'])
-                ->join('user U2', 'LEFT', ['U2.id', 'Q.commentator_id'])
-                ->order('Q.last_update DESC')
-                ->where(array_merge([['Q.pin', 1]], $where));
-            $index->items = $query->cacheOn()->execute();
-            $query->where(array_merge([['Q.pin', 0]], $where))
-                ->limit($index->list_per_page, $index->start);
-            foreach ($query->cacheOn()->execute() as $item) {
-                $index->items[] = $item;
-            }
-            // คืนค่า
-            return $index;
+        $obj = new static();
+
+        $where = [
+            ['Q.module_id', $index->module_id],
+            ['Q.published', 1]
+        ];
+        if (!empty($index->category_id)) {
+            $where[] = ['Q.category_id', $index->category_id];
         }
-        return null;
+
+        $query = \Kotchasan\Model::createQuery()
+            ->from('board_q Q')
+            ->where($where)
+            ->cacheOn();
+
+        $obj->instance = $query;
+
+        return $obj;
+    }
+
+    /**
+     * Count total
+     *
+     * @return int
+     */
+    public function count(): int
+    {
+        $query = clone $this->instance;
+        $row = $query->selectCount()->first();
+        return $row ? (int) $row->count : 0;
+    }
+
+    /**
+     * Paginate topics (pinned first, then by updated_at DESC)
+     *
+     * @param int $page
+     * @param int $limit
+     *
+     * @return array Pagination info + items
+     */
+    public function paginate($page, $limit)
+    {
+        $total = $this->count();
+        $total_pages = $limit > 0 ? (int) ceil($total / $limit) : 1;
+        $page = max(1, min($page, max(1, $total_pages)));
+        $offset = ($page - 1) * $limit;
+
+        $query = clone $this->instance;
+        $items = $query
+            ->select(
+                'Q.id',
+                'Q.topic',
+                'Q.category_id',
+                'U.name AS sender',
+                'U.status',
+                'Q.member_id',
+                'Q.created_at',
+                'Q.updated_at',
+                'Q.visited',
+                'Q.comments',
+                'Q.pin',
+                'Q.locked',
+                'Q.comment_date',
+                'A.name commentator',
+                'A.status reply_status'
+            )
+            ->join('user U', ['U.id', 'Q.member_id'], 'LEFT')
+            ->join('user A', ['A.id', 'Q.commentator_id'], 'LEFT')
+            ->orderBy('Q.pin', 'DESC')
+            ->orderBy('Q.updated_at', 'DESC')
+            ->limit($limit, $offset)
+            ->fetchAll();
+
+        return [
+            'page' => $page,
+            'total_pages' => $total_pages,
+            'total' => $total,
+            'items' => $items
+        ];
     }
 }

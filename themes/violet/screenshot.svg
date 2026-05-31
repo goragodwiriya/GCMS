@@ -1,0 +1,70 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" width="400" height="300">
+  <defs>
+    <linearGradient id="heroBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#7c3aed"/>
+      <stop offset="50%" style="stop-color:#a855f7"/>
+      <stop offset="100%" style="stop-color:#e11d48"/>
+    </linearGradient>
+    <linearGradient id="footerBg" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#1e1b4b"/>
+      <stop offset="100%" style="stop-color:#2e1065"/>
+    </linearGradient>
+    <linearGradient id="logoGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#7c3aed"/>
+      <stop offset="100%" style="stop-color:#e11d48"/>
+    </linearGradient>
+    <clipPath id="heroClip">
+      <ellipse cx="200" cy="0" rx="250" ry="130"/>
+    </clipPath>
+  </defs>
+
+  <!-- Page background -->
+  <rect width="400" height="300" fill="#faf5ff"/>
+
+  <!-- Navbar -->
+  <rect width="400" height="36" fill="white"/>
+  <rect x="12" y="10" width="80" height="16" rx="4" fill="url(#logoGrad)"/>
+  <rect x="200" y="14" width="30" height="8" rx="2" fill="#ddd6fe"/>
+  <rect x="238" y="14" width="30" height="8" rx="2" fill="#ddd6fe"/>
+  <rect x="276" y="14" width="30" height="8" rx="2" fill="#ddd6fe"/>
+  <rect x="340" y="11" width="48" height="14" rx="7" fill="url(#heroBg)"/>
+
+  <!-- Hero with ellipse clip-path -->
+  <ellipse cx="200" cy="0" rx="260" ry="140" fill="url(#heroBg)"/>
+  <!-- Badge pill -->
+  <rect x="153" y="46" width="94" height="16" rx="8" fill="rgba(255,255,255,0.25)"/>
+  <text x="200" y="58" font-family="sans-serif" font-size="8" fill="white" text-anchor="middle">✦ Welcome</text>
+  <!-- Hero title -->
+  <text x="200" y="82" font-family="sans-serif" font-size="16" font-weight="bold" fill="white" text-anchor="middle">Build something</text>
+  <text x="200" y="100" font-family="sans-serif" font-size="16" font-weight="bold" fill="#fde68a" text-anchor="middle">amazing</text>
+  <!-- Subtitle -->
+  <text x="200" y="118" font-family="sans-serif" font-size="7" fill="rgba(255,255,255,0.8)" text-anchor="middle">A modern CMS built for the future</text>
+  <!-- CTA buttons -->
+  <rect x="130" y="126" width="60" height="18" rx="9" fill="white"/>
+  <text x="160" y="139" font-family="sans-serif" font-size="7" fill="#7c3aed" font-weight="bold" text-anchor="middle">Explore</text>
+  <rect x="200" y="126" width="68" height="18" rx="9" fill="none" stroke="white" stroke-width="1.5"/>
+  <text x="234" y="139" font-family="sans-serif" font-size="7" fill="white" text-anchor="middle">Learn More</text>
+
+  <!-- Section 1 — Featured (alt background) -->
+  <rect y="152" width="400" height="50" fill="#f5f3ff"/>
+  <rect x="12" y="160" width="376" height="34" rx="6" fill="white" stroke="#ede9fe" stroke-width="1"/>
+  <rect x="20" y="165" width="32" height="8" rx="4" fill="#ede9fe"/>
+  <text x="36" y="172" font-family="sans-serif" font-size="6" fill="#7c3aed" text-anchor="middle">Featured</text>
+  <rect x="20" y="178" width="120" height="10" rx="2" fill="#f3f4f6"/>
+  <rect x="148" y="178" width="120" height="10" rx="2" fill="#f3f4f6"/>
+  <rect x="276" y="178" width="100" height="10" rx="2" fill="#f3f4f6"/>
+
+  <!-- Section 2 — Articles (white bg) -->
+  <rect y="202" width="400" height="50" fill="white"/>
+  <text x="200" y="216" font-family="sans-serif" font-size="8" fill="#7c3aed" font-weight="bold" text-anchor="middle">ข่าวประชาสัมพันธ์</text>
+  <rect x="12" y="220" width="115" height="24" rx="6" fill="#faf5ff" stroke="#ede9fe" stroke-width="1"/>
+  <rect x="135" y="220" width="115" height="24" rx="6" fill="#faf5ff" stroke="#ede9fe" stroke-width="1"/>
+  <rect x="258" y="220" width="130" height="24" rx="6" fill="#faf5ff" stroke="#ede9fe" stroke-width="1"/>
+
+  <!-- Footer -->
+  <rect y="252" width="400" height="48" fill="url(#footerBg)"/>
+  <rect x="12" y="262" width="60" height="8" rx="3" fill="rgba(255,255,255,0.3)"/>
+  <rect x="12" y="275" width="120" height="6" rx="2" fill="rgba(255,255,255,0.15)"/>
+  <rect x="300" y="262" width="88" height="8" rx="3" fill="rgba(255,255,255,0.3)"/>
+  <rect x="300" y="275" width="88" height="6" rx="2" fill="rgba(255,255,255,0.15)"/>
+</svg>

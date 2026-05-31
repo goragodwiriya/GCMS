@@ -1,0 +1,57 @@
+{
+    "name": "โรงเรียนสองคอลัมน์",
+    "version": "1.0.0",
+    "author": "AI Generated",
+    "author_url": "",
+    "description": "Theme for a two-column school website with a large banner in the center.",
+    "screenshot": "screenshot.svg",
+    "license": "MIT",
+    "layouts": [
+        "main",
+        "auth",
+        "blank",
+        "full-width"
+    ],
+    "components": [
+        "header",
+        "footer",
+        "navbar",
+        "sidebar",
+        "breadcrumb",
+        "pagination"
+    ],
+    "colors": {
+        "primary": "#007bff",
+        "primary_hover": "#0056b3",
+        "secondary": "#6c757d",
+        "accent": "#28a745",
+        "background": "#f8f9fa",
+        "text": "#212529",
+        "surface": "#ffffff",
+        "text_secondary": "#6c757d",
+        "border": "#dee2e6"
+    },
+    "settings": {
+        "show_sidebar": true,
+        "sidebar_position": "right",
+        "footer_columns": 2,
+        "show_breadcrumb": true,
+        "show_search": true,
+        "products_per_page": 12,
+        "banner_size": "large",
+        "color_scheme": "light"
+    },
+    "designer": {
+        "compatible": true,
+        "editable": true,
+        "source_theme": "wk",
+        "generated_by_ai": true
+    },
+    "ai": {
+        "base_theme": "wk",
+        "generated_at": "2026-05-31T23:18:35+07:00",
+        "generated_by": 1,
+        "home_html_generated": true,
+        "prompt": "เว็บไซต์โรงเรียนสองคอลัมน์ มีแบนเนอร์ขนาดใหญ่อยู่ตรงกลาง"
+    }
+}

@@ -1,0 +1,29 @@
+<article class="view-page">
+  <header class="view-header">
+    <div class="container">
+      <nav class="breadcrumbs one_line">
+        <ul>{BREADCRUMBS}</ul>
+      </nav>
+      <h1>{TOPIC}</h1>
+      <p class="description">{DESCRIPTION}</p>
+      <div class="header-meta">
+        <a href="{WEBURL}{MODULE}/{CATEGORY_ID}" class="badge category">{CATEGORY}</a>
+        <time class="date icon-calendar" datetime="{DATE}">{DATE {DATE} d M Y}</time>
+        <span class="icon-visited">{VISITED}</span>
+      </div>
+    </div>
+  </header>
+
+  <div class="container">
+    <div class="page-content">
+      {IMAGE}
+      <section>{DETAIL}</section>
+      <footer>{WIDGET_SHARE}</footer>
+    </div>
+
+    <section class="related-articles">
+      <h2>{LNG_Related Articles}</h2>
+      {WIDGET_RELATED module={MODULE};id={ID};tags={TAGS}}
+    </section>
+  </div>
+</article>

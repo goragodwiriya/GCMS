@@ -1,6 +1,6 @@
 <?php
 /**
- * @filesource module.php
+ * @filesource modules/index/models/menu.php
  *
  * @copyright 2016 Goragod.com
  * @license https://www.kotchasan.com/license/
@@ -11,7 +11,8 @@
 namespace Index\Module;
 
 /**
- * Description
+ * Class for loading all module and widget data.
+ * and run Cron if it's the first time of the day
  *
  * @author Goragod Wiriya <admin@goragod.com>
  *
@@ -20,7 +21,7 @@ namespace Index\Module;
 class Controller extends \Kotchasan\Controller
 {
     /**
-     * ข้อมูลโมดูล
+     * Module data
      *
      * @var \Index\Module\Model
      */
@@ -34,17 +35,17 @@ class Controller extends \Kotchasan\Controller
      *
      * @return static
      */
-    public static function init($menu, $new_day)
+    public static function init($menu, $new_day = false)
     {
         // create Class
-        $obj = new static;
-        // ไดเร็คทอรี่ที่ติดตั้งโมดูล
+        $obj = new static();
+        // Directory where modules are installed
         $dir = ROOT_PATH.'modules/';
-        // อ่านรายชื่อโมดูลและไดเร็คทอรี่ของโมดูลทั้งหมดที่ติดตั้งไว้
+        // Read the names of modules and directories of all installed modules
         $obj->module = new \Index\Module\Model($dir, $menu);
         if (MAIN_INIT == 'indexhtml') {
-            // โหลดโมดูลที่ติดตั้งแล้ว และสามารถใช้งานได้
-            foreach ($obj->module->by_owner as $owner => $modules) {
+            // Load installed modules and can be used
+            foreach ($obj->module->getModulesByOwner() as $owner => $modules) {
                 if (is_file($dir.$owner.'/controllers/init.php')) {
                     include $dir.$owner.'/controllers/init.php';
                     $class = ucfirst($owner).'\Init\Controller';
@@ -52,12 +53,15 @@ class Controller extends \Kotchasan\Controller
                         createClass($class)->init($modules);
                     }
                 }
+                if ($new_day && is_file($dir.$owner.'/controllers/cron.php')) {
+                    include $dir.$owner.'/controllers/cron.php';
+                    $class = ucfirst($owner).'\Cron\Controller';
+                    if (method_exists($class, 'init')) {
+                        createClass($class)->init($modules);
+                    }
+                }
             }
-            if ($new_day) {
-                // cron
-                createClass('Index\Cron\Controller')->index(self::$request);
-            }
-            // โหลด init ของส่วนเสริม
+            // Load init of widgets
             $dir = ROOT_PATH.'Widgets/';
             $f = @opendir($dir);
             if ($f) {
@@ -85,96 +89,102 @@ class Controller extends \Kotchasan\Controller
                 fclose($f);
             }
         }
-        // คืนค่า Class
-
+        // Return Class
         return $obj;
     }
 
     /**
-     * อ่านข้อมูลโมดูลทั้งหมด จากชื่อไดเร็คทอรี่
+     * Get all module data from directory names
      *
      * @return array
      */
     public function getInstalledOwners()
     {
-        return $this->module->by_owner;
+        return $this->module->getModulesByOwner();
     }
 
     /**
-     * ตรวจสอบโมดูลที่เรียก
+     * Check the called module
      *
-     * @param array $modules ข้อมูลจาก $_GET หรือ $_POST
+     * @param array $modules Data from $_GET or $_POST
      *
-     * @return object||null คืนค่าโมดูลที่ใช้งานได้ ไม่พบคืนค่า null
+     * @return object||null Returns the usable module, or null if not found
      */
     public function checkModuleCalled($modules)
     {
-        // รายชื่อโมดูลทั้งหมด
-        $module_list = array_keys($this->module->by_module);
-        // ตรวจสอบโมดูลที่เรียก
+        $modulesByName = $this->module->getModulesByName();
+        // List of all modules
+        $module_list = array_keys($modulesByName);
+        // Check the called module
         if (isset($modules['module']) && preg_match('/^(tag|calendar)([\/\-](.*)|)$/', $modules['module'], $match)) {
-            // โมดูล document (tag, calendar)
+            // Document module (tag, calendar)
             $modules['module'] = 'document';
             $modules['page'] = ucfirst($match[1]);
             if (isset($match[3])) {
                 $modules['alias'] = $match[3];
             }
         } elseif (isset($modules['module']) && preg_match('/^([a-z0-9]+)[\/\-]([a-z]+)$/', $modules['module'], $match)) {
-            // โมดูลที่ติดตั้ง
+            // Installed module
             $modules['module'] = $match[1];
             $modules['page'] = ucfirst($match[2]);
         } else {
-            // โมดูล index
+            // Index module
             $modules['page'] = 'Index';
         }
-        // ตรวจสอบโมดูลที่เลือกกับโมดูลที่ติดตั้งแล้ว
+
+        // Check the selected module against the installed modules
         $module = null;
         if (!empty($module_list)) {
             if (empty($modules['module'])) {
-                // ไม่ได้กำหนดโมดูลมา ใช้โมดูลแรกสุด
-                $module = $this->module->by_module[reset($module_list)];
-            } elseif ($modules['module'] == 'search') {
-                // เรียกหน้าค้นหา (โมดูล index)
+                // No module specified, use the first module
+                $module = $modulesByName[reset($module_list)];
+            } elseif ($modules['module'] === 'search') {
+                // Call search page (index module)
                 $module = (object) [
                     'owner' => 'search'
                 ];
-            } elseif ($modules['module'] == 'index' && isset($modules['id'])) {
-                // เรียกโมดูล index จาก id
+            } elseif ($modules['module'] === 'index' && !empty($modules['id'])) {
+                // Call index module by id
                 $module = self::findByIndexId($modules['id']);
             } elseif (in_array($modules['module'], $module_list)) {
-                // โมดูลที่เลือก
-                $module = $this->module->by_module[$modules['module']];
-            } elseif (in_array($modules['module'], array_keys($this->module->by_owner))) {
-                // เรียกโมดูลที่ติดตั้ง (ไดเร็คทอรี่)
+                // Selected module
+                $module = $modulesByName[$modules['module']];
+            } elseif (in_array($modules['module'], array_keys($this->module->getModulesByOwner()))) {
+                // Call installed module (directory)
                 $modules['owner'] = $modules['module'];
                 $module = (object) $modules;
             }
         }
         if ($module) {
-            if ($module->owner == 'index') {
-                // เรียกจากโมดูล index
-                $className = 'Index\Main\Controller';
-            } elseif ($module->owner == 'search') {
-                // ค้นหา
+            if ($module->owner === 'index') {
+                if ($module->module === 'home') {
+                    // หน้า Home
+                    $className = 'Home\Index\Controller';
+                } else {
+                    // เรียกจากโมดูล index
+                    $className = 'Index\Main\Controller';
+                }
+            } elseif ($module->owner === 'search') {
+                // Search
                 $className = 'Index\Search\Controller';
                 $module->owner = 'index';
                 $module->module = 'search';
                 $module->page = 'init';
             } else {
-                // เรียกจากโมดูลที่ติดตั้ง
+                // Called from installed module
                 $className = ucfirst($module->owner).'\\'.$modules['page'].'\Controller';
                 if (!class_exists($className)) {
                     $className = null;
                 }
             }
-            // เรียก method init
+            // Call method init
             $method = 'init';
         } elseif (!empty($modules['module']) &&
             class_exists('Index\Member\Controller') &&
             method_exists('Index\Member\Controller', $modules['module'])) {
-            // หน้าสมาชิก
+            // Member page
             $className = 'Index\Member\Controller';
-            // method ที่เลือก
+            // selected method
             $method = $modules['module'];
         }
         if (empty($className)) {
@@ -188,9 +198,9 @@ class Controller extends \Kotchasan\Controller
     }
 
     /**
-     * อ่านชื่อโมดูลแรกสุด
+     * Get the first module name
      *
-     * @return string ไม่พบคืนค่าข้อความว่าง
+     * @return string Returns an empty string if not found
      */
     public function getFirst()
     {
@@ -203,7 +213,7 @@ class Controller extends \Kotchasan\Controller
     }
 
     /**
-     * อ่านข้อมูลโมดูลทั้งหมด จากชื่อไดเร็คทอรี่
+     * Get all module data by directory name
      *
      * @param string $owner
      *
@@ -211,32 +221,35 @@ class Controller extends \Kotchasan\Controller
      */
     public function findByOwner($owner)
     {
-        return isset($this->module->by_owner[$owner]) ? $this->module->by_owner[$owner] : [];
+        $modules = $this->module->getModulesByOwner();
+        return isset($modules[$owner]) ? $modules[$owner] : [];
     }
 
     /**
-     * อ่านข้อมูลโมดูลจากชื่อโมดูล
+     * Get module data by module name
      *
-     * @param string $module ชื่อโมดูล
+     * @param string $module Module name
      *
-     * @return object|null ข้อมูลโมดูล (Object) ไม่พบคืนค่า null
+     * @return object|null Module data (Object) or null if not found
      */
     public function findByModule($module)
     {
-        return isset($this->module->by_module[$module]) ? $this->module->by_module[$module] : null;
+        $modules = $this->module->getModulesByName();
+        return isset($modules[$module]) ? $modules[$module] : null;
     }
 
     /**
-     * อ่านข้อมูลโมดูลจาก ID ของโมดูล
+     * Get module data by module ID
      *
-     * @param int $id ID ของโมดูล
+     * @param int $id Module ID
      *
-     * @return object|null ข้อมูลโมดูล (Object) ไม่พบคืนค่า null
+     * @return object|null Module data (Object) or null if not found
      */
     public function findByID($id)
     {
-        if (!empty($this->module->by_module)) {
-            foreach ($this->module->by_module as $item) {
+        $modules = $this->module->getModulesByName();
+        if (!empty($modules)) {
+            foreach ($modules as $item) {
                 if ($item->module_id == $id) {
                     return $item;
                 }
@@ -246,16 +259,17 @@ class Controller extends \Kotchasan\Controller
     }
 
     /**
-     * อ่านข้อมูลโมดูลจาก index_id ของโมดูล
+     * Get module data by index_id
      *
-     * @param int $id ID ของโมดูล
+     * @param int $id Module index_id
      *
-     * @return object|null ข้อมูลโมดูล (Object) ไม่พบคืนค่า null
+     * @return object|null Module data (Object) or null if not found
      */
     public function findByIndexId($id)
     {
-        if (!empty($this->module->by_module)) {
-            foreach ($this->module->by_module as $item) {
+        $modules = $this->module->getModulesByName();
+        if (!empty($modules)) {
+            foreach ($modules as $item) {
                 if ($item->index_id == $id) {
                     return $item;
                 }

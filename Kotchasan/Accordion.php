@@ -1,19 +1,13 @@
 <?php
-/**
- * @filesource Kotchasan/Accordion.php
- *
- * @copyright 2016 Goragod.com
- * @license https://www.kotchasan.com/license/
- * @author Goragod Wiriya <admin@goragod.com>
- * @package Kotchasan
- */
 
 namespace Kotchasan;
 
 /**
- * Accordion class for creating HTML accordions.
+ * Kotchasan Accordion Class
  *
- * @see https://www.kotchasan.com/
+ * This class provides a simple accordion component for displaying collapsible content sections.
+ *
+ * @package Kotchasan
  */
 class Accordion
 {

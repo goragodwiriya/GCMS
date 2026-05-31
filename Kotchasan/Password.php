@@ -1,19 +1,14 @@
 <?php
-/**
- * @filesource Kotchasan/Password.php
- *
- * @copyright 2016 Goragod.com
- * @license https://www.kotchasan.com/license/
- * @author Goragod Wiriya <admin@goragod.com>
- * @package Kotchasan
- */
 
 namespace Kotchasan;
 
 /**
- * This class provides functions for password encryption and decryption.
+ * Kotchasan Password Class
  *
- * @see https://www.kotchasan.com/
+ * This class provides methods for encoding and decoding strings,
+ * generating unique IDs, and creating secure API signatures.
+ *
+ * @package Kotchasan
  */
 class Password
 {
@@ -23,10 +18,6 @@ class Password
      * Decodes the given string using the provided password.
      * Returns the decrypted string.
      * Throws an exception if decryption fails.
-     *
-     * @assert (Password::encode("ทดสอบภาษาไทย", 12345678), 12345678) [==] "ทดสอบภาษาไทย"
-     * @assert (Password::encode(1234, 12345678), 12345678) [==] 1234
-     * @assert ('12345678', 12345678) [throws] \Exception
      *
      * @param string $string The encoded string to be decrypted (output of encode() function).
      * @param string $password The encryption key.

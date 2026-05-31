@@ -10,10 +10,10 @@
 
 namespace Index\Register;
 
-use Gcms\Gcms;
 use Kotchasan\Http\Request;
 use Kotchasan\Language;
 use Kotchasan\Template;
+use Web\Gcms;
 
 /**
  * module=register
@@ -22,7 +22,7 @@ use Kotchasan\Template;
  *
  * @since 1.0
  */
-class View extends \Gcms\View
+class View extends \Web\View
 {
     /**
      * หน้าสมัครสมาชิก
@@ -42,8 +42,8 @@ class View extends \Gcms\View
         // /member/registerfrm.html
         $template = Template::create('member', 'member', 'registerfrm');
         $template->add([
-            '/<EMAIL>(.*)<\/EMAIL>/isu' => in_array('email', self::$cfg->login_fields) ? '\\1' : '',
-            '/<PHONE>(.*)<\/PHONE>/isu' => in_array('phone1', self::$cfg->login_fields) || !empty(self::$cfg->member_phone) ? '\\1' : '',
+            '/<EMAIL>(.*)<\/EMAIL>/isu' => in_array('username', self::$cfg->login_fields) ? '\\1' : '',
+            '/<PHONE>(.*)<\/PHONE>/isu' => in_array('phone', self::$cfg->login_fields) || !empty(self::$cfg->member_phone) ? '\\1' : '',
             '/<IDCARD>(.*)<\/IDCARD>/isu' => empty(self::$cfg->member_idcard) ? '' : '\\1',
             '/{TOPIC}/' => $index->topic,
             '/{TOKEN}/' => $request->createToken(),

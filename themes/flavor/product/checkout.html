@@ -1,0 +1,98 @@
+<!-- Checkout Page -->
+<form id="checkoutForm" class="fv-checkout-page" data-form="checkout" data-validate="true" data-ajax-submit="true" data-load-api="{WEBURL}api/product/checkout/get"
+      data-load-options-api="{WEBURL}api/product/checkout/get" action="{WEBURL}api/product/checkout/save" method="post" autocomplete="off" data-on-load="initCheckout">
+
+  <header class="fv-checkout-header">
+    <h1 data-i18n>Make payment</h1>
+    <p data-i18n>Please fill in the information to proceed with your order</p>
+  </header>
+
+  <div class="container">
+    <div class="fv-checkout-content">
+      <!-- Order Summary -->
+      <div class="fv-order-summary">
+        <h2 class="fv-summary-title" data-i18n>Order summary</h2>
+
+        <div class="summary-items" id="checkoutItems"></div>
+
+        <div class="summary-totals">
+          <div class="fv-summary-row">
+            <span data-i18n>Subtotal</span>
+            <span id="subtotal">0</span>
+          </div>
+          <div class="fv-summary-row">
+            <span data-i18n>Shipping</span>
+            <span id="shipping">0</span>
+          </div>
+          <div class="fv-summary-row discount-row" id="discountRow" style="display: none;">
+            <span data-i18n>Discount</span>
+            <span id="discount">0</span>
+          </div>
+          <div class="fv-summary-row total">
+            <span data-i18n>Grand Total</span>
+            <span id="grandTotal">0</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Checkout Form -->
+      <div class="fv-checkout-form-wrapper">
+        <fieldset class="form-section">
+          <h3 class="section-title" data-i18n>Customer information</h3>
+          <div>
+            <label for="name" data-i18n>Name</label>
+            <span class="form-control icon-profile">
+              <input type="text" id="name" name="name" data-attr="value:name" required maxlength="150">
+            </span>
+          </div>
+          <div>
+            <label for="phone" data-i18n>Phone</label>
+            <span class="form-control icon-phone">
+              <input type="tel" id="phone" name="phone" data-attr="value:phone" required maxlength="20">
+            </span>
+          </div>
+        </fieldset>
+
+        <fieldset class="form-section">
+          <h3 class="section-title" data-i18n>Shipping Address</h3>
+          <div>
+            <label for="address" data-i18n>Address</label>
+            <span class="form-control icon-address">
+              <textarea id="address" name="address" data-attr="value:address" required rows="3"></textarea>
+            </span>
+          </div>
+          <div class="form-group">
+            <div class="width50">
+              <label for="province" data-i18n>Province</label>
+              <span class="form-control icon-location">
+                <select id="province" name="province" data-attr="value:province" data-options-key="provinces" required></select>
+              </span>
+            </div>
+            <div class="width50">
+              <label for="zipcode" data-i18n>Zipcode</label>
+              <span class="form-control icon-edit">
+                <input type="text" id="zipcode" name="zipcode" data-attr="value:zipcode" required maxlength="10">
+              </span>
+            </div>
+          </div>
+        </fieldset>
+
+        <fieldset class="form-section">
+          <h3 class="section-title" data-i18n>Payment Method</h3>
+          <div data-for="method of payment_methods">
+            <template>
+              <label class="payment-option">
+                <input type="radio" name="payment_method" data-attr="value:method.value" required>
+                <span data-text="method.text" data-i18n></span>
+              </label>
+            </template>
+          </div>
+        </fieldset>
+
+        <fieldset class="text-center">
+          <button type="submit" class="btn btn-primary fullwidth large icon-cart" data-i18n>Place Order</button>
+        </fieldset>
+      </div>
+    </div>
+  </div>
+</form>

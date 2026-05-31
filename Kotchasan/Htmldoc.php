@@ -1,19 +1,14 @@
 <?php
-/**
- * @filesource Kotchasan/Htmldoc.php
- *
- * @copyright 2016 Goragod.com
- * @license https://www.kotchasan.com/license/
- * @author Goragod Wiriya <admin@goragod.com>
- * @package Kotchasan
- */
 
 namespace Kotchasan;
 
 /**
- * Convert HTML to MS Word file
+ * Kotchasan Htmldoc Class
  *
- * @see https://www.kotchasan.com/
+ * This class provides methods to create a Microsoft Word document from HTML content.
+ * It allows setting the document file name and parsing HTML to extract the head and body.
+ *
+ * @package Kotchasan
  */
 class Htmldoc
 {

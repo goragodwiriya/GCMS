@@ -1,254 +1,126 @@
 <?php
-/**
- * @filesource Kotchasan/Jwt.php
- *
- * @copyright 2016 Goragod.com
- * @license https://www.kotchasan.com/license/
- * @author Goragod Wiriya <admin@goragod.com>
- * @package Kotchasan
- */
-
 namespace Kotchasan;
 
 /**
- * JWT encoding, decoding, and verification class
- *
- * @see https://www.kotchasan.com/
+ * Minimal JWT helper (HS256) for simple token issuance/validation.
+ * Not a full-featured library — suitable as a starter for migration to JWT.
  */
 class Jwt
 {
     /**
-     * Secret key for JWT encoding
-     *
-     * @var string
-     */
-    private $secretKey;
-
-    /**
-     * JWT expiration time
-     * 3600 = 1 hour.
-     * 0 = no expiration time (default).
-     * If an expiration time is specified, it will be checked during verification.
-     * The expired time will be added to the payload automatically during encoding,
-     * and removed when decoding.
-     * It is not recommended to specify the expiration time in the payload that needs to be encoded separately.
-     *
-     * @var int
-     */
-    private $expireTime;
-
-    /**
-     * Algorithm used for encoding with hash_hmac
-     *
-     * @var string
-     */
-    private $algorithm;
-
-    /**
-     * Algorithms supported by hash_hmac
-     *
-     * @var array
-     */
-    protected $hashHmacAlgorithms = [
-        'HS256' => 'sha256',
-        'HS384' => 'sha384',
-        'HS512' => 'sha512'
-    ];
-
-    /**
-     * Class constructor
-     *
-     * @param string $secretKey Secret key for JWT encoding
-     * @param int $expireTime JWT expiration time 0 = no expiration time (default), > 0 specifies expiration time in seconds
-     * @param int $algo Algorithm used for encoding, supported by $hashHmacAlgorithms
-     */
-    private function __construct($secretKey, $expireTime, $algo)
-    {
-        if (isset($this->hashHmacAlgorithms[$algo])) {
-            $this->algorithm = $algo;
-        } else {
-            throw new \Exception('Algorithm `'.$algo.'` is not supported');
-        }
-        $this->secretKey = $secretKey;
-        $this->expireTime = $expireTime;
-    }
-
-    /**
-     * Create a Jwt instance
-     *
-     * @param string $secretKey Secret key for JWT encoding
-     * @param int $expireTime JWT expiration time 0 = no expiration time (default), > 0 specifies expiration time in seconds
-     * @param string $algo Algorithm used for encoding, supported by $hashHmacAlgorithms
-     *
-     * @return static
-     */
-    public static function create($secretKey = 'my_secret_key', $expireTime = 0, $algo = 'HS256')
-    {
-        return new static($secretKey, $expireTime, $algo);
-    }
-
-    /**
-     * Encodes the payload into a JWT.
-     *
-     * @assert (array('name' => 'ภาษาไทย', 'id' => 1234567890)) [==] 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJuYW1lIjoiXHUwZTIwXHUwZTMyXHUwZTI5XHUwZTMyXHUwZTQ0XHUwZTE3XHUwZTIyIiwiaWQiOjEyMzQ1Njc4OTB9.fAdzmsl4AIGAyNGt7MfNum9DUIxn6DGMhdn1hw4PwwE'
-     *
-     * @param array $payload The payload data to be encoded.
-     *
-     * @return string The encoded JWT.
-     */
-    public function encode($payload)
-    {
-        // Prepare the JWT header
-        $header = [
-            'typ' => 'JWT', // JWT type
-            'alg' => $this->algorithm // Algorithm used for encoding
-        ];
-
-        // Encode the header
-        $headerEncoded = $this->base64UrlEncode(json_encode($header));
-
-        // Check if JWT expiration time is specified
-        if ($this->expireTime > 0) {
-            $payload['expired'] = time() + $this->expireTime; // Add expiration time to payload
-        }
-
-        // Encode the payload
-        $payloadEncoded = $this->base64UrlEncode(json_encode($payload));
-
-        // Generate the signature
-        $signature = $this->generateSignature($headerEncoded, $payloadEncoded);
-
-        // Combine the header, payload, and signature into a JWT and return
-        return "$headerEncoded.$payloadEncoded.$signature";
-    }
-
-    /**
-     * Decodes a JWT and retrieves the payload.
-     *
-     * @assert ('eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJuYW1lIjoiXHUwZTIwXHUwZTMyXHUwZTI5XHUwZTMyXHUwZTQ0XHUwZTE3XHUwZTIyIiwiaWQiOjEyMzQ1Njc4OTB9.fAdzmsl4AIGAyNGt7MfNum9DUIxn6DGMhdn1hw4PwwE') [==] array('name' => 'ภาษาไทย', 'id' => 1234567890)
-     *
-     * @param string $jwt The JWT to decode.
-     *
-     * @return array The decoded payload data.
-     * @throws \Exception If the token format is invalid.
-     */
-    public function decode($jwt)
-    {
-        // Split the JWT into Header, Payload, and Signature parts
-        $parts = explode('.', $jwt);
-
-        // Check if all three parts (Header, Payload, and Signature) are present
-        if (count($parts) !== 3) {
-            throw new \Exception('Invalid token format');
-        }
-
-        // Decode the Payload
-        $decodedPayload = $this->base64UrlDecode($parts[1]);
-
-        // Convert the decoded payload from JSON to an associative array
-        $payloadData = json_decode($decodedPayload, true);
-
-        // Remove the expiration time if it is specified in the payload
-        if ($this->expireTime > 0) {
-            unset($payloadData['expired']);
-        }
-
-        // Return the decoded payload
-        return $payloadData;
-    }
-
-    /**
-     * Verifies the integrity and validity of a JWT.
-     *
-     * @assert ('eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJuYW1lIjoiXHUwZTIwXHUwZTMyXHUwZTI5XHUwZTMyXHUwZTQ0XHUwZTE3XHUwZTIyIiwiaWQiOjEyMzQ1Njc4OTB9.fAdzmsl4AIGAyNGt7MfNum9DUIxn6DGMhdn1hw4PwwE') [==] array('name' => 'ภาษาไทย', 'id' => 1234567890)
-     * @assert ('eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJuYW1lIjoiXHUwZTIwXHUwZTMyXHUwZTI5XHUwZTMyXHUwZTQ0XHAwZTE3XHUwZTIyIiwiaWQiOjEyMzQ1Njc4OTB9.fAdzmsl4AIGAyNGt7MfNum9DUIxn6DGMhdn1hw4PwwE') [throws] \Exception
-     *
-     * @param string $jwt The JWT to verify.
-     *
-     * @return array The decoded payload data.
-     * @throws \Exception If the token format is invalid, the signature is invalid, or the token has expired.
-     */
-    public function verify($jwt)
-    {
-        // Split the JWT into Header, Payload, and Signature parts
-        $parts = explode('.', $jwt);
-
-        // Check if all three parts (Header, Payload, and Signature) are present
-        if (count($parts) !== 3) {
-            throw new \Exception('Invalid token format');
-        }
-
-        // Generate the expected signature based on the received Header and Payload
-        $signatureExpected = $this->generateSignature($parts[0], $parts[1]);
-
-        // Check if the expected signature matches the signature in the JWT
-        if ($signatureExpected !== $parts[2]) {
-            throw new \Exception('Invalid signature');
-        }
-
-        // Decode the Payload
-        $decodedPayload = $this->base64UrlDecode($parts[1]);
-
-        // Convert the decoded payload from JSON to an associative array
-        $payloadData = json_decode($decodedPayload, true);
-
-        if ($this->expireTime > 0) {
-            // Check if the Payload has expired (if expiration time is specified)
-            if ($payloadData['expired'] < time()) {
-                throw new \Exception('Token has expired');
-            }
-
-            // Remove the expiration time
-            unset($payloadData['expired']);
-        }
-
-        // Return the decoded payload
-        return $payloadData;
-    }
-
-    /**
-     * Generates a signature using the specified algorithm.
-     *
-     * @param string $header The JWT header.
-     * @param string $payload The JWT payload.
-     *
-     * @return string The generated signature.
-     */
-    private function generateSignature($header, $payload)
-    {
-        // Encode the secret key
-        $signature = hash_hmac($this->hashHmacAlgorithms[$this->algorithm], "$header.$payload", $this->secretKey, true);
-        // Return the encoded data
-        return $this->base64UrlEncode($signature);
-    }
-
-    /**
-     * Encodes data using Base64.
-     *
+     * base64url encode
      * @param string $data
-     *
-     * @return string
      */
-    private function base64UrlEncode($data)
+    private static function b64u_encode($data)
     {
-        // Replace '+' with '-' and '/' with '_'
-        $base64Url = strtr(base64_encode($data), '+/', '-_');
-        // Remove trailing '=' and return the result
-        return rtrim($base64Url, '=');
+        return rtrim(strtr(base64_encode($data), '+/', '-_'), '=');
     }
 
     /**
-     * Decodes data encoded with base64UrlEncode.
-     *
+     * base64url decode
      * @param string $data
-     *
-     * @return string
+     * @return mixed
      */
-    private function base64UrlDecode($data)
+    private static function b64u_decode($data)
     {
-        // Pad the data with trailing '=' to match Base64 format
-        $data = str_pad($data, strlen($data) % 4, '=', STR_PAD_RIGHT);
-        // Replace '-' with '+' and '_' with '/' and return the result
+        $remainder = strlen($data) % 4;
+        if ($remainder) {
+            $data .= str_repeat('=', 4 - $remainder);
+        }
         return base64_decode(strtr($data, '-_', '+/'));
+    }
+
+    /**
+     * Encode JWT
+     * @param array $payload
+     * @param $secret
+     * @param $algo
+     */
+    public static function encode(array $payload, $secret, $algo = 'HS256')
+    {
+        if ($secret === null || $secret === '') {
+            throw new \InvalidArgumentException('JWT secret must not be empty');
+        }
+        $header = ['typ' => 'JWT', 'alg' => $algo];
+        $segments = [];
+        $segments[] = self::b64u_encode(json_encode($header));
+        $segments[] = self::b64u_encode(json_encode($payload));
+        $signingInput = implode('.', $segments);
+        $sig = self::sign($signingInput, $secret, $algo);
+        $segments[] = self::b64u_encode($sig);
+        return implode('.', $segments);
+    }
+
+    /**
+     * Decode JWT
+     * @param string $jwt
+     * @param string $secret
+     * @param array $allowedAlgos
+     * @return mixed
+     */
+    public static function decode($jwt, $secret, $allowedAlgos = ['HS256'])
+    {
+        $parts = explode('.', $jwt);
+        if (count($parts) != 3) {
+            return null;
+        }
+        // Reject empty secrets — an empty secret would make signatures forgeable.
+        if ($secret === null || $secret === '') {
+            return null;
+        }
+        list($bh, $bp, $bs) = $parts;
+        $header = json_decode(self::b64u_decode($bh), true);
+        $payload = json_decode(self::b64u_decode($bp), true);
+        $sig = self::b64u_decode($bs);
+        if (empty($header) || empty($payload)) {
+            return null;
+        }
+        $alg = $header['alg'] ?? '';
+        // The algorithm MUST be in the server-controlled allow-list. This also
+        // rejects "none" and prevents algorithm-confusion attacks.
+        if (!in_array($alg, $allowedAlgos, true)) {
+            return null;
+        }
+        $signingInput = $bh.'.'.$bp;
+        try {
+            $expected = self::sign($signingInput, $secret, $alg);
+        } catch (\InvalidArgumentException $e) {
+            // Unsupported algorithm — refuse rather than silently fall back.
+            return null;
+        }
+        if (!hash_equals($expected, $sig)) {
+            return null;
+        }
+        // check nbf (not before)
+        if (isset($payload['nbf']) && time() < $payload['nbf']) {
+            return null;
+        }
+        // check exp
+        if (isset($payload['exp']) && time() >= $payload['exp']) {
+            return null;
+        }
+        return $payload;
+    }
+
+    /**
+     * Sign JWT
+     * @param string $data
+     * @param string $secret
+     * @param string $algo
+     */
+    private static function sign($data, $secret, $algo)
+    {
+        switch ($algo) {
+            case 'HS256':
+                return hash_hmac('sha256', $data, $secret, true);
+            case 'HS384':
+                return hash_hmac('sha384', $data, $secret, true);
+            case 'HS512':
+                return hash_hmac('sha512', $data, $secret, true);
+            default:
+                // Refuse unknown/unsupported algorithms instead of silently
+                // HMAC-signing them (which would enable algorithm confusion).
+                throw new \InvalidArgumentException('Unsupported JWT algorithm: '.$algo);
+        }
     }
 }

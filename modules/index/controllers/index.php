@@ -2,7 +2,7 @@
 /**
  * @filesource modules/index/controllers/index.php
  *
- * @copyright 2016 Goragod.com
+ * @copyright 2026 Goragod.com
  * @license https://www.kotchasan.com/license/
  *
  * @see https://www.kotchasan.com/
@@ -10,183 +10,372 @@
 
 namespace Index\Index;
 
-use Gcms\Gcms;
-use Gcms\Login;
 use Kotchasan\Http\Request;
 use Kotchasan\Http\Response;
+use Kotchasan\Language;
 use Kotchasan\Template;
+use Kotchasan\Text;
+use Web\Gcms;
+use Web\Login;
 
 /**
- * Controller สำหรับแสดงหน้าเว็บ
+ * Controller for displaying web pages
  *
  * @author Goragod Wiriya <admin@goragod.com>
  *
  * @since 1.0
  */
-class Controller extends \Kotchasan\Controller
+class Controller extends \Web\Controller
 {
     /**
-     * หน้าหลักเว็บไซต์ (index.html)
-     * ให้ผลลัพท์เป็น HTML
+     * @var mixed
+     */
+    private $isAdmin;
+
+    /**
+     * Main website page (index.html)
+     * Returns HTML
      *
      * @param Request $request
      */
     public function index(Request $request)
     {
-        // ตัวแปรป้องกันการเรียกหน้าเพจโดยตรง
+        if (!defined('DATA_FOLDER')) {
+            // Domain not found, show 404 page
+            \Index\Usernotfound\Controller::execute();
+            exit;
+        }
+        // Variable to prevent direct page access
         define('MAIN_INIT', 'indexhtml');
-        // session cookie
-        $request->initSession();
-        // ตรวจสอบการ login
+        // Verify login (supports both JWT Token and Session)
         Login::create($request);
-        // template ที่กำลังใช้งานอยู่
-        self::$cfg->skin = $request->get('skin', $request->session('skin', self::$cfg->skin)->toString())->filter('a-z0-9\-');
-        self::$cfg->skin = is_file(APP_PATH.'skin/'.self::$cfg->skin.'/style.css') ? self::$cfg->skin : 'rooster';
-        $_SESSION['skin'] = self::$cfg->skin;
-        Template::init('skin/'.self::$cfg->skin);
-        // ตรวจสอบหน้าที่จะแสดง
-        if (!empty(self::$cfg->maintenance_mode) && !Login::isAdmin()) {
+        // Language being used
+        Language::name();
+        // Set theme for template
+        Template::init(self::$cfg->skin);
+        $page = null;
+        // website administrator
+        $this->isAdmin = Login::isAdmin();
+        if (!empty(self::$cfg->maintenance_mode) && !$this->isAdmin) {
             Gcms::$view = new \Index\Maintenance\View();
         } elseif (!empty(self::$cfg->show_intro) && str_replace([BASE_PATH, '/'], '', $request->getUri()->getPath()) == '') {
             Gcms::$view = new \Index\Intro\View();
         } else {
-            // View
-            Gcms::$view = new \Gcms\View();
-            // โหลดเมนูทั้งหมดเรียงตามลำดับเมนู (รายการแรกคือหน้า Home)
-            Gcms::$menu = \Index\Menu\Controller::create();
-            // counter
-            $counter = \Index\Counter\Model::init($request);
-            // โหลดโมดูลที่ติดตั้งแล้ว และสามารถใช้งานได้ และ โหลด Counter
-            Gcms::$module = \Index\Module\Controller::init(Gcms::$menu, $counter->new_day);
-            // ข้อมูลเว็บไซต์
-            Gcms::$site = [
-                '@type' => 'Organization',
-                'name' => self::$cfg->web_title,
-                'description' => self::$cfg->web_description,
-                'url' => WEB_URL.'index.php'
-            ];
-            // logo
-            $img_logo = '{WEBTITLE}';
-            $logo = '';
-            if (!empty(self::$cfg->logo) && is_file(ROOT_PATH.DATA_FOLDER.'image/'.self::$cfg->logo)) {
-                $info = @getimagesize(ROOT_PATH.DATA_FOLDER.'image/'.self::$cfg->logo);
-                if ($info && $info[0] > 0 && $info[1] > 0) {
-                    $logo = WEB_URL.DATA_FOLDER.'image/'.self::$cfg->logo;
-                    $img_logo = '<img alt="{WEBTITLE}" src="'.$logo.'">';
-                    Gcms::$site['logo'] = [
-                        '@type' => 'ImageObject',
-                        'url' => $logo,
-                        'width' => $info[0]
-                    ];
-                }
-            }
-            if (is_file(ROOT_PATH.DATA_FOLDER.'image/site_logo.jpg')) {
-                $info = @getimagesize(ROOT_PATH.DATA_FOLDER.'image/site_logo.jpg');
-                if ($info && $info[0] > 0 && $info[1] > 0) {
-                    Gcms::$site['logo'] = [
-                        '@type' => 'ImageObject',
-                        'url' => WEB_URL.DATA_FOLDER.'image/site_logo.jpg',
-                        'width' => $info[0]
-                    ];
-                }
-            }
-            // หน้า home (เมนูรายการแรกสุด)
-            $home = Gcms::$menu->homeMenu();
+            // View for GCMS
+            Gcms::$view = new \Web\View();
+            // Retrieve login information
+            $login = Login::isMember();
+            // Load menu
+            Gcms::$menu = \Index\Menu\Controller::init($login);
+            // โหลด Counter
+            $new_day = \Index\Counter\Model::init($request);
+            // Load installed modules and can be used and Cron
+            Gcms::$module = \Index\Module\Controller::init(Gcms::$menu, $new_day);
+            // Website information
+            $img_logo = $this->setupSiteInfo();
+            // home page (first menu item)
+            $home = Gcms::$menu->getHomeMenu();
             if ($home) {
                 $home->canonical = WEB_URL.'index.php';
                 // breadcrumb หน้า home
                 Gcms::$view->addBreadcrumb($home->canonical, $home->menu_text, $home->menu_tooltip, 'icon-home');
             }
-            // โมดูลแรกสุด ใส่ลงใน Javascript
-            Gcms::$view->addScript('var FIRST_MODULE = "'.Gcms::$module->getFirst().'";');
-            // ตรวจสอบโมดูลที่เรียก
+            // Check the called module
             $modules = Gcms::$module->checkModuleCalled($request->getQueryParams());
+            // Load all widgets
+            Gcms::$widget = \Index\Widget\Controller::load();
             if (!empty($modules)) {
-                // โหลดโมดูลที่เรียก
+                // Load the calling module
                 $page = createClass($modules->className)->{$modules->method}($request, $modules->module);
             }
             if (empty($page)) {
-                // ไม่พบหน้าที่เรียก (index)
-                $page = createClass('Index\Error\Controller')->init('index');
+                // The requested page (index) was not found.
+                $page = \Index\Error\Controller::create()->init('index');
             }
-            $favicon = is_file(ROOT_PATH.DATA_FOLDER.'image/favicon.ico') ? WEB_URL.DATA_FOLDER.'image/favicon.ico' : WEB_URL.'favicon.ico';
-            // meta tag
-            $meta = [
-                'generator' => '<meta name="generator" content="GCMS AJAX CMS design by https://gcms.in.th">',
-                'og:title' => '<meta property="og:title" content="'.$page->topic.'">',
-                'description' => '<meta name="description" content="'.$page->description.'">',
-                'og:description' => '<meta property="og:description" content="'.$page->description.'">',
-                'keywords' => '<meta name="keywords" content="'.$page->keywords.'">',
-                'og:site_name' => '<meta property="og:site_name" content="'.strip_tags(self::$cfg->web_title).'">',
-                'og:type' => '<meta property="og:type" content="article">',
-                'shortcut_icon' => '<link rel="shortcut icon" href="'.$favicon.'" type="image/x-icon">',
-                'icon' => '<link rel="icon" href="'.$favicon.'" type="image/x-icon">'
-            ];
-            if (empty($page->image_src) && isset(Gcms::$site['logo'])) {
-                $page->image_src = Gcms::$site['logo']['url'];
-            }
-            if (!empty($page->image_src)) {
-                $info = getimagesize($page->image_src);
-                if ($info) {
-                    $meta['image_src'] = '<link rel="image_src" href="'.$page->image_src.'">';
-                    $meta['og:image'] = '<meta property="og:image" content="'.$page->image_src.'">';
-                    $meta['og:image:alt'] = '<meta property="og:image:alt" content="'.$page->topic.'">';
-                    $meta['og:image:width'] = '<meta property="og:image:width" content="'.$info[0].'">';
-                    $meta['og:image:height'] = '<meta property="og:image:height" content="'.$info[1].'">';
-                    $meta['og:image:type'] = '<meta property="og:image:type" content="'.$info['mime'].'">';
-                }
-            }
-            if (!empty(self::$cfg->facebook_appId)) {
-                $meta['og:app_id'] = '<meta property="fb:app_id" content="'.self::$cfg->facebook_appId.'">';
-            }
-            if (isset($page->canonical)) {
-                $meta['canonical'] = '<link rel="canonical" href="'.$page->canonical.'">';
-                $meta['og:url'] = '<meta property="og:url" content="'.$page->canonical.'">';
-            }
-            if (!empty(self::$cfg->google_site_verification)) {
-                $meta['google_site_verification'] = '<meta name="google-site-verification" content="'.self::$cfg->google_site_verification.'">';
-            }
-            if (!empty(self::$cfg->theme_color)) {
-                $meta['manifest'] = '<link rel="manifest" href="'.WEB_URL.'manifest.php">';
-                $meta['theme-color'] = '<meta name="theme-color" content="'.self::$cfg->theme_color.'">';
-            }
-            if (!Login::isAdmin()) {
-                if (!empty(self::$cfg->google_ads_code)) {
-                    $meta['adsense'] = '<script data-ad-client="ca-'.self::$cfg->google_ads_code.'" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>';
-                }
-                if (!empty(self::$cfg->google_tag)) {
-                    $meta['gtag'] = '<script async src="https://www.googletagmanager.com/gtag/js?id='.self::$cfg->google_tag.'"></script>';
-                    $meta['gtag'] .= '<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag("js",new Date());gtag("config","'.self::$cfg->google_tag.'");</script>';
-                }
-            }
-            Gcms::$view->setMetas($meta);
-            // ภาษาที่ติดตั้ง
+            // Set Meta Tags
+            $this->setupMetaTags($page);
+
+            // Languages Menus
             $languages = Template::create('', '', 'language');
             foreach (self::$cfg->languages as $lng) {
                 $languages->add([
                     '/{LNG}/' => $lng
                 ]);
             }
-            // เนื้อหา
+            // content
             Gcms::$view->setContents([
-                // content
-                '/{CONTENT}/' => $page->detail,
-                // โลโก
+                // Home page content
+                '/{MAIN}/' => $page->detail,
+                // logo
                 '/{LOGO}/' => $img_logo,
-                '/{BGLOGO}/' => $logo,
-                // title
+                // Title
                 '/{TITLE}/' => $page->topic,
-                // ภาษาที่ติดตั้ง
+                // Languages Menus
                 '/{LANGUAGES}/' => $languages->render()
             ]);
-            // เมนูหลัก
-            Gcms::$view->setContents(Gcms::$menu->render(isset($page->menu) ? $page->menu : $page->module));
         }
-        // ส่งออก เป็น HTML
+        // Export to HTML
+        $this->sendResponse($page);
+    }
+
+    /**
+     * Set up website information (Organization JSON-LD + header logo)
+     */
+    private function setupSiteInfo()
+    {
+        $company = self::$cfg->company ?? [];
+
+        // Build Organization schema — prefer BookStore for bookstore CMS
+        Gcms::$site = [
+            '@type' => !empty(self::$cfg->site_type) ? self::$cfg->site_type : 'Organization',
+            'name' => self::$cfg->web_title,
+            'description' => self::$cfg->web_description ?? '',
+            'url' => WEB_URL.'index.php'
+        ];
+
+        // Contact info from company config
+        if (!empty($company['phone'])) {
+            Gcms::$site['telephone'] = $company['phone'];
+        }
+        if (!empty($company['email'])) {
+            Gcms::$site['email'] = $company['email'];
+        }
+        if (!empty($company['address'])) {
+            Gcms::$site['address'] = [
+                '@type' => 'PostalAddress',
+                'streetAddress' => $company['address'],
+                'addressCountry' => 'TH'
+            ];
+        }
+
+        // Social profiles (sameAs)
+        $sameAs = [];
+        if (!empty(self::$cfg->facebook)) {
+            $sameAs[] = self::$cfg->facebook;
+        }
+        if (!empty(self::$cfg->line_id)) {
+            $sameAs[] = 'https://line.me/ti/p/'.self::$cfg->line_id;
+        }
+        if (!empty($sameAs)) {
+            Gcms::$site['sameAs'] = $sameAs;
+        }
+
+        // Logo: priority order — header logo → company_logo → site_logo
+        $img_logo = '<span>{WEBTITLE}</span>';
+        $imgType = self::$cfg->stored_img_type ?? '.webp';
+
+        $logoSources = [];
+        if (!empty(self::$cfg->header['logo'])) {
+            $logoSources[] = ['path' => ROOT_PATH.DATA_FOLDER.'image/'.self::$cfg->header['logo'],
+                'url' => WEB_URL.DATA_FOLDER.'image/'.self::$cfg->header['logo'],
+                'forHeader' => true];
+        }
+        $logoSources[] = ['path' => ROOT_PATH.DATA_FOLDER.'image/company_logo'.$imgType,
+            'url' => WEB_URL.DATA_FOLDER.'image/company_logo'.$imgType,
+            'forHeader' => false];
+        $logoSources[] = ['path' => ROOT_PATH.DATA_FOLDER.'image/site_logo'.$imgType,
+            'url' => WEB_URL.DATA_FOLDER.'image/site_logo'.$imgType,
+            'forHeader' => false];
+
+        foreach ($logoSources as $src) {
+            if (!is_file($src['path'])) {
+                continue;
+            }
+
+            $info = @getimagesize($src['path']);
+            if ($info && $info[0] > 0 && $info[1] > 0) {
+                // First valid logo = header img (highest priority)
+                if ($src['forHeader']) {
+                    $img_logo = '<img src="'.$src['url'].'" alt="{WEBTITLE}" width="'.$info[0].'" height="'.$info[1].'">';
+                }
+                // Set JSON-LD logo only if not already set
+                if (!isset(Gcms::$site['logo'])) {
+                    Gcms::$site['logo'] = [
+                        '@type' => 'ImageObject',
+                        'url' => $src['url'],
+                        'width' => $info[0],
+                        'height' => $info[1]
+                    ];
+                }
+                if ($src['forHeader']) {
+                    break;
+                }
+                // header logo found — stop
+            }
+        }
+
+        return $img_logo;
+    }
+
+    /**
+     * Set up Meta Tags
+     *
+     * @param object $page
+     */
+    private function setupMetaTags($page)
+    {
+        $topic = Text::htmlspecialchars($page->topic ?? '');
+        $description = Text::htmlspecialchars($page->description ?? '');
+        $keywords = Text::htmlspecialchars($page->keywords ?? '');
+        $siteName = Text::htmlspecialchars(strip_tags(self::$cfg->web_title));
+
+        // Favicon
+        $favicon = is_file(ROOT_PATH.DATA_FOLDER.'image/favicon.ico')
+        ? WEB_URL.DATA_FOLDER.'image/favicon.ico'
+        : WEB_URL.'favicon.ico';
+
+        // og:type — "website" for home/listing pages, "article" for content pages
+        $ogType = (!empty($page->is_home) || empty($page->canonical) || $page->canonical === WEB_URL.'index.php')
+        ? 'website'
+        : 'article';
+
+        // robots — noindex for 404 or pages that explicitly request it
+        $robotsContent = (!empty($page->status) && $page->status == 404) || !empty($page->noindex)
+        ? 'noindex, nofollow'
+        : 'index, follow';
+
+        // Locale — map language code to og:locale format
+        $langMap = ['th' => 'th_TH', 'en' => 'en_US', 'zh' => 'zh_CN', 'ja' => 'ja_JP'];
+        $ogLocale = $langMap[LANGUAGE] ?? strtolower(LANGUAGE).'_'.strtoupper(LANGUAGE);
+
+        $meta = [
+            'generator' => '<meta name="generator" content="GCMS AJAX CMS design by https://gcms.in.th">',
+            'robots' => '<meta name="robots" content="'.$robotsContent.'">',
+            'description' => '<meta name="description" content="'.$description.'">',
+            'keywords' => !empty($keywords) ? '<meta name="keywords" content="'.$keywords.'">' : '',
+            'og:locale' => '<meta property="og:locale" content="'.$ogLocale.'">',
+            'og:type' => '<meta property="og:type" content="'.$ogType.'">',
+            'og:title' => '<meta property="og:title" content="'.$topic.'">',
+            'og:description' => '<meta property="og:description" content="'.$description.'">',
+            'og:site_name' => '<meta property="og:site_name" content="'.$siteName.'">',
+            'icon' => '<link rel="icon" href="'.$favicon.'" type="image/x-icon">'
+        ];
+
+        // Apple touch icon (PNG preferred, fallback to favicon)
+        $touchIcon = is_file(ROOT_PATH.DATA_FOLDER.'image/apple-touch-icon.png')
+        ? WEB_URL.DATA_FOLDER.'image/apple-touch-icon.png'
+        : $favicon;
+        $meta['apple-touch-icon'] = '<link rel="apple-touch-icon" href="'.$touchIcon.'">';
+
+        // OG image — use page image, fallback to site logo
+        if (empty($page->image_src) && isset(Gcms::$site['logo']['url'])) {
+            $page->image_src = Gcms::$site['logo']['url'];
+        }
+        if (!empty($page->image_src)) {
+            // Only call getimagesize for local files to avoid slow network requests
+            $localPath = str_replace(WEB_URL, ROOT_PATH, $page->image_src);
+            $info = is_file($localPath) ? @getimagesize($localPath) : false;
+            $meta['og:image'] = '<meta property="og:image" content="'.Text::htmlspecialchars($page->image_src).'">';
+            $meta['og:image:alt'] = '<meta property="og:image:alt" content="'.$topic.'">';
+            if ($info) {
+                $meta['og:image:width'] = '<meta property="og:image:width" content="'.$info[0].'">';
+                $meta['og:image:height'] = '<meta property="og:image:height" content="'.$info[1].'">';
+                $meta['og:image:type'] = '<meta property="og:image:type" content="'.$info['mime'].'">';
+            }
+            $meta['twitter:card'] = '<meta name="twitter:card" content="summary_large_image">';
+            $meta['twitter:image'] = '<meta name="twitter:image" content="'.Text::htmlspecialchars($page->image_src).'">';
+        } else {
+            $meta['twitter:card'] = '<meta name="twitter:card" content="summary">';
+        }
+        $meta['twitter:title'] = '<meta name="twitter:title" content="'.$topic.'">';
+        $meta['twitter:description'] = '<meta name="twitter:description" content="'.$description.'">';
+
+        // Canonical + og:url
+        if (isset($page->canonical)) {
+            $canonical = Text::htmlspecialchars($page->canonical);
+            $meta['canonical'] = '<link rel="canonical" href="'.$canonical.'">';
+            $meta['og:url'] = '<meta property="og:url" content="'.$canonical.'">';
+            $meta['twitter:url'] = '<meta name="twitter:url" content="'.$canonical.'">';
+        }
+
+        // Facebook App ID
+        if (!empty(self::$cfg->facebook_appId)) {
+            $meta['og:app_id'] = '<meta property="fb:app_id" content="'.Text::htmlspecialchars(self::$cfg->facebook_appId).'">';
+        }
+
+        // Google site verification
+        if (!empty(self::$cfg->google_site_verification)) {
+            $meta['google_site_verification'] = '<meta name="google-site-verification" content="'.Text::htmlspecialchars(self::$cfg->google_site_verification).'">';
+        }
+
+        // PWA
+        if (!empty(self::$cfg->theme_color)) {
+            $meta['manifest'] = '<link rel="manifest" href="'.WEB_URL.'manifest.php">';
+            $meta['theme-color'] = '<meta name="theme-color" content="'.Text::htmlspecialchars(self::$cfg->theme_color).'">';
+            $meta['serviceworker'] = '<script>if("serviceWorker" in navigator)navigator.serviceWorker.register("'.WEB_URL.'sw.js");</script>';
+        }
+
+        // Analytics & Ads (non-admin only)
+        if (!$this->isAdmin) {
+            if (!empty(self::$cfg->google_ads_code)) {
+                $meta['adsense'] = '<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-'.Text::htmlspecialchars(self::$cfg->google_ads_code).'" crossorigin="anonymous"></script>';
+            }
+            if (!empty(self::$cfg->google_tag)) {
+                $gtag = Text::htmlspecialchars(self::$cfg->google_tag);
+                $meta['gtag'] = '<script async src="https://www.googletagmanager.com/gtag/js?id='.$gtag.'"></script>';
+                $meta['gtag'] .= '<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag("js",new Date());gtag("config","'.$gtag.'");</script>';
+            }
+        }
+
+        // Module scripts/styles — CSS in head, JS deferred to footer
+        $footerScripts = [];
+
+        foreach (Gcms::$module->getInstalledOwners() as $owner => $modules) {
+            if (is_file(ROOT_PATH.'modules/'.$owner.'/script.js')) {
+                $meta['script_modules_'.$owner] = '<script src="'.WEB_URL.'modules/'.$owner.'/script.js"></script>';
+            }
+            if (is_file(ROOT_PATH.'themes/'.self::$cfg->skin.'/'.$owner.'/style.css')) {
+                $meta['style_modules_'.$owner] = '<link rel="stylesheet" href="'.WEB_URL.'themes/'.self::$cfg->skin.'/'.$owner.'/style.css">';
+            }
+        }
+
+        $path = ROOT_PATH.'widgets/';
+        if (is_dir($path)) {
+            foreach (scandir($path) as $name) {
+                if ($name[0] !== '.') {
+                    if (is_file($path.'/'.$name.'/script.js')) {
+                        $meta['script_widgets_'.$name] = '<script src="'.WEB_URL.'widgets/'.$name.'/script.js"></script>';
+                    }
+                    if (is_file($path.'/'.$name.'/style.css')) {
+                        $meta['style_widgets_'.$name] = '<link rel="stylesheet" href="'.WEB_URL.'widgets/'.$name.'/style.css">';
+                    }
+                }
+            }
+        }
+
+        // Remove empty entries
+        $meta = array_filter($meta);
+
+        // Add Meta Tags to head
+        Gcms::$view->setMetas($meta);
+
+        // Add Javascripts to footer
+        if (!empty($footerScripts)) {
+            Gcms::$view->setFooterMetas($footerScripts);
+        }
+    }
+
+    /**
+     * Export data to HTML
+     *
+     * @param object $page
+     */
+    private function sendResponse($page)
+    {
         $response = new Response();
+
+        // Maintenance/Intro mode: $page is null, View handles its own rendering
+        if ($page === null) {
+            $response = $response->withContent(Gcms::$view->renderHTML());
+            $response->send();
+            return;
+        }
+
         if (isset($page->status) && $page->status == 404) {
             $response = $response->withStatus(404)->withAddedHeader('Status', '404 Not Found');
         }
-        $response->withContent(Gcms::$view->renderHTML())->send();
+        $menu = isset($page->module) ? $page->module : 'home';
+        $response = $response->withContent(Gcms::$view->renderWeb($menu));
+        $response->send();
     }
 }

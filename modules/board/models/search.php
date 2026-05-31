@@ -41,8 +41,12 @@ class Model extends \Kotchasan\Model
             $where1[] = ['Q.topic', 'LIKE', '%'.$item.'%'];
             $where1[] = ['Q.detail', 'LIKE', '%'.$item.'%'];
             $where2[] = ['R.detail', 'LIKE', '%'.$item.'%'];
-            $score1[] = "MATCH (Q.`topic`) AGAINST('$item') + MATCH (Q.`detail`) AGAINST('$item')";
-            $score2[] = "MATCH (R.`detail`) AGAINST('$item')";
+            // $item is interpolated into a raw AGAINST('...') literal (not PDO-bound
+            // because it sits inside Sql::create), so escape quotes/backslashes to
+            // prevent SQL injection / literal breakout.
+            $term = str_replace(['\\', "'"], ['\\\\', "\\'"], (string) $item);
+            $score1[] = "MATCH (Q.`topic`) AGAINST('$term') + MATCH (Q.`detail`) AGAINST('$term')";
+            $score2[] = "MATCH (R.`detail`) AGAINST('$term')";
         }
         $db = $this->db();
         $q1 = $db->createQuery()

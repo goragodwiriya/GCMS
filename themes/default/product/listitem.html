@@ -1,0 +1,35 @@
+<article class="book-card block{COLS}" data-book-id="{ID}">
+  <a class="book-card-link" href="{URL}">
+    <!-- Book Image -->
+    <div class="book-card-image">
+      <img src="{THUMB}" alt="{TOPIC}" loading="lazy" />
+
+      <!-- Badges -->
+      <div class="product-badges">{BADGES}</div>
+
+      <!-- Stock Status Overlay -->
+      <div class="stock-status">{SHOW_STOCK}</div>
+    </div>
+
+    <!-- Book Info -->
+    <div class="book-card-body">
+      <h3 class="book-title">{TOPIC}</h3>
+
+      <!-- Book Meta -->
+      <div class="book-meta">
+        <span class="book-pages icon-file">
+          {PAGE} <span data-i18n>pages</span>
+        </span>
+      </div>
+
+      <!-- Book Footer -->
+      <div class="book-footer">
+        <div class="book-price-wrapper">
+          <span class="book-price">{PRICE}</span>
+          <span class="currency" data-i18n>THB</span>
+        </div>
+        {BUTTON}
+      </div>
+    </div>
+  </a>
+</article>

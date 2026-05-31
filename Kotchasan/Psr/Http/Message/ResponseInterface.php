@@ -1,5 +1,6 @@
 <?php
-namespace Psr\Http\Message;
+
+namespace Kotchasan\Psr\Http\Message;
 
 /**
  * Representation of an outgoing, server-side response.
@@ -24,7 +25,7 @@ interface ResponseInterface extends MessageInterface
      * The status code is a 3-digit integer result code of the server's attempt
      * to understand and satisfy the request.
      *
-     * @return int status code
+     * @return int Status code.
      */
     public function getStatusCode();
 
@@ -39,18 +40,14 @@ interface ResponseInterface extends MessageInterface
      * immutability of the message, and MUST return an instance that has the
      * updated status and reason phrase.
      *
+     * @link http://tools.ietf.org/html/rfc7231#section-6
+     * @link http://www.iana.org/assignments/http-status-codes/http-status-codes.xhtml
+     * @param int $code The 3-digit integer result code to set.
+     * @param string $reasonPhrase The reason phrase to use with the
      *     provided status code; if none is provided, implementations MAY
      *     use the defaults as suggested in the HTTP specification.
-     *
-     * @see http://tools.ietf.org/html/rfc7231#section-6
-     * @see http://www.iana.org/assignments/http-status-codes/http-status-codes.xhtml
-     *
-     * @param int    $code         the 3-digit integer result code to set
-     * @param string $reasonPhrase The reason phrase to use with the
-     *
-     * @throws \InvalidArgumentException for invalid status code arguments
-     *
      * @return static
+     * @throws \InvalidArgumentException For invalid status code arguments.
      */
     public function withStatus($code, $reasonPhrase = '');
 
@@ -63,10 +60,9 @@ interface ResponseInterface extends MessageInterface
      * listed in the IANA HTTP Status Code Registry) for the response's
      * status code.
      *
-     * @see http://tools.ietf.org/html/rfc7231#section-6
-     * @see http://www.iana.org/assignments/http-status-codes/http-status-codes.xhtml
-     *
-     * @return string reason phrase; must return an empty string if none present
+     * @link http://tools.ietf.org/html/rfc7231#section-6
+     * @link http://www.iana.org/assignments/http-status-codes/http-status-codes.xhtml
+     * @return string Reason phrase; must return an empty string if none present.
      */
     public function getReasonPhrase();
 }

@@ -1,70 +1,215 @@
 <?php
-/**
- * @filesource Kotchasan/Model.php
- *
- * @copyright 2016 Goragod.com
- * @license https://www.kotchasan.com/license/
- * @author Goragod Wiriya <admin@goragod.com>
- * @package Kotchasan
- */
 
 namespace Kotchasan;
 
-use Kotchasan\Database\Query;
+use Kotchasan\QueryBuilder\DeleteBuilder;
+use Kotchasan\QueryBuilder\InsertBuilder;
+use Kotchasan\QueryBuilder\SelectBuilder;
+use Kotchasan\QueryBuilder\UpdateBuilder;
 
 /**
- * This class serves as the base class for all models in the application.
- * It extends the Query class and provides common functionality for interacting with the database.
+ * Model Class
  *
- * @see https://www.kotchasan.com/
+ * This class serves as the base class for all models in the application.
+ * It provides an abstraction over the Database class and QueryBuilders for easier database operations.
+ *
+ * @package Kotchasan
  */
-class Model extends Query
+class Model extends \Kotchasan\KBase
 {
     /**
+     * The database instance.
+     *
+     * @var Database
+     */
+    protected $db;
+
+    /**
      * The name of the database connection to be used.
-     * This is used to load the connection settings from settings/database.php.
      *
      * @var string
      */
-    protected $conn = 'mysql';
+    protected $conn = 'default';
 
     /**
      * Class constructor
      */
     public function __construct()
     {
-        parent::__construct($this->conn);
+        $this->db = Database::create($this->conn);
     }
 
     /**
-     * Create a new instance of the model.
+     * Create a new query builder instance directly.
+     *
+     * @return \Kotchasan\QueryBuilder\QueryBuilderInterface
+     */
+    public static function createQuery()
+    {
+        $model = new static();
+        return $model->getDB()->createQuery();
+    }
+
+    /**
+     * Backward-compatible factory to create a model instance.
+     * Some code calls Model::create() to get a model instance.
      *
      * @return static
      */
     public static function create()
     {
-        return new static;
+        return new static();
     }
 
     /**
      * Create a new database connection instance.
      *
-     * @return \Kotchasan\Database\Driver
+     * @return Database
      */
     public static function createDb()
     {
-        $model = new static;
-        return $model->db();
+        $model = new static();
+        return $model->getDB();
     }
 
     /**
-     * Create a new QueryBuilder instance.
+     * Begin a database transaction.
      *
-     * @return \Kotchasan\Database\QueryBuilder
+     * @return bool
      */
-    public static function createQuery()
+    public function beginTransaction()
     {
-        $model = new static;
-        return $model->db()->createQuery();
+        return $this->db->beginTransaction();
+    }
+
+    /**
+     * Commit a database transaction.
+     *
+     * @return bool
+     */
+    public function commit()
+    {
+        return $this->db->commit();
+    }
+
+    /**
+     * Rollback a database transaction.
+     *
+     * @return bool
+     */
+    public function rollback()
+    {
+        return $this->db->rollBack();
+    }
+
+    /**
+     * Create a SELECT query builder.
+     *
+     * @param mixed ...$columns The columns to select
+     * @return SelectBuilder
+     */
+    public function select(...$columns)
+    {
+        // Handle different parameter patterns:
+        // select() -> '*'
+        // select('col') -> 'col'
+        // select('col1', 'col2') -> ['col1', 'col2']
+        // select(['col1', 'col2']) -> ['col1', 'col2']
+
+        if (empty($columns)) {
+            $columnsToPass = '*';
+        } elseif (count($columns) === 1) {
+            $columnsToPass = $columns[0];
+        } else {
+            $columnsToPass = $columns;
+        }
+
+        return $this->db->select($columnsToPass);
+    }
+
+    /**
+     * Create an INSERT query builder.
+     *
+     * @param string $table The table to insert into
+     * @return InsertBuilder
+     */
+    public function insert(string $table)
+    {
+        return $this->db->insert($table);
+    }
+
+    /**
+     * Create an UPDATE query builder.
+     *
+     * @param string $table The table to update
+     * @return UpdateBuilder
+     */
+    public function update(string $table)
+    {
+        return $this->db->update($table);
+    }
+
+    /**
+     * Create a DELETE query builder.
+     *
+     * @param string $table The table to delete from
+     * @return DeleteBuilder
+     */
+    public function delete(string $table)
+    {
+        return $this->db->delete($table);
+    }
+
+    /**
+     * Execute a raw SQL query.
+     *
+     * @param string $sql The SQL query
+     * @param array $params The query parameters
+     * @return mixed
+     */
+    public function raw(string $sql, array $params = [])
+    {
+        return $this->db->raw($sql, $params);
+    }
+
+    /**
+     * Get the last inserted ID.
+     *
+     * @return int|string
+     */
+    public function lastInsertId()
+    {
+        return $this->db->lastInsertId();
+    }
+
+    /**
+     * Get the underlying database instance.
+     *
+     * @return Database
+     */
+    public function getDB()
+    {
+        return $this->db;
+    }
+
+    /**
+     * Get the configured table name with prefix applied.
+     *
+     * @param string $table The logical table name
+     * @return string The physical table name with prefix
+     */
+    public function getTableName(string $table): string
+    {
+        return $this->db->getTableName($table);
+    }
+
+    /**
+     * Get the configured table prefix.
+     *
+     * @return string The table prefix (without underscore)
+     */
+    public function getPrefix(): string
+    {
+        return $this->db->getPrefix();
     }
 }

@@ -11,32 +11,32 @@
 namespace Index\Sitemap;
 
 /**
- * คลาสสำหรับโหลดรายการโมดูลที่ติดตั้งแล้วทั้งหมด จากฐานข้อมูลของ GCMS
+ * Class for loading the list of all installed modules from the GCMS database.
  *
  * @author Goragod Wiriya <admin@goragod.com>
  *
  * @since 1.0
  */
-class Model extends \Kotchasan\Model
+class Model
 {
     /**
-     * อ่านรายชื่อโมดูลทั้งหมดที่ติดตั้งแล้ว
+     * Read the list of all installed modules.
      *
      * @return array
      */
     public static function getModules()
     {
         if (defined('MAIN_INIT')) {
-            $model = new static;
-            return $model->db()->createQuery()
-                ->select('M.id', 'M.module', 'M.owner', 'I.language')
+            return \Kotchasan\Model::createQuery()
+                ->select('M.id', 'M.module', 'M.owner', 'D.language')
                 ->from('modules M')
-                ->join('index I', 'LEFT', [['I.module_id', 'M.id'], ['I.index', 1]])
-                ->where(['I.published', '1'])
+                ->join('index I', [['I.module_id', 'M.id'], ['I.index', 1]], 'LEFT')
+                ->join('index_detail D', [['D.id', 'I.id'], ['D.module_id', 'M.id']], 'LEFT')
+                ->where(['I.published', 1])
                 ->cacheOn()
-                ->execute();
+                ->fetchAll();
         } else {
-            // เรียก method โดยตรง
+            // Call method directly
             new \Kotchasan\Http\NotFound('Do not call method directly');
         }
     }

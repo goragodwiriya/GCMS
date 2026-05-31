@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Map Preview</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    #map {
+      width: 100%;
+      height: 100%;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="map"></div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    (function() {
+      'use strict';
+
+      var leafletMap = null;
+      var leafletMarker = null;
+
+      var DEFAULTS = {
+        lat: 13.727639,
+        lng: 100.520194,
+        zoom: 16,
+        marker_icon: '📍',
+        popup_name: '',
+        popup_address: '',
+        google_maps_url: ''
+      };
+
+      function buildMarkerHtml(icon) {
+        return '<div style="background:#FFFFFF;width:40px;height:40px;' +
+          'border-radius:50% 50% 50% 0;transform:rotate(-45deg);' +
+          'border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,.3)">' +
+          '<div style="transform:rotate(45deg);color:#fff;font-size:20px;' +
+          'text-align:center;line-height:34px">' + icon + '</div></div>';
+      }
+
+      function renderMap(cfg) {
+        var lat = parseFloat(cfg.lat) || DEFAULTS.lat;
+        var lng = parseFloat(cfg.lng) || DEFAULTS.lng;
+        var zoom = parseInt(cfg.zoom) || DEFAULTS.zoom;
+        var icon = cfg.marker_icon || DEFAULTS.marker_icon;
+        var name = cfg.popup_name || '';
+        var addr = cfg.popup_address || '';
+        var gmUrl = cfg.google_maps_url || '';
+
+        if (!leafletMap) {
+          leafletMap = L.map('map', {zoomControl: true}).setView([lat, lng], zoom);
+          L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+            maxZoom: 19
+          }).addTo(leafletMap);
+        } else {
+          leafletMap.setView([lat, lng], zoom);
+        }
+
+        if (leafletMarker) {leafletMap.removeLayer(leafletMarker);}
+
+        var customIcon = L.divIcon({
+          className: '',
+          html: buildMarkerHtml(icon),
+          iconSize: [40, 40],
+          iconAnchor: [20, 40],
+          popupAnchor: [0, -40]
+        });
+
+        leafletMarker = L.marker([lat, lng], {icon: customIcon}).addTo(leafletMap);
+
+        var popupHtml =
+          '<div style="text-align:center;padding:6px 10px;min-width:160px">' +
+          (name ? '<strong style="font-size:15px">' + name + '</strong><br>' : '') +
+          (addr ? '<p style="margin:6px 0;color:#6B645D;font-size:13px">' +
+            addr.replace(/\n/g, '<br>') + '</p>' : '') +
+          (gmUrl ? '<a href="' + gmUrl + '" target="_blank" rel="noopener" ' +
+            'style="font-weight:bold;font-size:13px;text-decoration:none">' +
+            'Google Maps →</a>' : '') +
+          '</div>';
+
+        leafletMarker.bindPopup(popupHtml).openPopup();
+
+        setTimeout(function() {
+          if (leafletMap) {leafletMap.invalidateSize();}
+        }, 120);
+      }
+
+      /* ── resolve API URL relative to this file's location ─────────────
+         iframe.html lives at:  widgets/map/iframe.html
+         API endpoint lives at: api/index/widgets/get?widget=map
+         Relative path:         ../../api/index/widgets/get?widget=map      */
+      function resolveApiUrl() {
+        var base = window.location.href.replace(/\/[^/]+$/, '/');
+        // Navigate two levels up from widgets/map/ to reach site root
+        return base + '../../api/index/widgets/get?widget=map';
+      }
+
+      document.addEventListener('DOMContentLoaded', function() {
+        fetch(resolveApiUrl(), {credentials: 'same-origin'})
+          .then(function(res) {return res.ok ? res.json() : Promise.reject(res.status);})
+          .then(function(json) {
+            renderMap((json && json.data) ? json.data : json);
+          })
+          .catch(function() {
+            renderMap(DEFAULTS);
+          });
+      });
+    })();
+  </script>
+</body>
+
+</html>

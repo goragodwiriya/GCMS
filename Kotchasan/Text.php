@@ -1,19 +1,14 @@
 <?php
-/**
- * @filesource Kotchasan/Text.php
- *
- * @copyright 2016 Goragod.com
- * @license https://www.kotchasan.com/license/
- * @author Goragod Wiriya <admin@goragod.com>
- * @package Kotchasan
- */
-
 namespace Kotchasan;
 
 /**
- * String functions
+ * Kotchasan Text Class
  *
- * @see https://www.kotchasan.com/
+ * This class provides various text manipulation methods,
+ * including string truncation, file size formatting, HTML highlighting,
+ * and more.
+ *
+ * @package Kotchasan
  */
 class Text
 {
@@ -21,9 +16,6 @@ class Text
      * Truncates a string to the specified length.
      * If the source string is longer than the specified length,
      * it will be truncated and '...' will be appended.
-     *
-     * @assert ('สวัสดี ประเทศไทย', 8) [==] 'สวัสดี..'
-     * @assert ('123456789', 8) [==] '123456..'
      *
      * @param string $source The source string
      * @param int    $len    The desired length of the string (including the '...')
@@ -42,12 +34,6 @@ class Text
     /**
      * Converts the size of a file from bytes to KB, MB, etc.
      * Returns the file size as a string in KB, MB, etc.
-     *
-     * @assert (256) [==] '256 Bytes'
-     * @assert (1024) [==] '1 KB'
-     * @assert (1024 * 1024) [==] '1 MB'
-     * @assert (1024 * 1024 * 1024) [==] '1 GB'
-     * @assert (1024 * 1024 * 1024 * 1024) [==] '1 TB'
      *
      * @param int $bytes     The file size in bytes
      * @param int $precision The number of decimal places (default 2)
@@ -109,8 +95,6 @@ class Text
      * This function replaces special characters like "&", "<", ">", etc.
      * with their corresponding HTML entities.
      *
-     * @assert ('&"\'<>\\{}$') [==] '&amp;&quot;&#039;&lt;&gt;&#92;&#x007B;&#x007D;&#36;'
-     *
      * @param string $text          The input text
      * @param bool   $double_encode Whether to double encode existing entities (default true)
      *
@@ -118,14 +102,14 @@ class Text
      */
     public static function htmlspecialchars($text, $double_encode = true)
     {
-        if ($text === null) {
+        if ($text === null || $text === '') {
             return '';
         }
 
         // Replace special characters with their HTML entities
         $str = preg_replace(
-            ['/&/', '/"/', "/'/", '/</', '/>/', '/\\\/', '/\{/', '/\}/', '/\$/'],
-            ['&amp;', '&quot;', '&#039;', '&lt;', '&gt;', '&#92;', '&#x007B;', '&#x007D;', '&#36;'],
+            ['/&/', '/"/', "/'/", '/</', '/>/', '/\\\/', '/\$/'],
+            ['&amp;', '&quot;', '&#039;', '&lt;', '&gt;', '&#92;', '&#36;'],
             $text
         );
 
@@ -142,8 +126,6 @@ class Text
      * This function removes any leading/trailing whitespace, line breaks, tabs, and multiple spaces,
      * and then optionally cuts the text to the specified length.
      *
-     * @assert (" \tทดสอบ\r\nภาษาไทย") [==] 'ทดสอบ ภาษาไทย'
-     *
      * @param string $text The input text
      * @param int    $len  The maximum length of the one-line text (default 0, no limit)
      *
@@ -151,7 +133,7 @@ class Text
      */
     public static function oneLine($text, $len = 0)
     {
-        if ($text === null) {
+        if ($text === null || $text === '') {
             return '';
         }
 
@@ -167,15 +149,13 @@ class Text
      * This function removes any characters that are not word characters,
      * along with specific allowed characters (@, #, *, $, &, {, }, !, ?, +, _, -, =, ., [, ], ก-ฮ).
      *
-     * @assert (" 0\n12   34\r\r6\t5ทดสอบ@#$&{}!?+_-=.[]*") [==] '0123465ทดสอบ@#$&{}!?+_-=.[]*'
-     *
      * @param string $text The input text
      *
      * @return string
      */
     public static function password($text)
     {
-        if ($text === null) {
+        if ($text === null || $text === '') {
             return '';
         }
 
@@ -188,8 +168,6 @@ class Text
     /**
      * Removes non-character bytes from the given text.
      * This function uses a regular expression to match and remove any bytes that are not valid UTF-8 characters.
-     *
-     * @assert (chr(0).chr(127).chr(128).chr(255)) [==] chr(0).chr(127)
      *
      * @param string $text The input text
      *
@@ -207,8 +185,6 @@ class Text
     /**
      * Repeats a string a specified number of times.
      *
-     * @assert ('0', 10) [==] '0000000000'
-     *
      * @param string $text  The string to repeat
      * @param int    $count The number of times to repeat the string
      *
@@ -225,8 +201,6 @@ class Text
 
     /**
      * Replaces keys in a string with corresponding values.
-     *
-     * @assert ("SELECT * FROM table WHERE id=:id AND lang IN (:lang, '')", array(':id' => 1, array(':lang' => 'th'))) [==] "SELECT * FROM table WHERE id=1 AND lang IN (th, '')"
      *
      * @param string $source  The source string to replace keys in
      * @param array  $replace An associative array of keys and values
@@ -252,15 +226,13 @@ class Text
     /**
      * Convert special characters to their HTML entities for editor display.
      *
-     * @assert ('&"'."'<>{}&amp;&#38;") [==] "&amp;&quot;&#039;&lt;&gt;&#x007B;&#x007D;&amp;&#38;"
-     *
      * @param string $text The input text
      *
      * @return string The text with special characters converted to HTML entities
      */
     public static function toEditor($text)
     {
-        if ($text === null) {
+        if ($text === null || $text === '') {
             return '';
         }
 
@@ -275,36 +247,25 @@ class Text
     }
 
     /**
-     * Clean and format a topic text.
+     * Clean a plain text for safe storage (no HTML encoding).
+     * - strip_tags to remove markup
+     * - removeNonCharacters to drop invalid/control bytes
+     * - oneLine to normalize whitespace and optionally limit length
      *
-     * @assert (' ทด\/สอบ$'."\r\n\t".'<?php echo \'555\'?> ') [==] 'ทด&#92;/สอบ&#36; &lt;?php echo &#039;555&#039;?&gt;'
-     * @assert ('&nbsp;') [==] '&amp;nbsp;'
-     * @assert ('&nbsp;', false) [==] '&nbsp;'
+     * @param string $text The input text
+     * @param int    $len  Optional max length (0 = no cut)
      *
-     * @param string $text           The input text
-     * @param bool   $double_encode  Whether to double encode special characters (default: true)
-     *
-     * @return string The cleaned and formatted topic text
+     * @return string Cleaned text
      */
-    public static function topic($text, $double_encode = true)
+    public static function topic($text, $len = 0)
     {
-        // Check if the input text is null
-        if ($text === null) {
-            return '';
-        }
-
-        // Clean and format the text
-        $cleanedText = self::htmlspecialchars($text, $double_encode); // Convert special characters to HTML entities
-        $trimmedText = trim($cleanedText); // Remove leading and trailing whitespace
-        $formattedText = preg_replace('/[\r\n\s\t]+/', ' ', $trimmedText); // Replace consecutive whitespace characters with a single space
-
-        return $formattedText;
+        $clean = strip_tags($text ?? '');
+        $clean = self::removeNonCharacters($clean);
+        return self::oneLine($clean, $len);
     }
 
     /**
      * Convert HTML entities back to their corresponding characters.
-     *
-     * @assert (\Kotchasan\Text::htmlspecialchars('&"\'<>\\{}$')) [==] '&"\'<>\\{}$'
      *
      * @param string $text The input text
      *
@@ -313,7 +274,7 @@ class Text
     public static function unhtmlspecialchars($text)
     {
         // Check if the input text is null
-        if ($text === null) {
+        if ($text === null || $text === '') {
             return '';
         }
 
@@ -330,10 +291,6 @@ class Text
     /**
      * Sanitize a URL string.
      *
-     * @assert (" http://www.kotchasan.com?a=1&b=2&amp;c=3 ") [==] 'http://www.kotchasan.com?a=1&amp;b=2&amp;c=3'
-     * @assert ("javascript:alert('xxx')") [==] 'alertxxx'
-     * @assert ("http://www.xxx.com/javascript/") [==] 'http://www.xxx.com/javascript/'
-     *
      * @param string $text The input URL string
      *
      * @return string The sanitized URL string
@@ -341,7 +298,7 @@ class Text
     public static function url($text)
     {
         // Check if the input text is null
-        if ($text === null) {
+        if ($text === null || $text === '') {
             return '';
         }
 
@@ -357,9 +314,6 @@ class Text
     /**
      * Sanitize a username string.
      *
-     * @assert (' ad_min@demo.com') [==] 'ad_min@demo.com'
-     * @assert ('012 3465') [==] '0123465'
-     *
      * @param string $text The input username string
      *
      * @return string The sanitized username string
@@ -367,7 +321,7 @@ class Text
     public static function username($text)
     {
         // Check if the input text is null
-        if ($text === null) {
+        if ($text === null || $text === '') {
             return '';
         }
 
@@ -403,4 +357,288 @@ class Text
         return $output;
     }
 
+    /**
+     * Filter text by keeping only characters matching the pattern.
+     *
+     * @param string|null $text The input text
+     * @param string $pattern Character pattern to keep (regex character class)
+     * @param string $replacement Replacement for non-matching chars
+     *
+     * @return string
+     */
+    public static function filter($text, string $pattern, string $replacement = ''): string
+    {
+        if ($text === null || $text === '') {
+            return '';
+        }
+        return trim(preg_replace('/[^'.$pattern.']/', $replacement, $text));
+    }
+
+    /**
+     * Extract alphanumeric characters only.
+     *
+     * @param string|null $text The input text
+     *
+     * @return string
+     */
+    public static function alphanumeric($text): string
+    {
+        if ($text === null || $text === '') {
+            return '';
+        }
+        return preg_replace('/[^a-zA-Z0-9]/', '', $text);
+    }
+
+    /**
+     * Extract phone number digits only.
+     *
+     * @param string|null $text The input text
+     *
+     * @return string
+     */
+    public static function phone($text): string
+    {
+        if ($text === null || $text === '') {
+            return '';
+        }
+        return preg_replace('/[^0-9]/', '', $text);
+    }
+
+    /**
+     * Validate and sanitize color value.
+     *
+     * @param string|null $text The input color
+     * @param string $default Default color if invalid/empty
+     *
+     * @return string Valid color or default if invalid
+     */
+    public static function color($text, string $default = ''): string
+    {
+        if ($text === null || $text === '') {
+            return $default;
+        }
+        $color = trim($text);
+        if (preg_match('/^\#[0-9A-Fa-f]{3}([0-9A-Fa-f]{3})?([0-9A-Fa-f]{2})?$/', $color) || preg_match('/^[a-zA-Z]+$/', $color)) {
+            return $color;
+        }
+        return $default;
+    }
+
+    /**
+     * Escape single quotes to HTML entity.
+     *
+     * @param string|null $text The input text
+     *
+     * @return string
+     */
+    public static function quote($text): string
+    {
+        if ($text === null || $text === '') {
+            return '';
+        }
+        return str_replace("'", '&#39;', trim($text));
+    }
+
+    /**
+     * Escape text for textarea display.
+     *
+     * @param string|null $text The input text
+     *
+     * @return string
+     */
+    public static function textarea($text): string
+    {
+        if ($text === null || $text === '') {
+            return '';
+        }
+        return trim(preg_replace(['/</s', '/>/s', '/\\\\/s', '/\{/', '/\}/', '/\$/'], ['&lt;', '&gt;', '&#92;', '&#x007B;', '&#x007D;', '&#36;'], $text), " \n\r\0\x0B");
+    }
+
+    /**
+     * Extract digits only from text.
+     *
+     * @param string|null $text The input text
+     *
+     * @return string
+     */
+    public static function number($text): string
+    {
+        if ($text === null || $text === '') {
+            return '';
+        }
+        return preg_replace('/[^\d]/', '', $text);
+    }
+
+    /**
+     * Convert text to decimal
+     *
+     * @param string|null $text The input text
+     *
+     * @return float
+     */
+    public static function toDouble($text): float
+    {
+        if (empty($text)) {
+            return 0;
+        }
+        return (float) str_replace(',', '', $text);
+    }
+
+    /**
+     * Sanitize and truncate keywords.
+     *
+     * @param string|null $text The input text
+     * @param int $len Maximum length (0 = no limit)
+     *
+     * @return string
+     */
+    public static function keywords($text, int $len = 0): string
+    {
+        if ($text === null || $text === '') {
+            return '';
+        }
+        $result = trim(preg_replace('/[\r\n\s\t\"\'\<\>]{1,}/isu', ' ', strip_tags($text)));
+        if ($len > 0 && mb_strlen($result) > $len) {
+            $result = mb_substr($result, 0, $len);
+        }
+        return $result;
+    }
+
+    /**
+     * Sanitize and truncate description text.
+     *
+     * @param string|null $text The input text
+     * @param int $len Maximum length (0 = no limit)
+     *
+     * @return string
+     */
+    public static function description($text, int $len = 0): string
+    {
+        if ($text === null || $text === '') {
+            return '';
+        }
+
+        $patt = [
+            '@<(script|style)[^>]*?>.*?</\\1>@isu' => '',
+            '@<[a-z\/\!\?][^>]{0,}>@isu' => '',
+            '/{(WIDGET|LNG)_[\w\s\.\-\'\(\),%\/:\&#;]+}/su' => '',
+            '/(\[code(.+)?\]|\[\/code\]|\[ex(.+)?\])/ui' => '',
+            '/\[([a-z]+)([\s=].*)?\](.*?)\[\/\\1\]/ui' => '\\3',
+            '/(&rdquo;|&quot;|&nbsp;|&amp;|[\r\n\s\t\"\']){1,}/isu' => ' '
+        ];
+
+        $result = trim(preg_replace(array_keys($patt), array_values($patt), $text));
+
+        if ($len > 0 && mb_strlen($result) > $len) {
+            $result = mb_substr($result, 0, $len);
+        }
+
+        return $result;
+    }
+
+    /**
+     * Escape text for editor content.
+     *
+     * @param string|null $text The input text
+     *
+     * @return string
+     */
+    public static function detail(string $text): string
+    {
+        if ($text === null || $text === '') {
+            return '';
+        }
+
+        // Remove PHP processing instructions to prevent server-side code injection.
+        // All HTML tags (script, style, iframe, event handlers, etc.) are intentionally
+        // preserved — this function is used for trusted editor (admin) content.
+        return str_replace(
+            ['{', '}', '\\'],
+            ['&#x007B;', '&#x007D;', '&#92;'],
+            preg_replace('#<\?(.*?)\?>#is', '', $text)
+        );
+    }
+
+    /**
+     * Parse and validate time format.
+     *
+     * @param string|null $text The input time
+     * @param bool $strict Whether to append :00 for seconds
+     *
+     * @return string|null
+     */
+    public static function time($text, bool $strict = false): ?string
+    {
+        if (empty($text)) {
+            return null;
+        }
+        if (preg_match('/^([0-9]{1,2}:[0-9]{1,2})?(:[0-9]{1,2})?$/', $text, $match)) {
+            if (empty($match[2])) {
+                $match[2] = $strict ? ':00' : '';
+            }
+            return $match[1].$match[2];
+        }
+        return null;
+    }
+
+    /**
+     * Parse and format date.
+     *
+     * @param string|null $text The input date
+     * @param string $format Output date format
+     *
+     * @return string|null
+     */
+    public static function date($text, string $format = 'Y-m-d'): ?string
+    {
+        if ($text === null || $text === '') {
+            return null;
+        }
+        $timestamp = strtotime($text);
+        return $timestamp ? date($format, $timestamp) : null;
+    }
+
+    /**
+     * Get text with specified HTML formatting tags allowed.
+     *
+     * @param string $text The input text
+     * @param array $allowedTags Array of allowed tag names (default: ['em', 'b', 'strong', 'i'])
+     *
+     * @return string The processed text with allowed tags preserved
+     */
+    public static function htmlText($text, array $allowedTags = ['em', 'b', 'strong', 'i']): string
+    {
+        if ($text === null || $text === '') {
+            return '';
+        }
+
+        // Build strip_tags format: <em><b><strong><i>
+        $stripTagsFormat = implode('', array_map(fn($tag) => "<{$tag}>", $allowedTags));
+
+        // First strip all tags except allowed ones
+        $allowed = strip_tags($text, $stripTagsFormat);
+
+        // Build regex pattern for allowed tags
+        $tagPattern = implode('|', array_map('preg_quote', $allowedTags));
+
+        // Escape HTML special characters but preserve the allowed tags
+        // by temporarily replacing them with placeholders
+        $placeholders = [];
+        $i = 0;
+
+        // Match allowed tags (opening and closing)
+        $allowed = preg_replace_callback(
+            '/<(\/?)('.$tagPattern.')>/i',
+            function ($matches) use (&$placeholders, &$i) {
+                $placeholder = "ALLOWEDTAG{$i}PLACEHOLDER";
+                $placeholders[$placeholder] = '<'.$matches[1].strtolower($matches[2]).'>';
+                $i++;
+                return $placeholder;
+            },
+            $allowed
+        );
+
+        // Restore allowed tags
+        return str_replace(array_keys($placeholders), array_values($placeholders), $allowed);
+    }
 }

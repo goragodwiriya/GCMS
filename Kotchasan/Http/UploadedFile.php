@@ -1,262 +1,186 @@
 <?php
-/**
- * @filesource Kotchasan/Http/UploadedFile.php
- *
- * @copyright 2016 Goragod.com
- * @license https://www.kotchasan.com/license/
- * @author Goragod Wiriya <admin@goragod.com>
- * @package Kotchasan\Http
- */
 
 namespace Kotchasan\Http;
 
 use Kotchasan\Image;
 use Kotchasan\Language;
-use Psr\Http\Message\UploadedFileInterface;
+use Kotchasan\Psr\Http\Message\StreamInterface;
+use Kotchasan\Psr\Http\Message\UploadedFileInterface;
 
 /**
- * Class for handling uploaded files.
+ * HTTP Uploaded File Class
+ * Implements PSR-7 UploadedFileInterface
  *
- * @see https://www.kotchasan.com/
+ * @package Kotchasan\Http
  */
 class UploadedFile implements UploadedFileInterface
 {
     /**
-     * The upload error code (UPLOAD_ERR_XXX).
-     *
-     * @var int
+     * @var string|null
      */
-    private $error;
+    private $clientFilename;
 
     /**
-     * The file extension of the uploaded file.
-     *
+     * @var string|null
+     */
+    private $clientMediaType;
+
+    /**
      * @var string|null
      */
     private $ext;
 
     /**
-     * Indicates whether the file has been moved.
-     *
-     * @var bool
+     * @var int
      */
-    private $isMoved = false;
+    private $error;
 
     /**
-     * The MIME type of the file.
-     *
      * @var string|null
      */
-    private $mime;
+    private $file;
 
     /**
-     * The name of the uploaded file.
-     *
-     * @var string|null
-     */
-    private $name;
-
-    /**
-     * Indicates if the upload is from a SAPI environment.
-     *
      * @var bool
      */
-    private $sapi = false;
+    private $moved = false;
 
     /**
-     * The size of the uploaded file.
-     *
-     * @var int|null
+     * @var int
      */
     private $size;
 
     /**
-     * The file stream.
-     *
-     * @var Stream|null
+     * @var StreamInterface|null
      */
     private $stream;
 
     /**
-     * The path to the uploaded file.
+     * Create a new UploadedFile instance.
      *
-     * @var string|null
+     * @param string $file The full path to the uploaded file
+     * @param int $size The file size in bytes
+     * @param int $error The UPLOAD_ERR_XXX code representing the status of the upload
+     * @param string|null $clientFilename The filename as provided by the client
+     * @param string|null $clientMediaType The media type as provided by the client
      */
-    private $tmp_name;
-
-    /**
-     * Creates a new UploadedFile instance.
-     *
-     * @param string      $path         The path to the uploaded file.
-     * @param string      $originalName The original name of the uploaded file.
-     * @param string|null $mimeType     The MIME type of the uploaded file.
-     * @param int|null    $size         The size of the uploaded file.
-     * @param int|null    $error        The upload error code (UPLOAD_ERR_XXX).
-     * @param bool        $sapi         Indicates if the upload is in a SAPI environment.
-     */
-    public function __construct($path, $originalName, $mimeType = null, $size = null, $error = null, $sapi = true)
+    public function __construct($file, $size, $error, $clientFilename = null, $clientMediaType = null)
     {
-        $this->tmp_name = $path;
-        $this->name = $originalName;
-        $this->mime = $mimeType;
+        $this->file = $file;
         $this->size = $size;
         $this->error = $error;
-        $this->sapi = $sapi;
+        $this->clientFilename = $clientFilename;
+        $this->clientMediaType = $clientMediaType;
     }
 
     /**
-     * Copies the uploaded file to a new location.
-     *
-     * @param string $targetPath The destination path to which the file should be moved.
-     *
-     * @throws \RuntimeException         If an error occurs while copying the file.
-     * @throws \InvalidArgumentException If the target directory is not writable.
-     *
-     * @return bool True on success, false otherwise.
+     * {@inheritDoc}
      */
-    public function copyTo($targetPath)
+    public function getStream()
     {
-        if ($this->isMoved) {
-            throw new \RuntimeException(Language::sprintf('Uploaded file "%s" has already been moved', $this->name));
+        if ($this->moved) {
+            throw new \RuntimeException('Cannot retrieve stream after it has already been moved');
         }
-        if (!is_writable(dirname($targetPath))) {
-            throw new \InvalidArgumentException(Language::sprintf('Target directory "%s" is not writable', dirname($targetPath)));
+
+        if ($this->stream instanceof StreamInterface) {
+            return $this->stream;
         }
-        if (!copy($this->tmp_name, $targetPath)) {
-            throw new \RuntimeException(Language::sprintf('Error copying file %s to %s', $this->name, $targetPath));
-        }
-        return true;
+
+        $this->stream = new Stream($this->file);
+        return $this->stream;
     }
 
     /**
-     * ฟังก์ชั่น ตัดรูปภาพ ตามขนาดที่กำหนด และย้ายไปยังปลายทาง
-     * รูปภาพปลายทางจะมีขนาดเท่าที่กำหนด หากรูปภาพต้นฉบับมีขนาดหรืออัตราส่วนไม่พอดีกับขนาดของภาพปลายทาง
-     * รูปภาพจะถูกตัดขอบออกหรือจะถูกขยาย เพื่อให้พอดีกับรูปภาพปลายทางที่ต้องการ
-     * ผลลัพท์จะได้ไฟล์รูปภาพ jpg เท่านั้น
-     * สำเร็จคืนค่า true ไม่สำเร็จคืนค่าข้อความผิดพลาด
-     *
-     * @param array  $exts       นามสกุลของไฟล์รูปภาพที่ยอมรับ เช่น [jpg, gif, png]
-     * @param string $targetPath path และชื่อไฟล์ของไฟล์รูปภาพปลายทาง
-     * @param int    $width      ความกว้างของรูปภาพที่ต้องการ
-     * @param int    $height     ความสูงของรูปภาพที่ต้องการ
-     * @param string $watermark  (optional) ข้อความลายน้ำ
-     *
-     * @throws \InvalidArgumentException ข้อผิดพลาดหากที่อยู่ปลายทางไม่สามารถเขียนได้
-     * @throws \RuntimeException         ข้อผิดพลาดไม่สามารถสร้างรูปภาพได้
-     *
-     * @return bool|string
-     */
-    public function cropImage($exts, $targetPath, $width, $height, $watermark = '')
-    {
-        $this->check($exts, dirname($targetPath));
-        $ret = Image::crop($this->tmp_name, $targetPath, $width, $height, $watermark);
-        if ($ret === false) {
-            throw new \RuntimeException(Language::get('Unable to create image'));
-        }
-        return true;
-    }
-
-    /**
-     * อ่านชื่อไฟล์จากไฟล์ที่อัปโหลดและตัดตัวอักษที่ไม่สามารถใช้เป็นชื่อไฟล์ได้ออก
-     * ยอมรับ ภาษาอังกฤษ ตัวเลข ( ) _ - และ .(จุด) เท่านั้น
-     * นอกเหนือจากนั้นจะถูกแทนที่ด้วย $replace ติดกันไม่เกิน 1 ตัวอักษร
-     *
-     * @param string $replace ตัวอักษรที่จะแทนที่อักขระไที่ไม่ต้องการ ถ้าไม่ระบุจะใช้ _ (ขีดล่าง)
-     *
-     * @return string
-     */
-    public function getCleanFilename($replace = '_')
-    {
-        return preg_replace('/[^a-zA-Z0-9_\-\.\(\)]{1,}/', $replace, $this->name);
-    }
-
-    /**
-     * คืนค่านามสกุลของไฟล์อัปโหลด ตัวพิมพ์เล็ก เช่น jpg
-     *
-     * @return string
-     */
-    public function getClientFileExt()
-    {
-        if ($this->ext == null) {
-            $exts = explode('.', $this->name);
-            $this->ext = strtolower(end($exts));
-        }
-        return $this->ext;
-    }
-
-    /**
-     * อ่านชื่อไฟล์ (ต้นฉบับ) ของไฟล์ที่อัปโหลด
+     * Retrieves the path of the uploaded file (temporary filename).
      *
      * @return string|null
      */
-    public function getClientFilename()
+    public function getTempFileName()
     {
-        return $this->name;
+        return $this->file;
     }
 
     /**
-     * อ่าน MIME Type ของไฟล์
-     *
-     * @return string|null
+     * {@inheritDoc}
      */
-    public function getClientMediaType()
+    public function moveTo($targetPath)
     {
-        return $this->mime;
+        if ($this->moved) {
+            throw new \RuntimeException('Cannot move file; already moved!');
+        }
+
+        if ($this->error !== UPLOAD_ERR_OK) {
+            throw new \RuntimeException('Cannot retrieve stream due to upload error');
+        }
+
+        if (!is_string($targetPath) || empty($targetPath)) {
+            throw new \InvalidArgumentException('Invalid path provided for move operation');
+        }
+
+        $this->assertSafeTargetPath($targetPath);
+
+        $targetDirectory = dirname($targetPath);
+        if (!is_dir($targetDirectory) || !is_writable($targetDirectory)) {
+            throw new \RuntimeException('The target directory is not writable');
+        }
+
+        $sapi = PHP_SAPI;
+        if (empty($sapi) || substr($sapi, 0, 3) !== 'cli') {
+            // PHP SAPI is not CLI, use move_uploaded_file
+            if (!move_uploaded_file($this->file, $targetPath)) {
+                throw new \RuntimeException('Error occurred while moving uploaded file');
+            }
+        } else {
+            // CLI SAPI, use rename
+            if (!rename($this->file, $targetPath)) {
+                throw new \RuntimeException('Error occurred while moving uploaded file');
+            }
+        }
+
+        $this->moved = true;
     }
 
     /**
-     * อ่านข้อผิดพลาดของไฟล์อัปโหลด
-     * คืนค่า UPLOAD_ERR_XXX
+     * Validate a destination path before writing an uploaded file to it.
+     * Rejects null bytes / control characters and directory-traversal
+     * sequences ("..") that could let a client-derived filename escape the
+     * intended upload directory.
      *
-     * @return int
+     * @param string $targetPath
+     * @throws \InvalidArgumentException
      */
-    public function getError()
+    protected function assertSafeTargetPath($targetPath)
     {
-        return $this->error;
-    }
-
-    /**
-     * อ่านข้อผิดพลาดของไฟล์อัปโหลด เป็นข้อความ
-     *
-     * @staticvar array $errors
-     *
-     * @return string
-     */
-    public function getErrorMessage()
-    {
-        switch ($this->error) {
-            case UPLOAD_ERR_INI_SIZE:
-                return sprintf('The file "%s" exceeds your upload_max_filesize ini directive (limit is %s).', $this->getClientFilename(), self::getUploadSize());
-                break;
-            case UPLOAD_ERR_FORM_SIZE:
-                return sprintf('The file "%s" exceeds the upload limit defined in your form.', $this->getClientFilename());
-                break;
-            case UPLOAD_ERR_PARTIAL:
-                return sprintf('The file "%s" was only partially uploaded.', $this->getClientFilename());
-                break;
-            case UPLOAD_ERR_CANT_WRITE:
-                return sprintf('The file "%s" could not be written on disk.', $this->getClientFilename());
-                break;
-            case UPLOAD_ERR_NO_TMP_DIR:
-                return 'File could not be uploaded: missing temporary directory.';
-                break;
-            case UPLOAD_ERR_EXTENSION:
-                return 'File upload was stopped by a PHP extension.';
-                break;
-            case UPLOAD_ERR_OK:
-            case UPLOAD_ERR_NO_FILE:
-                return null;
-                break;
-            default:
-                return sprintf('The file "%s" was not uploaded due to an unknown error.', $this->getClientFilename());
-                break;
+        // Null byte / control-character injection
+        if (preg_match('/[\x00-\x1f]/', $targetPath)) {
+            throw new \InvalidArgumentException('Invalid characters in target path');
+        }
+        // Directory traversal: reject any ".." path segment
+        $normalized = str_replace('\\', '/', $targetPath);
+        foreach (explode('/', $normalized) as $segment) {
+            if ($segment === '..') {
+                throw new \InvalidArgumentException('Path traversal detected in target path');
+            }
+        }
+        // The basename must be non-empty and must not itself be a dot-path
+        $base = basename($normalized);
+        if ($base === '' || $base === '.' || $base === '..') {
+            throw new \InvalidArgumentException('Invalid target filename');
         }
     }
 
     /**
-     * Retrieves the size of the uploaded file.
+     * Move uploaded file immutably: perform move and return a new UploadedFile instance representing the moved file.
+     * This preserves the original instance unchanged and provides a new instance pointing to the new location.
      *
-     * @return int|null The size of the uploaded file in bytes, or null if the size is unknown.
+     * @param string $targetPath
+     * @return UploadedFile New instance pointing to moved file
+     * @throws \RuntimeException|\InvalidArgumentException
+     */
+    // moveToImmutable removed: callers should use moveTo() which mutates the instance per PSR behavior
+
+    /**
+     * {@inheritDoc}
      */
     public function getSize()
     {
@@ -264,39 +188,135 @@ class UploadedFile implements UploadedFileInterface
     }
 
     /**
-     * Retrieves the uploaded file as a stream.
-     *
-     * @throws \RuntimeException If the file has already been moved or if the file is not found.
-     *
-     * @return StreamInterface The uploaded file stream.
+     * {@inheritDoc}
      */
-    public function getStream()
+    public function getError()
     {
-        if (!is_file($this->tmp_name)) {
-            throw new \RuntimeException(Language::sprintf('Uploaded file %1s has already been moved', $this->name));
-        }
-        if ($this->stream === null) {
-            $this->stream = new Stream($this->tmp_name);
-        }
-        return $this->stream;
+        return $this->error;
     }
 
     /**
-     * Retrieves the path of the uploaded file, including the temporary directory.
-     *
-     * @return string|null The path of the uploaded file, or null if the file is not available.
+     * {@inheritDoc}
      */
-    public function getTempFileName()
+    public function getClientFilename()
     {
-        return $this->tmp_name;
+        return $this->clientFilename;
     }
 
     /**
-     * Retrieves the configured maximum upload file size.
+     * {@inheritDoc}
+     */
+    public function getClientMediaType()
+    {
+        return $this->clientMediaType;
+    }
+
+    /**
+     * Check if file was uploaded without error.
      *
-     * @param bool $return_byte False (default) to return the size as a string (e.g., '2M'), true to return the size in bytes.
+     * @return bool
+     */
+    public function hasUploadFile(): bool
+    {
+        return $this->error === UPLOAD_ERR_OK && $this->size > 0;
+    }
+
+    /**
+     * Check if there was an upload error.
+     * Note: UPLOAD_ERR_NO_FILE is not considered an error, just no file uploaded.
      *
-     * @return string|int The maximum upload file size as a string or an integer (bytes).
+     * @return bool
+     */
+    public function hasError(): bool
+    {
+        return $this->error !== UPLOAD_ERR_OK && $this->error !== UPLOAD_ERR_NO_FILE;
+    }
+
+    /**
+     * Get upload error message.
+     *
+     * @return string
+     */
+    public function getErrorMessage(): string
+    {
+        switch ($this->error) {
+            case UPLOAD_ERR_INI_SIZE:
+                return 'The uploaded file exceeds the upload_max_filesize directive in php.ini';
+            case UPLOAD_ERR_FORM_SIZE:
+                return 'The uploaded file exceeds the MAX_FILE_SIZE directive that was specified in the HTML form';
+            case UPLOAD_ERR_PARTIAL:
+                return 'The uploaded file was only partially uploaded';
+            case UPLOAD_ERR_NO_FILE:
+                return 'No file was uploaded';
+            case UPLOAD_ERR_NO_TMP_DIR:
+                return 'Missing a temporary folder';
+            case UPLOAD_ERR_CANT_WRITE:
+                return 'Failed to write file to disk';
+            case UPLOAD_ERR_EXTENSION:
+                return 'A PHP extension stopped the file upload';
+            default:
+                return 'Unknown upload error';
+        }
+    }
+
+    /**
+     * Validate file extension against allowed extensions.
+     *
+     * @param array $allowedExtensions Array of allowed file extensions (without dots)
+     * @return bool
+     */
+    public function validFileExt(array $allowedExtensions): bool
+    {
+        if (empty($this->clientFilename)) {
+            return false;
+        }
+
+        $extension = strtolower(pathinfo($this->clientFilename, PATHINFO_EXTENSION));
+
+        // Convert allowed extensions to lowercase for case-insensitive comparison
+        $allowedExtensions = array_map('strtolower', $allowedExtensions);
+
+        return in_array($extension, $allowedExtensions);
+    }
+
+    /**
+     * Copy uploaded file to a target path.
+     *
+     * @param string $targetPath
+     * @return bool
+     */
+    public function copyTo($targetPath)
+    {
+        if ($this->moved) {
+            throw new \RuntimeException('Cannot move file; already moved!');
+        }
+        if ($this->error !== UPLOAD_ERR_OK) {
+            throw new \RuntimeException('Cannot copy file due to upload error');
+        }
+        if (!is_string($targetPath) || empty($targetPath)) {
+            throw new \InvalidArgumentException('Invalid path provided for copy operation');
+        }
+        $this->assertSafeTargetPath($targetPath);
+        // Confirm the source really is an HTTP upload (skipped under CLI for tests)
+        $sapi = PHP_SAPI;
+        if ((empty($sapi) || substr($sapi, 0, 3) !== 'cli') && !is_uploaded_file($this->file)) {
+            throw new \RuntimeException('Source is not a valid uploaded file');
+        }
+        $targetDir = dirname($targetPath);
+        if (!is_dir($targetDir) || !is_writable($targetDir)) {
+            throw new \RuntimeException('The target directory is not writable');
+        }
+        if (!copy($this->file, $targetPath)) {
+            throw new \RuntimeException('Error occurred while copying uploaded file');
+        }
+        return true;
+    }
+
+    /**
+     * Get upload_max_filesize or bytes
+     *
+     * @param bool $return_byte
+     * @return string|int
      */
     public static function getUploadSize($return_byte = false)
     {
@@ -311,113 +331,112 @@ class UploadedFile implements UploadedFileInterface
     }
 
     /**
-     * Checks if an error occurred during the upload process.
+     * Clean filename
      *
-     * @return bool True if an error occurred, false otherwise.
+     * @param string $replace
+     * @return string
      */
-    public function hasError()
+    public function getCleanFilename($replace = '_')
     {
-        if ($this->error === null || $this->error === UPLOAD_ERR_OK || $this->error === UPLOAD_ERR_NO_FILE) {
-            return false;
-        }
-        return true;
+        return preg_replace('/[^a-zA-Z0-9_\-\.\(\)]{1,}/', $replace, $this->clientFilename ?? '');
     }
 
     /**
-     * Checks if an upload file exists.
+     * Get display name from filename
+     * - Removes file extension
+     * - kebab-case (one-two) → Title Case (One Two)
+     * - snake_case (one_two) → Sentence case (One two)
      *
-     * @return bool True if an upload file exists, false otherwise.
+     * @return string
      */
-    public function hasUploadFile()
+    public function getDisplayName()
     {
-        return $this->error == UPLOAD_ERR_OK;
-    }
+        // Get filename without extension
+        $filename = pathinfo($this->clientFilename ?? '', PATHINFO_FILENAME);
 
-    /**
-     * Moves the uploaded file to the specified target path.
-     *
-     * @param string $targetPath The path where the file will be moved.
-     *
-     * @return bool True if the file was successfully moved, false otherwise.
-     *
-     * @throws \RuntimeException If the file has already been moved or an error occurred during the move operation.
-     * @throws \InvalidArgumentException If the target directory is not writable.
-     */
-    public function moveTo($targetPath)
-    {
-        if ($this->isMoved) {
-            throw new \RuntimeException(Language::sprintf('Uploaded file %1s has already been moved', $this->name));
+        if (empty($filename)) {
+            return '';
         }
-        if (!is_writable(dirname($targetPath))) {
-            throw new \InvalidArgumentException(Language::sprintf('Target directory "%s" is not writable', dirname($targetPath)));
-        }
-        if (strpos($targetPath, '://') > 0) {
-            if (!copy($this->tmp_name, $targetPath)) {
-                throw new \RuntimeException(Language::sprintf('Error moving uploaded file %1s to %2s', $this->name, $targetPath));
-            }
-            if (!unlink($this->tmp_name)) {
-                throw new \RuntimeException(Language::sprintf('Error removing uploaded file %1s', $this->name));
-            }
-        } elseif ($this->sapi) {
-            if (!move_uploaded_file($this->tmp_name, $targetPath)) {
-                throw new \RuntimeException(Language::sprintf('Error moving uploaded file %1s to %2s', $this->name, $targetPath));
-            }
-        } elseif (copy($this->tmp_name, $targetPath)) {
-            unlink($this->tmp_name);
+
+        $hasUnderscore = strpos($filename, '_') !== false;
+
+        // Replace separators with spaces
+        $result = str_replace(['-', '_'], ' ', $filename);
+
+        // Normalize multiple spaces
+        $result = preg_replace('/\s+/', ' ', trim($result));
+
+        if ($hasUnderscore) {
+            // snake_case → Sentence case (first letter uppercase only)
+            return ucfirst(strtolower($result));
         } else {
-            throw new \RuntimeException(Language::sprintf('Error moving uploaded file %1s to %2s', $this->name, $targetPath));
+            // kebab-case → Title Case (each word capitalized)
+            return ucwords(strtolower($result));
         }
-        $this->isMoved = true;
-        return true;
     }
 
     /**
-     * Resizes an image.
+     * Get client file extension (lowercase)
      *
-     * @param array $exts An array of valid file extensions.
-     * @param string $target The target directory for saving the resized image.
-     * @param string $name The name of the resized image.
-     * @param int $width The desired width of the resized image.
-     * @param string $watermark Optional watermark to be applied on the resized image.
-     *
-     * @return string The path to the resized image.
-     *
-     * @throws \RuntimeException If unable to create the image.
-     * @throws \InvalidArgumentException If the file extension or target directory is invalid.
+     * @return string|null
      */
-    public function resizeImage($exts, $target, $name, $width, $watermark = '')
+    public function getClientFileExt()
+    {
+        if ($this->ext == null) {
+            $exts = explode('.', $this->clientFilename ?? '');
+            $this->ext = strtolower(end($exts));
+        }
+        return $this->ext;
+    }
+
+    /**
+     * Resize image and save to target directory using Kotchasan\Image
+     *
+     * @param array $exts
+     * @param string $target
+     * @param string $name
+     * @param int $width
+     * @param string $watermark
+     * @param bool $forceConvert
+     * @return array
+     */
+    public function resizeImage($exts, $target, $name, $width = 0, $watermark = '', $forceConvert = true)
     {
         $this->check($exts, $target);
-        $ret = Image::resize($this->tmp_name, $target, $name, $width, $watermark);
+        $ret = Image::resize($this->file, $target, $name, $width, $watermark, $forceConvert);
         if ($ret === false) {
             throw new \RuntimeException(Language::get('Unable to create image'));
-        } else {
-            return $ret;
         }
+        return $ret;
     }
 
     /**
-     * Checks if the file extension is valid.
+     * Crop image and save to target path using Kotchasan\Image
      *
-     * @param array $exts An array of valid file extensions.
-     *
-     * @return bool True if the file extension is valid, false otherwise.
+     * @param array $exts
+     * @param string $targetPath
+     * @param int $width
+     * @param int $height
+     * @param string $watermark
+     * @param bool $fit
+     * @return bool
      */
-    public function validFileExt($exts)
+    public function cropImage($exts, $targetPath, $width, $height, $watermark = '', $fit = false)
     {
-        return in_array($this->getClientFileExt(), $exts);
+        $this->check($exts, dirname($targetPath));
+        $ret = Image::crop($this->file, $targetPath, $width, $height, $watermark, $fit);
+        if ($ret === false) {
+            throw new \RuntimeException(Language::get('Unable to create image'));
+        }
+        return true;
     }
 
     /**
-     * Checks if the uploaded file is valid and the target directory is writable.
+     * Check extension and writable dir
      *
-     * @param array $exts An array of valid file extensions.
-     * @param string $targetDir The target directory.
-     *
-     * @throws \RuntimeException If the type of file is invalid.
-     * @throws \InvalidArgumentException If the target directory is not writable.
-     *
-     * @return bool True if the file is valid and the directory is writable, false otherwise.
+     * @param array $exts
+     * @param string $targetDir
+     * @return bool
      */
     private function check($exts, $targetDir)
     {

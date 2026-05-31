@@ -2,10 +2,8 @@
 /**
  * @filesource modules/index/controllers/search.php
  *
- * @copyright 2016 Goragod.com
+ * @copyright 2026 Goragod.com
  * @license https://www.kotchasan.com/license/
- *
- * @see https://www.kotchasan.com/
  */
 
 namespace Index\Search;
@@ -13,24 +11,22 @@ namespace Index\Search;
 use Kotchasan\Http\Request;
 
 /**
- * Controller หลัก สำหรับแสดง frontend ของ GCMS
+ * Site-wide search (merged modular providers, Google-style results page).
  *
- * @author Goragod Wiriya <admin@goragod.com>
+ * Routed from {@see \Index\Module\Controller::checkModuleCalled()} when module=search.
  *
  * @since 1.0
  */
-class Controller extends \Kotchasan\Controller
+class Controller extends \Web\Controller
 {
     /**
-     * แสดงผลโมดูล Index
-     *
      * @param Request $request
-     * @param object  $module  ข้อมูลโมดูลจาก database
+     * @param object  $index Stub module object from router
      *
-     * @return object||null คืนค่าข้อมูลหน้าที่เรียก ไม่พบคืนค่า null
+     * @return object
      */
-    public function init(Request $request, $module)
+    public function init(Request $request, $index)
     {
-        return \Index\Search\View::create()->render(\Index\Search\Model::findAll($request, $module));
+        return View::create()->render($request);
     }
 }

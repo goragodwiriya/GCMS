@@ -1,19 +1,13 @@
 <?php
-/**
- * @filesource Kotchasan/Collection.php
- *
- * @copyright 2016 Goragod.com
- * @license https://www.kotchasan.com/license/
- * @author Goragod Wiriya <admin@goragod.com>
- * @package Kotchasan
- */
 
 namespace Kotchasan;
 
 /**
- * Collection Class
+ * Kotchasan Collection Class
  *
- * @see https://www.kotchasan.com/
+ * This class provides a collection of items that can be accessed by key.
+ *
+ * @package Kotchasan
  */
 class Collection implements \Countable, \IteratorAggregate, \ArrayAccess
 {

@@ -1,0 +1,44 @@
+<aside data-component="sidebar"></aside>
+<div class="main-content">
+  <div>
+    <header data-component="topbar"></header>
+    <main class="content">
+      <div class="card-groups">
+        <header>
+          <div>
+            <h1 class="icon-number" data-i18n>Stats</h1>
+            <p data-i18n>Manage stats and counters</p>
+          </div>
+          <a class="btn btn-primary icon-new" href="/widgets/stats/stat" data-i18n>{LNG_Add} {LNG_Stats}</a>
+        </header>
+
+        <div class="content-body">
+          <div class="tablebody">
+            <table class="table border fullwidth" data-table="stats" data-source="../api/index/widgets/table?widget=stats" data-row-sortable="true" data-page-size="25"
+                   data-show-checkbox="true" data-actions='{"delete":"Delete"}' data-action-url="../api/index/widgets/tableaction?widget=stats" data-row-actions='{
+                     "edit": {
+                       "label": "Edit",
+                       "className": "btn btn-success icon-edit"
+                     }
+                   }'>
+              <thead>
+                <tr>
+                  <th data-field="name" data-filter="true" data-type="select" data-show-all="true" data-all-value="" data-i18n>{LNG_Group}</th>
+                  <th data-field="icon" data-template="<span class='${icon}'></span>" class="center" data-cell-class="center" data-i18n>{LNG_Icon}</th>
+                  <th data-field="label" data-i18n>{LNG_Label}</th>
+                  <th data-field="value" class="center" data-cell-class="center" data-i18n>{LNG_Value}</th>
+                  <th data-field="suffix" class="center" data-cell-class="center" data-i18n>{LNG_Suffix}</th>
+                  <th data-field="prefix" class="center" data-cell-class="center" data-i18n>{LNG_Prefix}</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+  <footer class="footer">
+    <p class="center">&copy; 2026 Goragod.com - Powered by <a href="https://nowjs.net">Now.js</a></p>
+  </footer>
+</div>

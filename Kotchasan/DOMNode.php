@@ -1,19 +1,14 @@
 <?php
-/**
- * @filesource Kotchasan/DOMNode.php
- *
- * @copyright 2016 Goragod.com
- * @license https://www.kotchasan.com/license/
- * @author Goragod Wiriya <admin@goragod.com>
- * @package Kotchasan
- */
 
 namespace Kotchasan;
 
 /**
- * Class representing a DOM Node.
+ * Kotchasan DOMNode Class
  *
- * @see https://www.kotchasan.com/
+ * This class represents a node in a Document Object Model (DOM) structure.
+ * It provides methods for managing node attributes, child nodes, and text content.
+ *
+ * @package Kotchasan
  */
 class DOMNode
 {

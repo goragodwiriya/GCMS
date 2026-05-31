@@ -2,19 +2,18 @@
 /**
  * @filesource modules/document/controllers/tag.php
  *
- * @copyright 2016 Goragod.com
+ * @copyright 2026 Goragod.com
  * @license https://www.kotchasan.com/license/
- *
- * @see https://www.kotchasan.com/
  */
 
 namespace Document\Tag;
 
+use Kotchasan\ArrayTool;
 use Kotchasan\Http\Request;
-use Kotchasan\Language;
+use Web\Gcms;
 
 /**
- * หน้าแสดงบทความจาก Tag
+ * Frontend Controller for Document Tags
  *
  * @author Goragod Wiriya <admin@goragod.com>
  *
@@ -23,32 +22,37 @@ use Kotchasan\Language;
 class Controller extends \Kotchasan\Controller
 {
     /**
-     * หน้าแสดงบทความจาก Tag
+     * Main controller for the module
      *
      * @param Request $request
-     * @param object  $module  ข้อมูลโมดูลจาก database
+     * @param object  $index   Module data
      *
      * @return object
      */
-    public function init(Request $request, $module)
+    public function init(Request $request, $index)
     {
-        // tag ที่เลือก
-        $module->tag = $request->request('tag', isset($module->alias) ? $module->alias : '')->topic();
-        // ลิสต์รายการ tag
-        $index = \Document\Stories\Model::tags($request, $module);
-        if ($index) {
-            $index->module = 'document';
-            $index->rows = self::$cfg->document_rows;
-            $index->cols = self::$cfg->document_cols;
-            $index->style = self::$cfg->document_style;
-            $index->new_date = 0;
-            $index->topic = Language::get('Tags').' '.$index->tag;
-            $index->description = $index->topic;
-            $index->keywords = $index->topic;
-            $index->detail = '';
-            return createClass('Document\Stories\View')->index($request, $index);
+        if (MAIN_INIT === 'indexhtml') {
+            $page = max(1, $request->get('page')->toInt());
+            $limit = (self::$cfg->tag_cols ?? 3) * (self::$cfg->tag_rows ?? 3);
+            $listModel = \Document\Tag\Model::create($index);
+            $listModel->updateCount($index->alias);
+            $pagination = $listModel->paginate($page, $limit);
+            $index = ArrayTool::replace($index, $pagination);
+            // Tag listing view
+            return \Document\Tag\View::create()->render($index);
         }
-        // 404
-        return createClass('Index\Error\Controller')->init('document');
+    }
+
+    /**
+     * URL generation function
+     *
+     * @param string $tag Tag name
+     * @param bool   $encode (option) true=encode with rawurlencode (default true)
+     *
+     * @return string
+     */
+    public static function url($tag, $encode = true)
+    {
+        return Gcms::createUrl('tag', $tag, 0, 0, '', $encode);
     }
 }

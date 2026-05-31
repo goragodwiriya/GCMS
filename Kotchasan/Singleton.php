@@ -1,19 +1,15 @@
 <?php
-/**
- * @filesource Kotchasan/Singleton.php
- *
- * @copyright 2016 Goragod.com
- * @license https://www.kotchasan.com/license/
- * @author Goragod Wiriya <admin@goragod.com>
- * @package Kotchasan
- */
 
 namespace Kotchasan;
 
 /**
- * This class provides the base functionality for creating singleton classes.
+ * Kotchasan Singleton Class
  *
- * @see https://www.kotchasan.com/
+ * This class implements the Singleton design pattern.
+ * It ensures that only one instance of the class exists
+ * and provides a global point of access to it.
+ *
+ * @package Kotchasan
  */
 abstract class Singleton
 {
@@ -34,7 +30,7 @@ abstract class Singleton
     public static function &getInstance()
     {
         if (null === static::$instance) {
-            static::$instance = new static;
+            static::$instance = new static();
         }
         return static::$instance;
     }

@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="{LANGUAGE}" dir="ltr" class="smooth">
+
+<head>
+  <title>{TITLE}</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- Fonts: preconnect must be in <head> so browser starts DNS/TLS early -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&family=Prompt:wght@400;500;600;700&display=swap">
+
+  <!-- Framework CSS -->
+  <link rel="stylesheet" href="{WEBURL}Now/dist/now.core.min.css">
+
+  <!-- GCMS Core CSS -->
+  <link rel="stylesheet" href="{WEBURL}themes/gcms.css">
+  <link rel="stylesheet" href="{WEBURL}Now/css/carousel.css">
+
+  <!-- Theme CSS -->
+  <link rel="stylesheet" href="{WEBURL}{SKIN}css/styles.css">
+
+  <script>
+    const WEB_URL = "{WEBURL}";
+  </script>
+</head>
+
+<body>
+  <div>
+    <!-- Top Utility Bar -->
+    <div class="topbar">
+      <div class="container">
+        <div class="topbar-links">
+          <a href="{WEBURL}story" class="icon-info">ประวัติโรงเรียน</a>
+          <a href="{WEBURL}personnel" class="icon-users">บุคลากร</a>
+          <a href="{WEBURL}gallery" class="icon-image">ภาพกิจกรรม</a>
+          <a href="{WEBURL}download" class="icon-download">ดาวน์โหลด</a>
+        </div>
+        <div class="topbar-right">
+          {WIDGET_LANGUAGES}
+        </div>
+      </div>
+    </div>
+
+    <!-- Header -->
+    <header class="header">
+      <div class="container">
+        <div class="header-content">
+          <!-- Logo -->
+          <div class="logo">
+            <div>
+              <a href="{WEBURL}" class="logo-text">{WEBTITLE}</a>
+              <p class="logo-subtitle">{WEBDESCRIPTION}</p>
+            </div>
+          </div>
+
+          <!-- Navigation -->
+          <nav class="topmenu responsive-menu" data-component="menu">{MAINMENU}</nav>
+
+          <!-- Mobile Menu Button -->
+          <button class="menu-toggle topmenu-toggle">
+            <span class="toggle-icon">
+              <span class="toggle-bar"></span>
+              <span class="toggle-bar"></span>
+              <span class="toggle-bar"></span>
+            </span>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <main id="main" role="main">{MAIN}</main>
+
+    <div class="container textlinks-footer">{WIDGET_TEXTLINKS_footer}</div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="footer" id="contact">
+    <div class="container">
+      <div class="footer-content">
+        <div class="footer-section">
+          <h3 class="footer-title">ติดต่อเรา</h3>
+          <ul class="footer-links">
+            <li><span class="icon-office" data-text="company.name"></span></li>
+            <li><a class="icon-phone" data-attr="href:'tel:' + company.phone" data-text="company.phone"></a></li>
+            <li><a class="icon-email" data-attr="href:'mailto:' + company.email" data-text="company.email"></a></li>
+            <li><a class="icon-map" data-text="company.address"></a></li>
+          </ul>
+        </div>
+
+        <div class="footer-section">
+          <h3 class="footer-title">เมนูหลัก</h3>
+          <ul class="footer-links">
+            <li><a href="{WEBURL}story">ประวัติโรงเรียน</a></li>
+            <li><a href="{WEBURL}vision">วิสัยทัศน์</a></li>
+            <li><a href="{WEBURL}personnel">บุคลากร</a></li>
+            <li><a href="{WEBURL}news">ข่าวสาร/ประชาสัมพันธ์</a></li>
+            <li><a href="{WEBURL}knowledge">ผลงานทางวิชาการ</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-section">
+          <h3 class="footer-title">บริการ</h3>
+          <ul class="footer-links">
+            <li><a href="{WEBURL}gallery">ประมวลภาพกิจกรรม</a></li>
+            <li><a href="{WEBURL}download">ดาวน์โหลดเอกสาร</a></li>
+            <li><a href="{WEBURL}contactus">ติดต่อเรา</a></li>
+            <li data-if="user === null"><a href="{WEBURL}login" data-i18n>{LNG_Log in}</a></li>
+            <li data-if="user !== null"><a href="{WEBURL}profile" data-i18n>{LNG_Edit profile}</a></li>
+            <li data-if="user !== null"><a href="{WEBURL}logout" data-on="click:doLogout" data-i18n>{LNG_Logout}</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-section">
+          <h3 class="footer-title">เวลาทำการ</h3>
+          <ul class="footer-links">
+            <li>จันทร์ - ศุกร์: 8:00 - 16:30</li>
+            <li>เสาร์ - อาทิตย์: ปิดทำการ</li>
+            <li>วันหยุดราชการ: ปิดทำการ</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="footer-bottom">
+        <p>
+          Copyright &copy; 2569
+          <a href="{WEBURL}">{WEBTITLE}</a>
+          &nbsp;|&nbsp; GCMS Version {VERSION}
+          &nbsp;|&nbsp; <a href="{WEBURL}terms" target="_blank" data-i18n>Terms of Service</a>
+          &nbsp;|&nbsp; <a href="{WEBURL}privacy" target="_blank" data-i18n>Privacy Policy</a>
+        </p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Deferred CSS -->
+  <link rel="stylesheet" href="{WEBURL}Now/css/fonts.css">
+  <link rel="stylesheet" href="{WEBURL}Now/dist/now.syntaxhighlighter.min.css">
+
+  <!-- Framework Scripts -->
+  <script src="{WEBURL}Now/dist/now.core.min.js"></script>
+  <script src="{WEBURL}Now/dist/now.syntaxhighlighter.min.js"></script>
+
+  <!-- App Scripts -->
+  <script src="{WEBURL}js/main.js"></script>
+  <script src="{WEBURL}js/global.js"></script>
+</body>
+
+</html>

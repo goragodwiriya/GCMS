@@ -1,0 +1,138 @@
+<aside data-component="sidebar"></aside>
+<div class="main-content">
+  <div>
+    <header data-component="topbar"></header>
+    <main class="content">
+      <div class="card-groups">
+        <header>
+          <div>
+            <h1 class="icon-map" data-i18n>Map Widget</h1>
+            <p data-i18n>{LNG_Edit Widgets} Map (OpenStreetMap / Leaflet)</p>
+          </div>
+        </header>
+
+        <div class="content-body">
+          <form id="map-settings-form" data-form="settings" action="../api/index/widgets/save?widget=map" method="POST" data-ajax-submit="true"
+                data-load-api="../api/index/widgets/get?widget=map" data-confirm="Confirm save">
+
+            <!-- ─── Location ───────────────────────────────────────────── -->
+            <fieldset>
+              <legend class="icon-map" data-i18n>Location</legend>
+
+              <div>
+                <label for="lat" data-i18n>Latitude</label>
+                <span class="form-control icon-map">
+                  <input type="number" id="lat" name="lat" data-attr="value:lat" step="0.000001" min="-90" max="90" data-precision="7" data-allow-negative="true"
+                         placeholder="13.727639">
+                </span>
+                <div class="comment" data-i18n>
+                  Latitude of the location in decimal degrees (e.g. 13.727639)
+                </div>
+              </div>
+
+              <div>
+                <label for="lng" data-i18n>Longitude</label>
+                <span class="form-control icon-map">
+                  <input type="number" id="lng" name="lng" data-attr="value:lng" step="0.000001" min="-180" max="180" data-precision="7" data-allow-negative="true"
+                         placeholder="100.520194">
+                </span>
+                <div class="comment" data-i18n>
+                  Longitude of the location in decimal degrees (e.g. 100.520194)
+                </div>
+              </div>
+
+              <div>
+                <label for="google_maps_url" data-i18n>Google Maps URL</label>
+                <span class="form-control icon-link">
+                  <input type="url" id="google_maps_url" name="google_maps_url" data-attr="value:google_maps_url" placeholder="https://maps.app.goo.gl/...">
+                </span>
+                <div class="comment" data-i18n>
+                  Share link from Google Maps shown as "View in Google Maps" in the popup
+                </div>
+              </div>
+            </fieldset>
+
+            <!-- ─── Display ────────────────────────────────────────────── -->
+            <fieldset>
+              <legend class="icon-widgets" data-i18n>Display</legend>
+
+              <div>
+                <label for="height" data-i18n>Height (px)</label>
+                <span class="form-control">
+                  <input type="range" id="height" name="height" data-attr="value:height" min="200" max="800" step="10">
+                </span>
+                <div class="comment" data-i18n>Map container height in pixels (200 – 800)</div>
+              </div>
+
+              <div>
+                <label for="zoom" data-i18n>Zoom level</label>
+                <span class="form-control">
+                  <input type="range" id="zoom" name="zoom" data-attr="value:zoom" min="1" max="19" step="1">
+                </span>
+                <div class="comment" data-i18n>
+                  1 = world view · 10 = city · 16 = street · 19 = building
+                </div>
+              </div>
+            </fieldset>
+
+            <!-- ─── Marker ─────────────────────────────────────────────── -->
+            <fieldset>
+              <legend class="icon-pin" data-i18n>Marker</legend>
+
+              <div>
+                <label for="marker_icon" data-i18n>Pin icon</label>
+                <span class="form-control">
+                  <input type="text" id="marker_icon" name="marker_icon" data-attr="value:marker_icon" placeholder="📍" maxlength="8">
+                </span>
+                <div class="comment" data-i18n>
+                  Emoji or short text displayed inside the pin (e.g. 📍 📚 🏠 ✦)
+                </div>
+              </div>
+            </fieldset>
+
+            <!-- ─── Popup ──────────────────────────────────────────────── -->
+            <fieldset>
+              <legend class="icon-info" data-i18n>Popup</legend>
+
+              <div>
+                <label for="popup_name" data-i18n>Location name</label>
+                <span class="form-control icon-edit">
+                  <input type="text" id="popup_name" name="popup_name" data-attr="value:popup_name" placeholder="My Shop">
+                </span>
+                <div class="comment" data-i18n>
+                  Name displayed in bold at the top of the popup balloon
+                </div>
+              </div>
+
+              <div>
+                <label for="popup_address" data-i18n>Address</label>
+                <span class="form-control icon-address">
+                  <input type="text" id="popup_address" name="popup_address" data-attr="value:popup_address" placeholder="123 Example Road, Bangkok 10100">
+                </span>
+                <div class="comment" data-i18n>
+                  Address line shown in the popup balloon
+                </div>
+              </div>
+            </fieldset>
+
+            <!-- ─── Live preview ───────────────────────────────────────── -->
+            <fieldset>
+              <legend class="icon-map" data-i18n>Preview</legend>
+              <iframe id="map-preview" src="../widgets/map/iframe.html" title="Map preview" sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"
+                      data-attr="height:height" style="width:100%;border:0;border-radius:6px;display:block"></iframe>
+            </fieldset>
+
+            <!-- ─── Submit ────────────────────────────────────────────── -->
+            <fieldset class="submit">
+              <button type="submit" class="btn btn-primary icon-save" data-i18n>Save</button>
+            </fieldset>
+
+          </form>
+        </div>
+      </div>
+    </main>
+  </div>
+  <footer class="footer">
+    <p class="center">&copy; 2026 Powered by <a href="https://nowjs.net">Now.js</a></p>
+  </footer>
+</div>

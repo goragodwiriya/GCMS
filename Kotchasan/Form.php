@@ -1,19 +1,16 @@
 <?php
-/**
- * @filesource Kotchasan/Form.php
- *
- * @copyright 2016 Goragod.com
- * @license https://www.kotchasan.com/license/
- * @author Goragod Wiriya <admin@goragod.com>
- * @package Kotchasan
- */
 
 namespace Kotchasan;
 
 /**
- * Form class
+ * Kotchasan Form Class
  *
- * @see https://www.kotchasan.com/
+ * This class provides methods for creating various HTML form elements.
+ * It supports input types such as button, checkbox, color, currency, date,
+ * datetime, email, file, hidden, number, integer, password, radio, range,
+ * and select elements.
+ *
+ * @package Kotchasan
  */
 class Form extends \Kotchasan\KBase
 {
@@ -57,9 +54,6 @@ class Form extends \Kotchasan\KBase
     /**
      * Create a button element.
      *
-     * @assert (array('id' => 'test_id', 'value' => 'Test', 'disabled' => true))->render() [==] '<button disabled type="button" name="test_id" id="test_id">Test</button>'
-     * @assert (array('id' => 'test_id', 'value' => 'Test', 'disabled' => true, 'tag' => 'input'))->render() [==] '<input disabled type="button" name="test_id" id="test_id" value="Test">'
-     *
      * @param array $attributes
      *        An array of attributes for the input field.
      *
@@ -67,7 +61,7 @@ class Form extends \Kotchasan\KBase
      */
     public static function button($attributes = [])
     {
-        $obj = new static;
+        $obj = new static();
         if (isset($attributes['tag']) && $attributes['tag'] == 'input') {
             $obj->tag = 'input';
         } else {
@@ -82,11 +76,6 @@ class Form extends \Kotchasan\KBase
     /**
      * Create an input element of type "checkbox".
      *
-     * @assert (array('id' => 'test_id', 'value' => 1))->render() [==] '<input type="checkbox" name="test_id" id="test_id" value=1>'
-     * @assert (array('id' => 'test_id', 'value' => 1, 'label' => 'Test'))->render() [==] '<label><input type="checkbox" name="test_id" id="test_id" value=1 title="Test">Test</label>'
-     * @assert (array('id' => 'test_id', 'value' => 1, 'label' => 'Test', 'itemClass' => 'item'))->render() [==] '<div class="item"><label><input type="checkbox" name="test_id" id="test_id" value=1 title="Test">&nbsp;Test</label></div>'
-     * @assert (array('id' => 'test_id', 'value' => 1, 'label' => 'Test', 'itemClass' => 'item' , 'labelClass' => 'icon-valid'))->render() [==] '<div class="item"><label class="icon-valid"><input type="checkbox" name="test_id" id="test_id" value=1 title="Test">&nbsp;Test</label></div>'
-     *
      * @param array $attributes
      *        An array of attributes for the input field.
      *
@@ -94,7 +83,7 @@ class Form extends \Kotchasan\KBase
      */
     public static function checkbox($attributes = [])
     {
-        $obj = new static;
+        $obj = new static();
         $obj->tag = 'input';
         $attributes['type'] = 'checkbox';
         $obj->attributes = $attributes;
@@ -104,9 +93,6 @@ class Form extends \Kotchasan\KBase
     /**
      * Create an input element of type "color".
      *
-     * @assert (array('id' => 'test_id', 'value' => '#FFF', 'label' => 'Test'))->render() [==] '<label>Test&nbsp;<input type="text" name="test_id" id="test_id" value="#FFF" title="Test" class="color"></label>'
-     * @assert (array('id' => 'test_id', 'value' => '#FFF', 'label' => 'Test', 'itemClass' => 'item' , 'labelClass' => 'icon-color'))->render() [==] '<div class="item"><label for="test_id">Test</label><span class="icon-color"><input type="text" name="test_id" id="test_id" value="#FFF" title="Test" class="color"></span></div>'
-     *
      * @param array $attributes
      *        An array of attributes for the input field.
      *
@@ -114,7 +100,7 @@ class Form extends \Kotchasan\KBase
      */
     public static function color($attributes = [])
     {
-        $obj = new static;
+        $obj = new static();
         $obj->tag = 'input';
         $attributes['type'] = 'text';
         $attributes['class'] = 'color';
@@ -125,9 +111,6 @@ class Form extends \Kotchasan\KBase
     /**
      * Create an input element for handling currency values.
      *
-     * @assert (array('id' => 'test_id', 'value' => 1, 'label' => 'Test'))->render() [==] '<label>Test&nbsp;<input type="text" name="test_id" id="test_id" value=1 title="Test" class="currency"></label>'
-     * @assert (array('id' => 'test_id', 'value' => 100, 'label' => 'Test', 'itemClass' => 'item' , 'labelClass' => 'icon-money'))->render() [==] '<div class="item"><label for="test_id">Test</label><span class="icon-money"><input type="text" name="test_id" id="test_id" value=100 title="Test" class="currency"></span></div>'
-     *
      * @param array $attributes
      *        An array of attributes for the input field.
      *
@@ -135,7 +118,7 @@ class Form extends \Kotchasan\KBase
      */
     public static function currency($attributes = [])
     {
-        $obj = new static;
+        $obj = new static();
         $obj->tag = 'input';
         $attributes['type'] = 'text';
         $attributes['class'] = 'currency';
@@ -146,9 +129,6 @@ class Form extends \Kotchasan\KBase
     /**
      * Create an input element of type "date".
      *
-     * @assert (array('id' => 'test_id', 'value' => 1, 'label' => 'Test'))->render() [==] '<label>Test&nbsp;<input type="date" name="test_id" id="test_id" value=1 title="Test"></label>'
-     * @assert (array('id' => 'test_id', 'value' => '#FFF', 'label' => 'Test', 'itemClass' => 'item' , 'labelClass' => 'icon-calendar'))->render() [==] '<div class="item"><label for="test_id">Test</label><span class="icon-calendar"><input type="date" name="test_id" id="test_id" value="#FFF" title="Test"></span></div>'
-     *
      * @param array $attributes
      *        An array of attributes for the input field.
      *
@@ -156,7 +136,7 @@ class Form extends \Kotchasan\KBase
      */
     public static function date($attributes = [])
     {
-        $obj = new static;
+        $obj = new static();
         $obj->tag = 'input';
         $attributes['type'] = 'date';
         $obj->attributes = $attributes;
@@ -166,9 +146,6 @@ class Form extends \Kotchasan\KBase
     /**
      * Create an input element of type "datetime".
      *
-     * @assert (array('id' => 'test_id', 'value' => '2021-01-01 12:00', 'label' => 'Test'))->render() [==] '<label>Test&nbsp;<input type="datetime-local" name="test_id" id="test_id" value="2021-01-01 12:00" title="Test"></label>'
-     * @assert (array('id' => 'test_id', 'value' => '2021-01-01 12:00', 'label' => 'Test', 'itemClass' => 'item' , 'labelClass' => 'icon-calendar'))->render() [==] '<div class="item"><label for="test_id">Test</label><span class="icon-calendar"><input type="datetime-local" name="test_id" id="test_id" value="2021-01-01 12:00" title="Test"></span></div>'
-     *
      * @param array $attributes
      *        An array of attributes for the input field.
      *
@@ -176,7 +153,7 @@ class Form extends \Kotchasan\KBase
      */
     public static function datetime($attributes = [])
     {
-        $obj = new static;
+        $obj = new static();
         $obj->tag = 'input';
         $attributes['type'] = 'datetime-local';
         $obj->attributes = $attributes;
@@ -186,9 +163,6 @@ class Form extends \Kotchasan\KBase
     /**
      * Create an input element of type "email".
      *
-     * @assert (array('id' => 'test_id', 'label' => 'Test'))->render() [==] '<label>Test&nbsp;<input type="email" name="test_id" id="test_id" title="Test"></label>'
-     * @assert (array('id' => 'test_id', 'label' => 'Test', 'itemClass' => 'item' , 'labelClass' => 'icon-email'))->render() [==] '<div class="item"><label for="test_id">Test</label><span class="icon-email"><input type="email" name="test_id" id="test_id" title="Test"></span></div>'
-     *
      * @param array $attributes
      *        An array of attributes for the input field.
      *
@@ -196,7 +170,7 @@ class Form extends \Kotchasan\KBase
      */
     public static function email($attributes = [])
     {
-        $obj = new static;
+        $obj = new static();
         $obj->tag = 'input';
         $attributes['type'] = 'email';
         $obj->attributes = $attributes;
@@ -206,9 +180,6 @@ class Form extends \Kotchasan\KBase
     /**
      * Create an input element of type "file".
      *
-     * @assert (array('id' => 'test_id', 'label' => 'Test'))->render() [==] '<label>Test&nbsp;<input type="file" name="test_id" id="test_id" title="Test" class="g-file"></label>'
-     * @assert (array('id' => 'test_id', 'label' => 'Test', 'itemClass' => 'item' , 'labelClass' => 'icon-file'))->render() [==] '<div class="item"><label for="test_id">Test</label><span class="icon-file"><input type="file" name="test_id" id="test_id" title="Test" class="g-file"></span></div>'
-     *
      * @param array $attributes
      *        An array of attributes for the input field.
      *
@@ -216,7 +187,7 @@ class Form extends \Kotchasan\KBase
      */
     public static function file($attributes = [])
     {
-        $obj = new static;
+        $obj = new static();
         $obj->tag = 'input';
         $attributes['type'] = 'file';
         $attributes['class'] = 'g-file';
@@ -255,8 +226,6 @@ class Form extends \Kotchasan\KBase
     /**
      * Create an input element of type "hidden".
      *
-     * @assert (array('id' => 'test_id', 'value' => 1))->render() [==] '<input type="hidden" name="test_id" id="test_id" value=1>'
-     *
      * @param array $attributes
      *        An array of attributes for the input field.
      *
@@ -264,7 +233,7 @@ class Form extends \Kotchasan\KBase
      */
     public static function hidden($attributes = [])
     {
-        $obj = new static;
+        $obj = new static();
         $obj->tag = 'input';
         $attributes['type'] = 'hidden';
         $obj->attributes = $attributes;
@@ -274,9 +243,6 @@ class Form extends \Kotchasan\KBase
     /**
      * Create an input element of type "number".
      *
-     * @assert (array('id' => 'test_id', 'value' => 1, 'label' => 'Test'))->render() [==] '<label>Test&nbsp;<input type="number" name="test_id" id="test_id" value=1 title="Test"></label>'
-     * @assert (array('id' => 'test_id', 'value' => 1234, 'label' => 'Test', 'itemClass' => 'item' , 'labelClass' => 'icon-number'))->render() [==] '<div class="item"><label for="test_id">Test</label><span class="icon-number"><input type="number" name="test_id" id="test_id" value=1234 title="Test"></span></div>'
-     *
      * @param array $attributes
      *        An array of attributes for the input field.
      *
@@ -284,7 +250,7 @@ class Form extends \Kotchasan\KBase
      */
     public static function number($attributes = [])
     {
-        $obj = new static;
+        $obj = new static();
         $obj->tag = 'input';
         $attributes['type'] = 'number';
         $obj->attributes = $attributes;
@@ -294,9 +260,6 @@ class Form extends \Kotchasan\KBase
     /**
      * Create an input element of type "integer" that allows negative values.
      *
-     * @assert (array('id' => 'test_id', 'value' => 1, 'label' => 'Test'))->render() [==] '<label>Test&nbsp;<input type="integer" name="test_id" id="test_id" value=1 title="Test"></label>'
-     * @assert (array('id' => 'test_id', 'value' => -100, 'label' => 'Test', 'itemClass' => 'item' , 'labelClass' => 'icon-number'))->render() [==] '<div class="item"><label for="test_id">Test</label><span class="icon-number"><input type="integer" name="test_id" id="test_id" value=-100 title="Test"></span></div>'
-     *
      * @param array $attributes
      *        An array of attributes for the input field.
      *
@@ -304,7 +267,7 @@ class Form extends \Kotchasan\KBase
      */
     public static function integer($attributes = [])
     {
-        $obj = new static;
+        $obj = new static();
         $obj->tag = 'input';
         $attributes['type'] = 'integer';
         $obj->attributes = $attributes;
@@ -314,9 +277,6 @@ class Form extends \Kotchasan\KBase
     /**
      * Create an input element of type "password".
      *
-     * @assert (array('id' => 'test_id', 'value' => '1234', 'label' => 'Test'))->render() [==] '<label>Test&nbsp;<input type="password" name="test_id" id="test_id" value=1234 title="Test"></label>'
-     * @assert (array('id' => 'test_id', 'value' => '1234', 'label' => 'Test', 'itemClass' => 'item' , 'labelClass' => 'icon-color'))->render() [==] '<div class="item"><label for="test_id">Test</label><span class="icon-color"><input type="password" name="test_id" id="test_id" value=1234 title="Test"></span></div>'
-     *
      * @param array $attributes
      *        An array of attributes for the input field.
      *
@@ -324,7 +284,7 @@ class Form extends \Kotchasan\KBase
      */
     public static function password($attributes = [])
     {
-        $obj = new static;
+        $obj = new static();
         $obj->tag = 'input';
         $attributes['type'] = 'password';
         $obj->attributes = $attributes;
@@ -334,11 +294,6 @@ class Form extends \Kotchasan\KBase
     /**
      * Create an input element of type "radio".
      *
-     * @assert (array('id' => 'test_id', 'value' => 1))->render() [==] '<input type="radio" name="test_id" id="test_id" value=1>'
-     * @assert (array('id' => 'test_id', 'value' => 1, 'label' => 'Test'))->render() [==] '<label><input type="radio" name="test_id" id="test_id" value=1 title="Test">Test</label>'
-     * @assert (array('id' => 'test_id', 'value' => 1, 'label' => 'Test', 'itemClass' => 'item'))->render() [==] '<div class="item"><label for="test_id">Test</label><span><input type="radio" name="test_id" id="test_id" value=1 title="Test"></span></div>'
-     * @assert (array('id' => 'test_id', 'value' => 1, 'label' => 'Test', 'itemClass' => 'item' , 'labelClass' => 'icon-valid'))->render() [==] '<div class="item"><label for="test_id">Test</label><span class="icon-valid"><input type="radio" name="test_id" id="test_id" value=1 title="Test"></span></div>'
-     *
      * @param array $attributes
      *        An array of attributes for the input field.
      *
@@ -346,7 +301,7 @@ class Form extends \Kotchasan\KBase
      */
     public static function radio($attributes = [])
     {
-        $obj = new static;
+        $obj = new static();
         $obj->tag = 'input';
         $attributes['type'] = 'radio';
         $obj->attributes = $attributes;
@@ -356,9 +311,6 @@ class Form extends \Kotchasan\KBase
     /**
      * Create an input element of type "range".
      *
-     * @assert (array('id' => 'test_id', 'value' => 1, 'label' => 'Test'))->render() [==] '<label>Test&nbsp;<input type="range" name="test_id" id="test_id" value=1 title="Test"></label>'
-     * @assert (array('id' => 'test_id', 'value' => 1, 'label' => 'Test', 'itemClass' => 'item'))->render() [==] '<div class="item"><label for="test_id">Test</label><div><input type="range" name="test_id" id="test_id" value=1 title="Test"></div></div>'
-     *
      * @param array $attributes
      *        An array of attributes for the input field.
      *
@@ -366,7 +318,7 @@ class Form extends \Kotchasan\KBase
      */
     public static function range($attributes = [])
     {
-        $obj = new static;
+        $obj = new static();
         $obj->tag = 'input';
         $attributes['type'] = 'range';
         $obj->attributes = $attributes;
@@ -565,10 +517,13 @@ class Form extends \Kotchasan\KBase
         if (!empty($class)) {
             $prop['class'] = 'class="'.implode(' ', $class).'"';
         }
-        if (isset($checkbox) && $this->tag !== 'select') {
+        if (isset($checkbox)) {
             $itemClass = empty($itemClass) ? 'w_checkbox' : $itemClass.' w_checkbox';
             $chk = $checkbox ? ' checked' : '';
             $w_checkbox = '<input type=checkbox id="checkbox_'.$id.'" name="checkbox_'.$name.'" value=1'.$chk.'>';
+            if ($this->tag === 'select' && $checkbox) {
+                $prop['checkbox'] = 'checkbox=1';
+            }
         } else {
             $w_checkbox = '';
         }
@@ -683,9 +638,6 @@ class Form extends \Kotchasan\KBase
     /**
      * Creates a reset button element.
      *
-     * @assert (array('id' => 'test_id', 'value' => 'Test', 'disabled' => true))->render() [==] '<button disabled type="reset" name="test_id" id="test_id">Test</button>'
-     * @assert (array('id' => 'test_id', 'value' => 'Test', 'disabled' => true, 'tag' => 'input'))->render() [==] '<input disabled type="reset" name="test_id" id="test_id" value="Test">'
-     *
      * @param array $attributes
      *        An array of attributes for the input field.
      *
@@ -693,7 +645,7 @@ class Form extends \Kotchasan\KBase
      */
     public static function reset($attributes = [])
     {
-        $obj = new static;
+        $obj = new static();
         if (isset($attributes['tag']) && $attributes['tag'] == 'input') {
             $obj->tag = 'input';
         } else {
@@ -714,9 +666,6 @@ class Form extends \Kotchasan\KBase
     /**
      * Creates a select dropdown element.
      *
-     * @assert (array('id' => 'test_id', 'value' => 1, 'label' => 'Test', 'options' => [0 => 0, 1 => 1]))->render() [==] '<label>Test&nbsp;<select name="test_id" id="test_id" title="Test"><option value=0>0</option><option value=1 selected>1</option></select></label>'
-     * @assert (array('id' => 'test_id', 'value' => '#FFF', 'label' => 'Test', 'itemClass' => 'item' , 'labelClass' => 'icon-color', 'options' => [0 => 0, 1 => 1]))->render() [==] '<div class="item"><label for="test_id">Test</label><span class="icon-color"><select name="test_id" id="test_id" title="Test"><option value=0 selected>0</option><option value=1>1</option></select></span></div>'
-     *
      * @param array $attributes
      *        An array of attributes for the input field.
      *
@@ -724,7 +673,7 @@ class Form extends \Kotchasan\KBase
      */
     public static function select($attributes = [])
     {
-        $obj = new static;
+        $obj = new static();
         $obj->tag = 'select';
         $obj->attributes = $attributes;
         return $obj;
@@ -733,9 +682,6 @@ class Form extends \Kotchasan\KBase
     /**
      * Creates a submit button or input field.
      *
-     * @assert (array('id' => 'test_id', 'value' => 'Test', 'disabled' => true))->render() [==] '<button disabled type="submit" name="test_id" id="test_id">Test</button>'
-     * @assert (array('id' => 'test_id', 'value' => 'Test', 'disabled' => true, 'tag' => 'input'))->render() [==] '<input disabled type="submit" name="test_id" id="test_id" value="Test">'
-     *
      * @param array $attributes
      *        An array of attributes for the input field.
      *
@@ -743,7 +689,7 @@ class Form extends \Kotchasan\KBase
      */
     public static function submit($attributes = [])
     {
-        $obj = new static;
+        $obj = new static();
         if (isset($attributes['tag']) && $attributes['tag'] == 'input') {
             $obj->tag = 'input';
         } else {
@@ -764,9 +710,6 @@ class Form extends \Kotchasan\KBase
     /**
      * Create an input element of type "tel".
      *
-     * @assert (array('id' => 'test_id', 'value' => '0123456789', 'label' => 'Test'))->render() [==] '<label>Test&nbsp;<input type="tel" name="test_id" id="test_id" value=0123456789 title="Test"></label>'
-     * @assert (array('id' => 'test_id', 'value' => '0123456789', 'label' => 'Test', 'itemClass' => 'item' , 'labelClass' => 'icon-phone'))->render() [==] '<div class="item"><label for="test_id">Test</label><span class="icon-phone"><input type="tel" name="test_id" id="test_id" value=0123456789 title="Test"></span></div>'
-     *
      * @param array $attributes
      *        An array of attributes for the input field.
      *
@@ -774,7 +717,7 @@ class Form extends \Kotchasan\KBase
      */
     public static function tel($attributes = [])
     {
-        $obj = new static;
+        $obj = new static();
         $obj->tag = 'input';
         $attributes['type'] = 'tel';
         $obj->attributes = $attributes;
@@ -784,9 +727,6 @@ class Form extends \Kotchasan\KBase
     /**
      * Create an input element of type "text".
      *
-     * @assert (array('id' => 'test_id', 'value' => 1, 'label' => 'Test'))->render() [==] '<label>Test&nbsp;<input type="text" name="test_id" id="test_id" value=1 title="Test"></label>'
-     * @assert (array('id' => 'test_id', 'value' => '#FFF', 'label' => 'Test', 'itemClass' => 'item' , 'labelClass' => 'icon-color'))->render() [==] '<div class="item"><label for="test_id">Test</label><span class="icon-color"><input type="text" name="test_id" id="test_id" value="#FFF" title="Test"></span></div>'
-     *
      * @param array $attributes
      *        An array of attributes for the input field.
      *
@@ -794,7 +734,7 @@ class Form extends \Kotchasan\KBase
      */
     public static function text($attributes = [])
     {
-        $obj = new static;
+        $obj = new static();
         $obj->tag = 'input';
         $attributes['type'] = 'text';
         if (isset($attributes['text'])) {
@@ -811,9 +751,6 @@ class Form extends \Kotchasan\KBase
     /**
      * Create an input element of type "textarea".
      *
-     * @assert (array('id' => 'test_id', 'value' => 1, 'label' => 'Test'))->render() [==] '<label>Test&nbsp;<textarea name="test_id" id="test_id" title="Test">1</textarea></label>'
-     * @assert (array('id' => 'test_id', 'value' => '#FFF', 'label' => 'Test', 'itemClass' => 'item' , 'labelClass' => 'icon-file'))->render() [==] '<div class="item"><label for="test_id">Test</label><span class="icon-file"><textarea name="test_id" id="test_id" title="Test">#FFF</textarea></span></div>'
-     *
      * @param array $attributes
      *        An array of attributes for the input field.
      *
@@ -821,7 +758,7 @@ class Form extends \Kotchasan\KBase
      */
     public static function textarea($attributes = [])
     {
-        $obj = new static;
+        $obj = new static();
         $obj->tag = 'textarea';
         $obj->attributes = $attributes;
         return $obj;
@@ -830,9 +767,6 @@ class Form extends \Kotchasan\KBase
     /**
      * Create an input element of type "time".
      *
-     * @assert (array('id' => 'test_id', 'value' => '00:00', 'label' => 'Test'))->render() [==] '<label>Test&nbsp;<input type="time" name="test_id" id="test_id" value="00:00" title="Test"></label>'
-     * @assert (array('id' => 'test_id', 'value' => '00:00', 'label' => 'Test', 'itemClass' => 'item' , 'labelClass' => 'icon-clock'))->render() [==] '<div class="item"><label for="test_id">Test</label><span class="icon-clock"><input type="time" name="test_id" id="test_id" value="00:00" title="Test"></span></div>'
-     *
      * @param array $attributes
      *        An array of attributes for the input field.
      *
@@ -840,7 +774,7 @@ class Form extends \Kotchasan\KBase
      */
     public static function time($attributes = [])
     {
-        $obj = new static;
+        $obj = new static();
         $obj->tag = 'input';
         $attributes['type'] = 'time';
         $obj->attributes = $attributes;
@@ -850,9 +784,6 @@ class Form extends \Kotchasan\KBase
     /**
      * Create an input element of type "url".
      *
-     * @assert (array('id' => 'test_id', 'value' => 'kotchasan.com', 'label' => 'Test'))->render() [==] '<label>Test&nbsp;<input type="url" name="test_id" id="test_id" value="kotchasan.com" title="Test"></label>'
-     * @assert (array('id' => 'test_id', 'value' => 'kotchasan.com', 'label' => 'Test', 'itemClass' => 'item' , 'labelClass' => 'icon-world'))->render() [==] '<div class="item"><label for="test_id">Test</label><span class="icon-world"><input type="url" name="test_id" id="test_id" value="kotchasan.com" title="Test"></span></div>'
-     *
      * @param array $attributes
      *        An array of attributes for the input field.
      *
@@ -860,7 +791,7 @@ class Form extends \Kotchasan\KBase
      */
     public static function url($attributes = [])
     {
-        $obj = new static;
+        $obj = new static();
         $obj->tag = 'input';
         $attributes['type'] = 'url';
         $obj->attributes = $attributes;

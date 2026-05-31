@@ -2,18 +2,17 @@
 /**
  * @filesource modules/board/controllers/write.php
  *
- * @copyright 2016 Goragod.com
+ * @copyright 2026 Goragod.com
  * @license https://www.kotchasan.com/license/
- *
- * @see https://www.kotchasan.com/
  */
 
 namespace Board\Write;
 
 use Kotchasan\Http\Request;
+use Web\Login;
 
 /**
- * Controller หลัก สำหรับแสดง frontend ของ GCMS
+ * Frontend Controller for Board module
  *
  * @author Goragod Wiriya <admin@goragod.com>
  *
@@ -22,37 +21,50 @@ use Kotchasan\Http\Request;
 class Controller extends \Kotchasan\Controller
 {
     /**
-     * เขียนความคิดเห็น
+     * Main controller for the module
      *
      * @param Request $request
-     * @param object  $module  ข้อมูลโมดูลจาก database
+     * @param object  $index   Module data
      *
      * @return object
      */
-    public function init(Request $request, $module)
+    public function init(Request $request, $index)
     {
-        // รายการที่แก้ไข
-        $qid = $request->request('id')->toInt();
-        // ตรวจสอบโมดูลและอ่านข้อมูลโมดูล
-        if ($qid > 0) {
-            // แก้ไข
-            $index = \Board\Module\Model::getQuestionById($qid, $module);
-            if ($index) {
-                // ฟอร์มแก้ไขกระทู้
-                $page = createClass('Board\Writeedit\View')->index($request, $index);
+        // Must be logged in to write/edit
+        $login = Login::isMember();
+        if (!$login) {
+            return \Index\Error\Controller::create()->init('unauthorized');
+        }
+
+        // Category ID from request (if any)
+        $index->category_id = $request->get('category_id')->toInt();
+        // Categories
+        $index->categories = \Web\Category::create($index->module_id);
+
+        // Topic ID — 0 = new, >0 = edit existing
+        $index->id = $request->get('id')->toInt();
+
+        if ($index->id > 0) {
+            // Load existing topic for edit form
+            $topic = \Board\Write\Model::get($index->id);
+            if (!$topic) {
+                return \Index\Error\Controller::create()->init('document');
             }
+            // Only original author or moderator may access the edit form
+            $canApprove = Login::checkStatus($login, $index->config, ['can_approve']);
+            if ($topic->member_id !== $login->id && !$canApprove) {
+                return \Index\Error\Controller::create()->init('unauthorized');
+            }
+            $index->category_id = $topic->category_id;
+            $index->subject = $topic->topic;
+            $index->detail = $topic->detail;
         } else {
-            // ใหม่
-            $index = \Board\Module\Model::get($request, $module);
-            if ($index) {
-                // ฟอร์มโพสต์กระทู้
-                $page = createClass('Board\Write\View')->index($request, $index);
-            }
+            // New topic, set default values
+            $index->subject = '';
+            $index->detail = '';
         }
-        if (empty($page)) {
-            // ไม่พบหน้าที่เรียก (board)
-            $page = createClass('Index\Error\Controller')->init('board');
-        }
-        return $page;
+
+        // Render form
+        return \Board\Write\View::create()->render($index);
     }
 }
