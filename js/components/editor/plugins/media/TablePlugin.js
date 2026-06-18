@@ -8,12 +8,42 @@ import PluginBase from '../PluginBase.js';
 import BaseDialog from '../../ui/dialogs/BaseDialog.js';
 import EventBus from '../../core/EventBus.js';
 
+const DEFAULT_TABLE_CLASS_OPTIONS = [
+  {value: 'table', label: '.table', checked: true},
+  {value: 'border', label: '.border', checked: true},
+  {value: 'data', label: '.data', checked: false},
+  {value: 'fullwidth', label: '.fullwidth', checked: true}
+];
+
+const CLASS_NAME_PATTERN = /^[a-zA-Z_][a-zA-Z0-9_-]*$/;
+
 class TableDialog extends BaseDialog {
-  constructor(editor) {
+  constructor(editor, options = {}) {
     super(editor, {
       title: 'Insert Table',
-      width: 350
+      width: 420
     });
+
+    this.options = {
+      classOptions: DEFAULT_TABLE_CLASS_OPTIONS,
+      ...options
+    };
+    this.mode = 'insert';
+    this.additionalTags = [];
+    this.presetCheckboxes = new Map();
+  }
+
+  setMode(mode = 'insert') {
+    this.mode = mode === 'edit' ? 'edit' : 'insert';
+    const isInsert = this.mode === 'insert';
+
+    if (this.rowsField) this.rowsField.style.display = isInsert ? '' : 'none';
+    if (this.colsField) this.colsField.style.display = isInsert ? '' : 'none';
+    if (this.headerField) this.headerField.style.display = isInsert ? '' : 'none';
+
+    if (this.dialog) {
+      this.setTitle(this.mode === 'edit' ? this.translate('Table Properties') : this.translate('Insert Table'));
+    }
   }
 
   buildBody() {
@@ -52,14 +82,71 @@ class TableDialog extends BaseDialog {
     });
     this.body.appendChild(this.headerField);
 
-    // Border checkbox
-    this.borderField = this.createField({
-      type: 'checkbox',
-      id: 'rte-table-border',
-      checkLabel: 'Show border',
-      checked: true
+    this.classField = document.createElement('div');
+    this.classField.className = 'rte-dialog-field';
+    const classLabel = document.createElement('div');
+    classLabel.className = 'rte-dialog-label';
+    classLabel.textContent = this.translate('Table classes');
+    this.classField.appendChild(classLabel);
+
+    this.classOptionList = document.createElement('div');
+    this.classOptionList.className = 'rte-table-class-options';
+
+    this.options.classOptions.forEach((option, index) => {
+      const wrapper = document.createElement('label');
+      wrapper.className = 'rte-table-class-option';
+
+      const input = document.createElement('input');
+      input.type = 'checkbox';
+      input.id = `rte-table-class-${option.value}`;
+      input.checked = option.checked !== false;
+      input.dataset.className = option.value;
+      this.presetCheckboxes.set(option.value, input);
+
+      const text = document.createElement('span');
+      text.textContent = this.translate(option.label || option.value);
+
+      wrapper.appendChild(input);
+      wrapper.appendChild(text);
+      this.classOptionList.appendChild(wrapper);
     });
-    this.body.appendChild(this.borderField);
+
+    this.classField.appendChild(this.classOptionList);
+    this.body.appendChild(this.classField);
+
+    this.extraClassField = document.createElement('div');
+    this.extraClassField.className = 'rte-dialog-field';
+
+    const extraLabel = document.createElement('label');
+    extraLabel.className = 'rte-dialog-label';
+    extraLabel.textContent = this.translate('Additional classes');
+    extraLabel.setAttribute('for', 'rte-table-extra-class-input');
+    this.extraClassField.appendChild(extraLabel);
+
+    this.tagInput = document.createElement('div');
+    this.tagInput.className = 'rte-tags-input';
+
+    this.tagList = document.createElement('div');
+    this.tagList.className = 'rte-tags-list';
+    this.tagInput.appendChild(this.tagList);
+
+    this.extraClassInput = document.createElement('input');
+    this.extraClassInput.type = 'text';
+    this.extraClassInput.id = 'rte-table-extra-class-input';
+    this.extraClassInput.className = 'rte-dialog-input rte-tags-input-field';
+    this.extraClassInput.placeholder = this.translate('Type class and press Enter');
+    this.extraClassInput.addEventListener('keydown', (event) => this.handleTagInputKeydown(event));
+    this.extraClassInput.addEventListener('blur', () => this.addTagsFromText(this.extraClassInput.value));
+    this.tagInput.appendChild(this.extraClassInput);
+
+    this.extraClassField.appendChild(this.tagInput);
+
+    const help = document.createElement('div');
+    help.className = 'rte-dialog-help';
+    help.textContent = this.translate('Use Enter or comma to add class tags.');
+    this.extraClassField.appendChild(help);
+
+    this.body.appendChild(this.extraClassField);
 
     // Width field
     this.widthField = this.createField({
@@ -69,41 +156,58 @@ class TableDialog extends BaseDialog {
       placeholder: '100% or 500px'
     });
     this.body.appendChild(this.widthField);
+    this.setMode(this.mode);
   }
 
   populate(data) {
     const rowsInput = this.rowsField.querySelector('input');
     const colsInput = this.colsField.querySelector('input');
     const headerInput = this.headerField.querySelector('input');
-    const borderInput = this.borderField.querySelector('input');
     const widthInput = this.widthField.querySelector('input');
 
     rowsInput.value = data.rows || 3;
     colsInput.value = data.cols || 3;
     headerInput.checked = data.hasHeader !== false;
-    borderInput.checked = data.hasBorder !== false;
     widthInput.value = data.width || '100%';
+
+    const selectedClasses = new Set(data.tableClasses || []);
+    this.presetCheckboxes.forEach((input, className) => {
+      const option = this.options.classOptions.find(item => item.value === className);
+      const defaultChecked = option ? option.checked !== false : false;
+      input.checked = selectedClasses.size > 0 ? selectedClasses.has(className) : defaultChecked;
+    });
+
+    this.setAdditionalTags(data.additionalClasses || []);
   }
 
   getData() {
     const rowsInput = this.rowsField.querySelector('input');
     const colsInput = this.colsField.querySelector('input');
     const headerInput = this.headerField.querySelector('input');
-    const borderInput = this.borderField.querySelector('input');
     const widthInput = this.widthField.querySelector('input');
 
+    this.addTagsFromText(this.extraClassInput.value);
+
     return {
+      mode: this.mode,
       rows: parseInt(rowsInput.value) || 3,
       cols: parseInt(colsInput.value) || 3,
       hasHeader: headerInput.checked,
-      hasBorder: borderInput.checked,
-      width: widthInput.value.trim() || '100%'
+      width: widthInput.value.trim() || '100%',
+      tableClasses: Array.from(this.presetCheckboxes.entries())
+        .filter(([, input]) => input.checked)
+        .map(([className]) => className),
+      additionalClasses: [...this.additionalTags]
     };
   }
 
   validate() {
     this.clearError();
     const data = this.getData();
+
+    if (data.mode !== 'insert') {
+      return true;
+    }
 
     if (data.rows < 1 || data.rows > 50) {
       this.showError('Rows must be between 1 and 50', this.rowsField);
@@ -117,6 +221,75 @@ class TableDialog extends BaseDialog {
 
     return true;
   }
+
+  handleTagInputKeydown(event) {
+    if (event.key === 'Enter' || event.key === ',') {
+      event.preventDefault();
+      this.addTagsFromText(this.extraClassInput.value);
+    } else if (event.key === 'Backspace' && !this.extraClassInput.value.trim()) {
+      this.removeTag(this.additionalTags[this.additionalTags.length - 1]);
+    }
+  }
+
+  addTagsFromText(text) {
+    const values = String(text || '')
+      .split(/[\s,]+/)
+      .map(item => item.trim())
+      .filter(Boolean);
+
+    if (values.length === 0) {
+      this.extraClassInput.value = '';
+      return;
+    }
+
+    values.forEach(value => {
+      if (!CLASS_NAME_PATTERN.test(value)) {
+        return;
+      }
+
+      if (!this.additionalTags.includes(value)) {
+        this.additionalTags.push(value);
+      }
+    });
+
+    this.additionalTags.sort((a, b) => a.localeCompare(b));
+    this.extraClassInput.value = '';
+    this.renderTagList();
+  }
+
+  setAdditionalTags(tags) {
+    this.additionalTags = [];
+    (tags || []).forEach(tag => {
+      if (CLASS_NAME_PATTERN.test(tag) && !this.additionalTags.includes(tag)) {
+        this.additionalTags.push(tag);
+      }
+    });
+    this.additionalTags.sort((a, b) => a.localeCompare(b));
+    this.renderTagList();
+  }
+
+  removeTag(tagName) {
+    if (!tagName) {
+      return;
+    }
+
+    this.additionalTags = this.additionalTags.filter(tag => tag !== tagName);
+    this.renderTagList();
+  }
+
+  renderTagList() {
+    this.tagList.innerHTML = '';
+
+    this.additionalTags.forEach(tagName => {
+      const tag = document.createElement('button');
+      tag.type = 'button';
+      tag.className = 'rte-tag-item';
+      tag.title = this.translate('Remove class');
+      tag.textContent = tagName;
+      tag.addEventListener('click', () => this.removeTag(tagName));
+      this.tagList.appendChild(tag);
+    });
+  }
 }
 
 class TablePlugin extends PluginBase {
@@ -125,9 +298,17 @@ class TablePlugin extends PluginBase {
   init() {
     super.init();
 
+    this.options = {
+      classOptions: DEFAULT_TABLE_CLASS_OPTIONS,
+      ...this.options
+    };
+    this.editingTable = null;
+
     // Create dialog
-    this.dialog = new TableDialog(this.editor);
-    this.dialog.onConfirm = (data) => this.insertTable(data);
+    this.dialog = new TableDialog(this.editor, {
+      classOptions: this.options.classOptions
+    });
+    this.dialog.onConfirm = (data) => this.handleTableDialogConfirm(data);
 
     // Create context menu for table operations
     this.setupContextMenu();
@@ -213,7 +394,25 @@ class TablePlugin extends PluginBase {
       min-width: 180px;
     `;
 
+    const table = cell.closest('table');
+    const hasClass = (className) => !!table?.classList.contains(className);
+
     const menuItems = [
+      {
+        label: `${hasClass('border') ? '[x]' : '[ ]'} Toggle .border`,
+        action: () => this.toggleTableClass('border')
+      },
+      {
+        label: `${hasClass('data') ? '[x]' : '[ ]'} Toggle .data`,
+        action: () => this.toggleTableClass('data')
+      },
+      {
+        label: `${hasClass('fullwidth') ? '[x]' : '[ ]'} Toggle .fullwidth`,
+        action: () => this.toggleTableClass('fullwidth')
+      },
+      {type: 'separator'},
+      {label: 'Table properties...', action: () => this.openTablePropertiesDialog(table)},
+      {type: 'separator'},
       {label: 'Insert row above', action: () => this.addRow('before')},
       {label: 'Insert row below', action: () => this.addRow('after')},
       {type: 'separator'},
@@ -291,8 +490,30 @@ class TablePlugin extends PluginBase {
    * Open table dialog
    */
   openDialog() {
+    this.editingTable = null;
+    this.dialog.setMode('insert');
     this.saveSelection();
     this.dialog.open({});
+  }
+
+  openTablePropertiesDialog(table = null) {
+    const targetTable = table || this.getTableContext()?.table;
+    if (!targetTable) {
+      return;
+    }
+
+    this.editingTable = targetTable;
+    this.saveSelection();
+    this.dialog.setMode('edit');
+    this.dialog.open(this.extractTableProperties(targetTable));
+  }
+
+  handleTableDialogConfirm(data) {
+    if (data.mode === 'edit') {
+      this.updateTableProperties(data);
+    } else {
+      this.insertTable(data);
+    }
   }
 
   /**
@@ -302,28 +523,121 @@ class TablePlugin extends PluginBase {
   insertTable(data) {
     this.restoreSelection();
 
-    const {rows, cols, hasHeader, hasBorder, width} = data;
+    const {rows, cols, hasHeader, width} = data;
+    const tableClasses = this.resolveTableClasses(data);
+    const tableClassAttr = tableClasses.length > 0 ? ` class="${tableClasses.join(' ')}"` : '';
+    const tableStyleAttr = width ? ` style="width: ${width};"` : '';
 
-    let html = `<table style="width: ${width}; border-collapse: collapse;">`;
+    let html = `<div class="tablebody"><table${tableClassAttr}${tableStyleAttr}>`;
 
     for (let r = 0; r < rows; r++) {
       html += '<tr>';
       for (let c = 0; c < cols; c++) {
         const isHeader = hasHeader && r === 0;
         const tag = isHeader ? 'th' : 'td';
-        const borderStyle = hasBorder ? 'border: 1px solid #ddd;' : '';
-        const headerBg = isHeader ? 'background: #f5f5f5;' : '';
 
-        html += `<${tag} style="${borderStyle} ${headerBg} padding: 8px;">&nbsp;</${tag}>`;
+        html += `<${tag}>&nbsp;</${tag}>`;
       }
       html += '</tr>';
     }
 
-    html += '</table><p></p>';
+    html += '</table></div><p></p>';
 
     this.insertHtml(html);
     this.recordHistory(true);
     this.focusEditor();
+  }
+
+  extractTableProperties(table) {
+    const classes = Array.from(table.classList);
+    const presetClassSet = new Set((this.options.classOptions || []).map(option => option.value));
+
+    return {
+      width: table.style.width || '',
+      tableClasses: classes.filter(className => presetClassSet.has(className)),
+      additionalClasses: classes.filter(className => !presetClassSet.has(className)),
+      rows: table.rows?.length || 1,
+      cols: table.rows?.[0]?.cells?.length || 1,
+      hasHeader: !!table.querySelector('th')
+    };
+  }
+
+  updateTableProperties(data) {
+    const table = this.editingTable || this.getTableContext()?.table;
+    if (!table) {
+      return;
+    }
+
+    this.ensureTableWrapper(table);
+
+    const classes = this.resolveTableClasses(data);
+    table.className = classes.join(' ');
+
+    if (data.width) {
+      table.style.width = data.width;
+    } else {
+      table.style.removeProperty('width');
+    }
+
+    if (table.classList.contains('fullwidth') && !table.style.width) {
+      table.style.width = '100%';
+    }
+
+    this.recordHistory(true);
+    this.focusEditor();
+  }
+
+  toggleTableClass(className) {
+    const table = this.getTableContext()?.table;
+    if (!table) {
+      return;
+    }
+
+    this.ensureTableWrapper(table);
+
+    if (!table.classList.contains('table')) {
+      table.classList.add('table');
+    }
+
+    const enabled = table.classList.toggle(className);
+    if (className === 'fullwidth') {
+      if (enabled) {
+        table.style.width = '100%';
+      } else if (table.style.width === '100%') {
+        table.style.removeProperty('width');
+      }
+    }
+
+    this.recordHistory(true);
+    this.focusEditor();
+  }
+
+  ensureTableWrapper(table) {
+    if (table.parentElement?.classList.contains('tablebody')) {
+      return;
+    }
+
+    const wrapper = document.createElement('div');
+    wrapper.className = 'tablebody';
+    table.parentNode?.insertBefore(wrapper, table);
+    wrapper.appendChild(table);
+  }
+
+  resolveTableClasses(data = {}) {
+    const classes = new Set(['table']);
+    (data.tableClasses || []).forEach(className => {
+      if (CLASS_NAME_PATTERN.test(className)) {
+        classes.add(className);
+      }
+    });
+
+    (data.additionalClasses || []).forEach(className => {
+      if (CLASS_NAME_PATTERN.test(className)) {
+        classes.add(className);
+      }
+    });
+
+    return Array.from(classes);
   }
 
   /**

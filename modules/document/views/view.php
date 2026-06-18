@@ -47,6 +47,7 @@ class View extends \Web\View
             }
         }
 
+        // category breadcrumb
         if (!empty($article->category_id)) {
             $categoryUrl = \Document\Index\Controller::url($index->module, $article->category_id);
             Gcms::$view->addBreadcrumb($categoryUrl, $article->category_name, $article->category_name);
@@ -59,14 +60,14 @@ class View extends \Web\View
         // view.html template
         $template = Template::create($index->owner, $index->module, 'view');
 
-        $imageHtml = $image ? '<img src="'.$image.'" alt="'.Text::htmlspecialchars($article->topic).'" class="figure">' : '';
+        $imageHtml = $image ? '<section class="article-image"><img src="'.$image.'" alt="'.Text::htmlspecialchars($article->topic).'"></section>' : '';
 
         $template->add([
             '/{ID}/' => $article->id,
             '/{TOPIC}/' => Text::htmlspecialchars($article->topic),
             '/{IMAGE}/' => $imageHtml,
             '/{IMAGE_URL}/' => $image,
-            '/{DETAIL}/' => $article->detail,
+            '/{DETAIL}/' => Gcms::showDetail(str_replace(['&#x007B;', '&#x007D;'], ['{', '}'], $article->detail), true),
             '/{DESCRIPTION}/' => Text::htmlspecialchars($article->description),
             '/{DATE}/' => $article->published_date,
             '/{CATEGORY}/' => Text::htmlspecialchars((string) $article->category_name),

@@ -6619,7 +6619,9 @@ const TableManager = {
 
         case 'number':
           const numberDecimals = getDecimals(0);
-          return new Intl.NumberFormat(options.locale, {
+          // Accept empty string locale by falling back to undefined (uses runtime default)
+          const nfLocale = options && options.locale ? options.locale : undefined;
+          return new Intl.NumberFormat(nfLocale, {
             minimumFractionDigits: numberDecimals,
             maximumFractionDigits: numberDecimals,
             useGrouping: options.useGrouping !== false
@@ -6635,7 +6637,8 @@ const TableManager = {
 
         case 'percent':
           const percentDecimals = getDecimals(0);
-          return new Intl.NumberFormat(options.locale, {
+          const pctLocale = options && options.locale ? options.locale : undefined;
+          return new Intl.NumberFormat(pctLocale, {
             style: 'percent',
             minimumFractionDigits: percentDecimals,
             maximumFractionDigits: percentDecimals

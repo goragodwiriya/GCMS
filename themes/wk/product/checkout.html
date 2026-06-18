@@ -3,11 +3,11 @@
       data-load-options-api="{WEBURL}api/product/checkout/get" action="{WEBURL}api/product/checkout/save" method="post" autocomplete="off" data-on-load="initCheckout">
 
   <header class="hero">
-    <h1 class="hero-title" data-i18n>Make payment</h1>
-    <p class="hero-subtitle" data-i18n>Please fill in the information to proceed with your order</p>
+    <h1 class="page__title" data-i18n>Make payment</h1>
+    <p class="page__subtitle" data-i18n>Please fill in the information to proceed with your order</p>
   </header>
 
-  <div class="page-content">
+  <div class="section__content">
     <div class="container">
       <div class="checkout-content">
         <!-- Order Summary -->
@@ -43,7 +43,7 @@
 
           <!-- Customer information -->
           <fieldset class="form-section">
-            <h3 class="section-title" data-i18n>Customer information</h3>
+            <h3 class="section__header" data-i18n>Customer information</h3>
 
             <div>
               <label for="name" data-i18n>Name</label>
@@ -62,7 +62,7 @@
 
           <!-- Shipping Address -->
           <fieldset class="form-section">
-            <h3 class="section-title" data-i18n>Shipping Address</h3>
+            <h3 class="section__header" data-i18n>Shipping Address</h3>
 
             <div>
               <label for="address" data-i18n>Address</label>
@@ -89,7 +89,7 @@
 
           <!-- Payment Method -->
           <fieldset class="form-section">
-            <h3 class="section-title" data-i18n>Payment Method</h3>
+            <h3 class="section__header" data-i18n>Payment Method</h3>
             <ul class="payment-methods" id="paymentMethods">
               <!-- Payment methods will be loaded by JavaScript -->
             </ul>
@@ -131,7 +131,7 @@
 
           <!-- Payment Proof Upload -->
           <fieldset class="form-section">
-            <h3 class="section-title" data-i18n>Payment Proof</h3>
+            <h3 class="section__header" data-i18n>Payment Proof</h3>
 
             <div>
               <label for="payment_proof" data-i18n>Attach money transfer slip</label>
@@ -144,7 +144,7 @@
 
           <!-- Notes -->
           <fieldset class="form-section">
-            <h3 class="section-title" data-i18n>Notes</h3>
+            <h3 class="section__header" data-i18n>Notes</h3>
             <div class="form-group">
               <span class="form-control icon-file">
                 <textarea id="comment" name="comment" rows="4" placeholder="{LNG_Provide additional information, such as preferred delivery time}"></textarea>

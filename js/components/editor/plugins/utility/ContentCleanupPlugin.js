@@ -126,7 +126,8 @@ class ContentCleanupPlugin extends PluginBase {
         'float-left', 'float-right', 'float-center',
         'block', 'inline', 'inline-block', 'flex', 'grid',
         'text-left', 'text-center', 'text-right', 'text-justify',
-        'mx-auto', 'center-block'
+        'mx-auto', 'center-block',
+        'tablebody', 'table', 'border', 'data', 'fullwidth'
     ];
 
     init() {

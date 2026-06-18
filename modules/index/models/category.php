@@ -36,8 +36,7 @@ class Model extends \Kotchasan\Model
         $query = static::createQuery()
             ->select('category_id', 'topic', 'language')
             ->from('category')
-            ->where([['type', $type]])
-            ->execute();
+            ->where(['type', $type]);
         $data = [];
         foreach ($query->fetchAll() as $item) {
             if (!isset($data[$item->category_id])) {

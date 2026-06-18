@@ -39,5 +39,9 @@
     "show_breadcrumb": true,
     "show_search": true,
     "products_per_page": 12
+  },
+  "designer": {
+    "compatible": true,
+    "editable": true
   }
 }

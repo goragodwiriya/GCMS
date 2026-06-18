@@ -79,7 +79,6 @@ class Controller extends \Kotchasan\KBase
     {
         $permissions = [
             ['value' => 'can_config', 'text' => '{LNG_Can configure} {LNG_the system}'],
-            ['value' => 'can_use_ai_chat', 'text' => 'Can use AI Chat'],
             ['value' => 'can_view_usage_history', 'text' => '{LNG_Can view} {LNG_system usage history}']
         ];
 

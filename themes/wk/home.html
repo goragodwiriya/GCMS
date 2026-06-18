@@ -1,74 +1,120 @@
-<div class="homepage">
-  {WIDGET_TEXTLINKS_hero}
-
+<div class="homepage" data-gcms-page="home" data-editor-container="content">
+  <!-- Hero Banner -->
+  <section class="hero-banner gcms-custom-block" data-block-type="hero-banner" data-editor-template="hero-banner" data-gcms-custom="1">
+    <div class="container">
+      <div class="section__content" data-repeat-container data-drop-zone>
+        <h1 data-editable="text" data-editor-field-name="hero_banner_title">ยินดีต้อนรับสู่โรงเรียนวิทยาศาสตร์แห่งอนาคต</h1>
+        <p data-editable="text" data-editor-field-name="hero_banner_subtitle" data-repeat-item>ศูนย์การเรียนรู้ที่มุ่งเน้นการพัฒนาทักษะด้านวิทยาศาสตร์ เทคโนโลยี วิศวกรรม
+          และคณิตศาสตร์ (STEM) สำหรับเยาวชนไทย เพื่อเตรียมความพร้อมสู่โลกอนาคต</p>
+        <div>
+          <div class="section-actions" data-repeat-container data-drop-zone>
+            <a data-editable="text" data-editor-field-name="hero_banner_button" href="#" class="btn btn-orange large" data-repeat-item>สมัครเรียน</a>
+            <button data-editable="text" data-editor-field-name="hero_banner_next" class="btn" data-repeat-item>ลงทะเบียน</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
   <div class="container">
     <div class="sidebar-right sidebar-top-mobile gap home-layout">
-      <aside class="sidebar home-sidebar" id="home-sidebar">
-        <section class="home-panel__bg">
-          <div class="home-panel__header">
-            <h2>บุคลากร</h2>
+      <aside class="sidebar home-sidebar" id="home-sidebar" data-editor-container="sidebar">
+        <!-- Personnel -->
+        <section class="section-bg widget-personnel" data-block-type="widget-personnel" data-editor-id="block-personnel" data-editor-label="Personnel">
+          <div class="container">
+            <div class="section__header">
+              <h2 data-editable="text" data-editor-field-name="personnel_title">{LNG_Personnel}</h2>
+            </div>
+            <div class="section__content">{WIDGET_PERSONNEL cat=1;menu=1}</div>
           </div>
-          {WIDGET_PERSONNEL cat=1;menu=1}
         </section>
-
-        <section class="home-panel__bg">
-          <div class="home-panel__header">
-            <h2>ระบบงานออนไลน์</h2>
+        <!-- Image Menu -->
+        <section class="section-bg widget-image-menu" data-block-type="image-menu" data-gcms-custom="1" data-editor-id="image-menu">
+          <div class="container">
+            <div class="section__header">
+              <h2 data-editable="text" data-editor-field-name="image-menu_title">{LNG_Menu}</h2>
+            </div>
+            <div class="section__content">
+              <nav class="sidemenu">
+                <ul data-repeat-container>
+                  <li data-repeat-item><a href="#" data-editable="text" data-editor-field-name="image-menu_link_1"><img
+                           src="{WEBURL}datas/prepared/banners/kotchasan_long.webp"" alt=" Kotchasan" data-editable="image" data-editor-field-name="image-menu_link_1_image"
+                           loading="lazy"></a></li>
+                  <li data-repeat-item><a href="#" data-editable="text" data-editor-field-name="image-menu_link_2"><img src="{WEBURL}datas/prepared/banners/gcms_long.webp"
+                           alt="GCMS" data-editable="image" data-editor-field-name="image-menu_link_2_image" loading="lazy"></a></li>
+                  <li data-repeat-item><a href="#" data-editable="text" data-editor-field-name="image-menu_link_3"><img src="{WEBURL}datas/prepared/banners/goragod_long.webp"
+                           alt="Goragod.com" data-editable="image" data-editor-field-name="image-menu_link_3_image" loading="lazy"></a></li>
+                </ul>
+              </nav>
+            </div>
           </div>
-          <nav class="sidemenu">
-            <ul>{WIDGET_TEXTLINKS_online}</ul>
-          </nav>
         </section>
-
-        <section class="home-panel__bg">{WIDGET_FACEBOOK}</section>
+        <!-- Facebook -->
+        <section class="section-bg widget-facebook" data-block-type="widget-facebook" data-editor-id="block-facebook" data-editor-label="Facebook">
+          <div class="container">
+            <div class="section__content">{WIDGET_FACEBOOK}</div>
+          </div>
+        </section>
       </aside>
-
       <div class="content home-content">
-        <section>{WIDGET_TEXTLINKS_banner}</section>
-
-        <section class="home-section__bg">{DETAIL}</section>
-
-        <section class="home-section__bg">
-          <div class="home-section__header">
-            <div>
-              <h2>ข่าวประชาสัมพันธ์</h2>
+        <!-- Slideshow -->
+        <section class="slideshow-block gcms-custom-block" data-block-type="slideshow" data-editor-template="slideshow" data-editor-id="block-hero" data-editor-label="Hero"
+                 data-gcms-custom="1">
+          <div class="gallery-slideshow" data-slideshow data-height="auto" data-show-expand="false" data-repeat-container>
+            <div class="now-slide" data-repeat-item>
+              <img src="https://picsum.photos/1200/450?random=31" alt="" data-editable="image" data-editor-field-name="hero_slide_1_image">
             </div>
-          </div>
-          <div class="home-section__content">
-            {WIDGET_DOCUMENT module=news}
+            <div class="now-slide" data-repeat-item>
+              <img src="https://picsum.photos/1200/450?random=32" alt="" data-editable="image" data-editor-field-name="hero_slide_2_image">
+            </div>
+            <div class="now-slide" data-repeat-item>
+              <img src="https://picsum.photos/1200/450?random=33" alt="" data-editable="image" data-editor-field-name="hero_slide_3_image">
+            </div>
           </div>
         </section>
-
-        <section class="home-section__bg">
-          <div class="home-section__header">
-            <div>
-              <h2>ข่าวเด่น</h2>
-            </div>
-          </div>
-          <div class="home-section__content">
-            {WIDGET_DOCUMENT module=news;layout=highlight;limit=5}
+        <!-- Home Content -->
+        <section class="section-bg" data-block-type="home-cms" data-editor-id="home-detail" data-editor-label="Home Content" data-editor-template="content">
+          <div class="container">
+            <div class="page-detail">{DETAIL}</div>
           </div>
         </section>
-
-        <section class="home-section__bg">
-          <div class="home-section__header">
-            <div>
-              <h2>บทความล่าสุด</h2>
+        <!-- News -->
+        <section class="section-bg widget-document" data-block-type="widget-document" data-editor-id="block-news" data-editor-label="Press release">
+          <div class="container">
+            <div class="section__header">
+              <h2 data-editable="text" data-editor-field-name="news_title">{LNG_Press release}</h2>
+              <a href="/news" class="view-more" data-editable="text" data-editor-field-name="news_viewall">{LNG_View all}...</a>
             </div>
-          </div>
-          <div class="home-section__content">
-            {WIDGET_DOCUMENT module=news;layout=carousel;limit=6;mobile=1;tablet=2;desktop=3}
+            <div class="section__content">{WIDGET_DOCUMENT module=news}</div>
           </div>
         </section>
-
-        <section class="home-section__bg">
-          <div class="home-section__header">
-            <div>
-              <h2>กิจกรรม</h2>
+        <!-- Highlight News -->
+        <section class="section-bg widget-document" data-block-type="widget-document" data-editor-id="block-news-highlight" data-editor-label="Highlight News">
+          <div class="container">
+            <div class="section__header">
+              <h2 data-editable="text" data-editor-field-name="news_highlight_title">{LNG_Highlight News}</h2>
+              <a href="/news" class="view-more" data-editable="text" data-editor-field-name="news_highlight_viewall">{LNG_View all}...</a>
             </div>
+            <div class="section__content">{WIDGET_DOCUMENT module=news;layout=highlight;limit=5}</div>
           </div>
-          <div class="home-section__content">
-            {WIDGET_GALLERY module=gallery;count=4}
+        </section>
+        <!-- Carousel News -->
+        <section class="section-bg widget-document" data-block-type="widget-document" data-editor-id="block-news-carousel" data-editor-label="Latest Articles">
+          <div class="container">
+            <div class="section__header">
+              <h2 data-editable="text" data-editor-field-name="news_carousel_title">{LNG_Latest Articles}</h2>
+              <a href="/news" class="view-more" data-editable="text" data-editor-field-name="news_carousel_viewall">{LNG_View all}...</a>
+            </div>
+            <div class="section__content">{WIDGET_DOCUMENT module=news;layout=carousel;limit=6;mobile=1;tablet=2;desktop=3}</div>
+          </div>
+        </section>
+        <!-- Gallery -->
+        <section class="section-bg widget-gallery" data-block-type="widget-gallery" data-editor-id="widget-gallery" data-editor-label="Activities">
+          <div class="container">
+            <div class="section__header">
+              <h2 data-editable="text" data-editor-field-name="gallery_title">{LNG_Activities}</h2>
+              <a href="/gallery" class="view-more" data-editable="text" data-editor-field-name="widget-gallery_viewall">{LNG_View all}...</a>
+            </div>
+            <div class="section__content">{WIDGET_GALLERY module=gallery;count=4}</div>
           </div>
         </section>
       </div>

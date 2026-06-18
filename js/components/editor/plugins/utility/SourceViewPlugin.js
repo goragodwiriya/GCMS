@@ -60,6 +60,51 @@ class SourceViewPlugin extends PluginBase {
       // Don't record history on every keystroke in source view
       // Will sync when switching back
     });
+
+    this.sourceEditor.addEventListener('keydown', (event) => {
+      if (event.key !== 'Tab' || event.ctrlKey || event.metaKey || event.altKey) {
+        return;
+      }
+
+      const tabToSpaces = Number.isInteger(this.options.tabToSpaces)
+        ? Math.max(0, this.options.tabToSpaces)
+        : Number.isInteger(this.editor.options?.tabToSpaces)
+          ? Math.max(0, this.editor.options.tabToSpaces)
+          : 4;
+      if (tabToSpaces <= 0) {
+        // Soft tabs disabled: keep the browser's default Tab handling.
+        return;
+      }
+
+      const start = this.sourceEditor.selectionStart ?? 0;
+      const end = this.sourceEditor.selectionEnd ?? start;
+      const value = this.sourceEditor.value;
+
+      if (event.shiftKey) {
+        event.preventDefault();
+
+        if (start !== end) {
+          return;
+        }
+
+        const indent = tabToSpaces > 0 ? ' '.repeat(tabToSpaces) : '\t';
+        const before = value.slice(Math.max(0, start - indent.length), start);
+        if (before === indent) {
+          this.sourceEditor.value = value.slice(0, start - indent.length) + value.slice(end);
+          const cursor = start - indent.length;
+          this.sourceEditor.setSelectionRange(cursor, cursor);
+        }
+        return;
+      }
+
+      event.preventDefault();
+
+      const indent = tabToSpaces > 0 ? ' '.repeat(tabToSpaces) : '\t';
+
+      this.sourceEditor.value = value.slice(0, start) + indent + value.slice(end);
+      const cursor = start + indent.length;
+      this.sourceEditor.setSelectionRange(cursor, cursor);
+    });
   }
 
   /**
@@ -165,7 +210,9 @@ class SourceViewPlugin extends PluginBase {
 
       // ── Text node ──────────────────────────────────────────────────────
       if (node.nodeType === Node.TEXT_NODE) {
-        const text = node.textContent.replace(/\s+/g, ' ').trim();
+        const text = node.textContent
+          .replace(/[ \t\r\n\f]+/g, ' ')
+          .replace(/^[ \t\r\n\f]+|[ \t\r\n\f]+$/g, '');
         return text ? pad + text + '\n' : '';
       }
 
@@ -206,7 +253,9 @@ class SourceViewPlugin extends PluginBase {
 
       if (!hasBlockChild) {
         // All content is inline — keep on a single line for readability
-        const inner = node.innerHTML.replace(/\s+/g, ' ').trim();
+        const inner = node.innerHTML
+          .replace(/[ \t\r\n\f]+/g, ' ')
+          .replace(/^[ \t\r\n\f]+|[ \t\r\n\f]+$/g, '');
         return pad + openTag + inner + closeTag + '\n';
       }
 

@@ -267,6 +267,55 @@ class SelectionManager {
   }
 
   /**
+   * Remove text immediately before the cursor.
+   * Returns true when text was removed.
+   * @param {number} count
+   * @returns {boolean}
+   */
+  removeTextBeforeCursor(count) {
+    const range = this.getRange();
+    const expectedText = typeof count === 'string' ? count : null;
+    const deleteCount = expectedText !== null ? expectedText.length : count;
+
+    if (!range || !range.collapsed || !this.isWithinEditor() || deleteCount <= 0) {
+      return false;
+    }
+
+    const container = range.startContainer;
+    const offset = range.startOffset;
+
+    if (container.nodeType === Node.TEXT_NODE) {
+      const start = Math.max(0, offset - deleteCount);
+      if (start === offset) {
+        return false;
+      }
+
+      const text = container.textContent || '';
+      const textBeforeCursor = text.slice(start, offset);
+      if (textBeforeCursor.length === 0) {
+        return false;
+      }
+
+      if (expectedText !== null && textBeforeCursor !== expectedText) {
+        return false;
+      }
+
+      container.textContent = text.slice(0, start) + text.slice(offset);
+
+      const newRange = document.createRange();
+      newRange.setStart(container, start);
+      newRange.collapse(true);
+
+      const selection = this.getSelection();
+      selection.removeAllRanges();
+      selection.addRange(newRange);
+      return true;
+    }
+
+    return false;
+  }
+
+  /**
    * Wrap selection with element
    * @param {string} tagName - Tag name to wrap with
    * @param {Object} attributes - Attributes for the element

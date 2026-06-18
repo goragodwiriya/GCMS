@@ -53,7 +53,11 @@ const SecurityConfig = {
       enabled: true,
       directives: {
         'default-src': ["'self'"],
-        'script-src': ["'self'"],
+        // Allow social SDK hosts required by the application (Google, Facebook, Telegram)
+        // NOTE: Telegram's official widget uses dynamic code-generation which may require
+        // 'unsafe-eval'. Enabling 'unsafe-eval' reduces the protection offered by CSP —
+        // prefer a server-side or non-eval integration when possible.
+        'script-src': ["'self'", "https://accounts.google.com", "https://apis.google.com", "https://connect.facebook.net", "https://telegram.org", "https://*.telegram.org", "'unsafe-inline'", "'unsafe-eval'"],
         'style-src': ["'self'", "'unsafe-inline'"],
         'img-src': ["'self'", "data:", "https:"],
         'connect-src': ["'self'"],

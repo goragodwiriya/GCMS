@@ -98,7 +98,7 @@ class View extends \Web\View
         if ($listitem->hasItem()) {
             $list = $listitem->render();
         } else {
-            $list = '<div class="list-empty"><div class="list-empty-icon icon-file"></div><h3>{LNG_No articles found}</h3></div>';
+            $list = '<div class="list-empty"><div class="list-empty-icon icon-file"></div><h3>{LNG_No items found}</h3></div>';
         }
 
         $template->add([

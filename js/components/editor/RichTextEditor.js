@@ -43,6 +43,7 @@ class RichTextEditor {
       maxHeight: null,
       placeholder: '',
       readOnly: false,
+      tabToSpaces: 4,
       toolbar: Toolbar.defaultItems,
       stickyToolbar: false,
       plugins: [],

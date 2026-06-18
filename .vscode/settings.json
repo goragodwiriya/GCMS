@@ -1,0 +1,20 @@
+{
+    "files.associations": {
+        "*.instructions.md": "markdown",
+        "*.prompt.md": "markdown"
+    },
+    "search.exclude": {
+        "**/node_modules": true,
+        "**/Now/dist": true,
+        "**/datas/cache": true,
+        "**/datas/logs": true,
+        "**/.copilot/transcripts": true
+    },
+    "files.watcherExclude": {
+        "**/node_modules/**": true,
+        "**/Now/dist/**": true,
+        "**/datas/cache/**": true,
+        "**/datas/logs/**": true,
+        "**/.copilot/transcripts/**": true
+    }
+}

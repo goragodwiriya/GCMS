@@ -39,42 +39,6 @@ function initGeneralSettings(element, data) {
     intervalId = window.setInterval(updateTimes, 1000);
   }
 
-  // Clear cache button handler
-  const clearCacheBtn = element.querySelector('#clearCacheBtn');
-  if (clearCacheBtn) {
-    clearCacheBtn.addEventListener('click', async () => {
-      if (!confirm(Now.translate('Are you sure you want to clear all cache?'))) {
-        return;
-      }
-
-      clearCacheBtn.disabled = true;
-      clearCacheBtn.textContent = Now.translate('Clearing Cache');
-
-      try {
-        const result = await http.post('api/index/cache/clear');
-
-        if (result.success) {
-          NotificationManager.show({
-            type: 'success',
-            title: Now.translate('Success'),
-            message: result.message || Now.translate('Cache cleared successfully')
-          });
-        } else {
-          throw new Error(result.message || 'Failed to clear cache');
-        }
-      } catch (error) {
-        NotificationManager.show({
-          type: 'error',
-          title: Now.translate('Error'),
-          message: error.message || Now.translate('Failed to clear cache')
-        });
-      } finally {
-        clearCacheBtn.disabled = false;
-        clearCacheBtn.textContent = Now.translate('Clear All Cache');
-      }
-    });
-  }
-
   // Return cleanup function (optional)
   return () => {
     window.clearInterval(intervalId);
@@ -183,7 +147,7 @@ function initTelegramSettings(element, data) {
     const restoreButton = setBusy(test_telegram, Now.translate('Sending...'));
 
     try {
-      const response = await ApiService.post('api/index/settings/testTelegram', {
+      const response = await ApiService.post('../api/index/settings/testTelegram', {
         bot_token: telegram_bot_token.value,
         chat_id: telegram_chat_id.value
       });
@@ -209,7 +173,7 @@ function initTelegramSettings(element, data) {
     const restoreButton = setBusy(set_telegram_webhook, 'Setting...');
 
     try {
-      const response = await ApiService.post('api/index/settings/setTelegramWebhook', {
+      const response = await ApiService.post('../api/index/settings/setTelegramWebhook', {
         bot_token: telegram_bot_token.value,
         webhook_url: telegram_webhook_url.value,
         secret_token: telegram_webhook_secret ? telegram_webhook_secret.value : ''
@@ -643,7 +607,8 @@ function initAiChatConsole(element) {
         history: chatHistoryPayload()
       });
       const parsed = unwrapApiResponse(response);
-      const payload = parsed.data && typeof parsed.data === 'object' ? parsed.data : {};
+      const data = parsed.data?.data || parsed.data;
+      const payload = typeof data === 'object' ? data : {};
 
       if (!parsed.success) {
         throw new Error(parsed.message || 'Chat request failed');
@@ -995,9 +960,9 @@ function initAiSettings(element, data) {
       });
 
       if (response.success) {
-        NotificationManager.success(response.message || Now.translate('AI connection test successful'));
+        NotificationManager.success(response.data?.message || response.message || Now.translate('AI connection test successful'));
       } else {
-        NotificationManager.error(response.message || Now.translate('AI connection test failed'));
+        NotificationManager.error(response.data?.message || response.message || Now.translate('AI connection test failed'));
       }
     } catch (error) {
       NotificationManager.error(Now.translate('AI connection test failed'));
@@ -1679,6 +1644,343 @@ function formatMenuArrow(cell, rawValue, rowData, attributes) {
   }
 }
 
+function initDatabaseBackupPage(element) {
+  const root = element.closest('.content') || element;
+  const tableList = root.querySelector('#db_table_list');
+  const selectAll = root.querySelector('#db_select_all');
+  const selectAllStructure = root.querySelector('#db_select_all_structure');
+  const selectAllData = root.querySelector('#db_select_all_data');
+  const exportBtn = root.querySelector('#db_export_btn');
+  const importBtn = root.querySelector('#db_import_btn');
+  const importScope = root.querySelector('#db_import_scope');
+  const importFormat = root.querySelector('#db_import_format');
+  const importFile = root.querySelector('#db_import_file');
+  const overwriteInput = root.querySelector('#db_import_overwrite');
+  const confirmInput = root.querySelector('#db_import_confirm');
+  const progress = root.querySelector('#db_progress');
+  const progressText = root.querySelector('#db_progress_text');
+  const tableApiContainer = root.querySelector('#db_tables_container');
+
+  if (!tableList || !exportBtn || !importBtn || !progress || !progressText) {
+    return () => {};
+  }
+
+  const setProgress = (value, text) => {
+    progress.value = Math.max(0, Math.min(100, Number(value) || 0));
+    progressText.textContent = text || '';
+  };
+
+  const setRowStructureData = (table, checked) => {
+    if (table === '') {
+      return;
+    }
+    const structure = root.querySelector(`.db-structure-checkbox[data-table="${CSS.escape(table)}"]`);
+    const data = root.querySelector(`.db-data-checkbox[data-table="${CSS.escape(table)}"]`);
+    if (structure) {
+      structure.checked = checked;
+    }
+    if (data) {
+      data.checked = checked;
+    }
+  };
+
+  const syncRowCheckbox = (table) => {
+    if (table === '') {
+      return;
+    }
+    const row = root.querySelector(`.db-row-checkbox[data-table="${CSS.escape(table)}"]`);
+    const structure = root.querySelector(`.db-structure-checkbox[data-table="${CSS.escape(table)}"]`);
+    const data = root.querySelector(`.db-data-checkbox[data-table="${CSS.escape(table)}"]`);
+    if (row) {
+      row.checked = !!structure?.checked && !!data?.checked;
+    }
+  };
+
+  const getTableModes = () => {
+    const modes = {};
+    root.querySelectorAll('.db-structure-checkbox').forEach((structureEl) => {
+      const table = structureEl.getAttribute('data-table') || '';
+      if (table === '') {
+        return;
+      }
+      const dataEl = root.querySelector(`.db-data-checkbox[data-table="${CSS.escape(table)}"]`);
+      const hasStructure = structureEl.checked;
+      const hasData = !!dataEl?.checked;
+      if (!hasStructure && !hasData) {
+        return;
+      }
+      modes[table] = {
+        structure: hasStructure,
+        data: hasData
+      };
+    });
+    return modes;
+  };
+
+  const getSelectedTables = () => Object.keys(getTableModes());
+
+  const detectFilename = (response) => {
+    const disposition = response.headers.get('Content-Disposition') || '';
+    const utf8 = disposition.match(/filename\*=UTF-8''([^;]+)/i);
+    if (utf8 && utf8[1]) {
+      return decodeURIComponent(utf8[1]);
+    }
+    const plain = disposition.match(/filename="?([^";]+)"?/i);
+    if (plain && plain[1]) {
+      return plain[1];
+    }
+    const stamp = Utils.date.format(new Date(), 'YYYY-MM-DD-HHmmss', 'en');
+    return `database-backup-${stamp}.sql`;
+  };
+
+  const triggerBlobDownload = (blob, filename) => {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  const exportClick = async () => {
+    const tableModes = getTableModes();
+    const selected = Object.keys(tableModes);
+    if (selected.length === 0) {
+      NotificationManager.error('Please select structure or data for at least one table');
+      return;
+    }
+
+    exportBtn.disabled = true;
+    setProgress(10, 'Preparing backup export...');
+
+    try {
+      const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+      const formBody = new URLSearchParams();
+      formBody.set('scope', 'selected');
+      formBody.set('tables', JSON.stringify(selected));
+      formBody.set('table_modes', JSON.stringify(tableModes));
+      if (csrfToken !== '') {
+        formBody.set('_token', csrfToken);
+      }
+
+      const response = await fetch('../api/index/database/export', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: {
+          Accept: 'application/sql,application/octet-stream',
+          'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+          ...(csrfToken ? {'X-CSRF-Token': csrfToken} : {})
+        },
+        body: formBody.toString()
+      });
+
+      if (!response.ok) {
+        const text = await response.text();
+        throw new Error(text || 'Export failed');
+      }
+
+      const blob = await response.blob();
+      const filename = detectFilename(response);
+      triggerBlobDownload(blob, filename);
+
+      setProgress(100, 'Backup file generated');
+      NotificationManager.success('Backup generated successfully');
+    } catch (error) {
+      setProgress(0, 'Export failed');
+      NotificationManager.error(extractApiErrorMessage(error, 'Export failed'));
+    } finally {
+      exportBtn.disabled = false;
+    }
+  };
+
+  const importClick = async () => {
+    const tableModes = getTableModes();
+    const selected = Object.keys(tableModes);
+    if (selected.length === 0) {
+      NotificationManager.error('Please select structure or data for at least one table');
+      return;
+    }
+    const file = importFile.files && importFile.files[0] ? importFile.files[0] : null;
+    if (!file) {
+      NotificationManager.error('Please choose a backup file');
+      return;
+    }
+    if (!confirmInput.checked) {
+      NotificationManager.error('Please confirm overwrite/import operation');
+      return;
+    }
+
+    importBtn.disabled = true;
+    setProgress(10, 'Uploading backup file...');
+
+    const formData = new FormData();
+    formData.append('backup_file', file);
+    formData.append('scope', importScope.value);
+    formData.append('format', importFormat.value);
+    formData.append('overwrite', overwriteInput.checked ? '1' : '0');
+    formData.append('confirm_overwrite', confirmInput.checked ? '1' : '0');
+    formData.append('tables', JSON.stringify(selected));
+    formData.append('table_modes', JSON.stringify(tableModes));
+
+    try {
+      const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+      const response = await fetch('../api/index/database/import', {
+        method: 'POST',
+        body: formData,
+        credentials: 'same-origin',
+        headers: {
+          Accept: 'application/json',
+          ...(csrfToken ? {'X-CSRF-Token': csrfToken} : {})
+        }
+      });
+      const payload = await response.json();
+      if (!response.ok || !payload || payload.success !== true) {
+        throw new Error(payload?.message || 'Import failed');
+      }
+
+      setProgress(100, 'Import completed');
+      NotificationManager.success(payload.message || 'Import completed successfully');
+      if (window.ApiComponent && tableApiContainer) {
+        ApiComponent.refresh(tableApiContainer);
+      }
+    } catch (error) {
+      setProgress(0, 'Import failed');
+      NotificationManager.error(extractApiErrorMessage(error, 'Import failed'));
+    } finally {
+      importBtn.disabled = false;
+    }
+  };
+
+  const selectAllChange = () => {
+    const checked = !!selectAll.checked;
+    root.querySelectorAll('.db-row-checkbox').forEach((checkbox) => {
+      checkbox.checked = checked;
+      setRowStructureData(checkbox.getAttribute('data-table') || '', checked);
+    });
+  };
+
+  const selectAllStructureChange = () => {
+    const checked = !!selectAllStructure?.checked;
+    root.querySelectorAll('.db-structure-checkbox').forEach((checkbox) => {
+      checkbox.checked = checked;
+      syncRowCheckbox(checkbox.getAttribute('data-table') || '');
+    });
+  };
+
+  const selectAllDataChange = () => {
+    const checked = !!selectAllData?.checked;
+    root.querySelectorAll('.db-data-checkbox').forEach((checkbox) => {
+      checkbox.checked = checked;
+      syncRowCheckbox(checkbox.getAttribute('data-table') || '');
+    });
+  };
+
+  const tableListChange = (event) => {
+    const target = event.target;
+    if (!(target instanceof HTMLInputElement) || target.type !== 'checkbox') {
+      return;
+    }
+    const table = target.getAttribute('data-table') || '';
+    if (table === '') {
+      return;
+    }
+    if (target.classList.contains('db-row-checkbox')) {
+      setRowStructureData(table, target.checked);
+      return;
+    }
+    if (target.classList.contains('db-structure-checkbox') || target.classList.contains('db-data-checkbox')) {
+      syncRowCheckbox(table);
+    }
+  };
+
+  exportBtn.addEventListener('click', exportClick);
+  importBtn.addEventListener('click', importClick);
+  tableList.addEventListener('change', tableListChange);
+  if (selectAll) {
+    selectAll.addEventListener('change', selectAllChange);
+  }
+  if (selectAllStructure) {
+    selectAllStructure.addEventListener('change', selectAllStructureChange);
+  }
+  if (selectAllData) {
+    selectAllData.addEventListener('change', selectAllDataChange);
+  }
+
+  return () => {
+    exportBtn.removeEventListener('click', exportClick);
+    importBtn.removeEventListener('click', importClick);
+    tableList.removeEventListener('change', tableListChange);
+    if (selectAll) {
+      selectAll.removeEventListener('change', selectAllChange);
+    }
+    if (selectAllStructure) {
+      selectAllStructure.removeEventListener('change', selectAllStructureChange);
+    }
+    if (selectAllData) {
+      selectAllData.removeEventListener('change', selectAllDataChange);
+    }
+  };
+}
+
+function bindDatabaseBackupTables(element, payload) {
+  const root = element.closest('.content') || element;
+  const tableList = root.querySelector('#db_table_list');
+  const prefixEl = root.querySelector('#db_prefix');
+  const progress = root.querySelector('#db_progress');
+  const progressText = root.querySelector('#db_progress_text');
+
+  if (!tableList || !prefixEl) {
+    return;
+  }
+
+  const formatBytes = (bytes) => {
+    const size = Number(bytes);
+    if (!Number.isFinite(size) || size <= 0) {
+      return '-';
+    }
+    const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+    let value = size;
+    let idx = 0;
+    while (value >= 1024 && idx < units.length - 1) {
+      value /= 1024;
+      idx += 1;
+    }
+    return `${value.toFixed(idx === 0 ? 0 : 2)} ${units[idx]}`;
+  };
+
+  const data = payload?.data || payload || {};
+  const tables = Array.isArray(data.tables) ? data.tables : [];
+
+  prefixEl.textContent = data.table_prefix || data.prefix || '-';
+  if (tables.length === 0) {
+    tableList.innerHTML = '<tr><td colspan="6" class="center">No prefixed tables found</td></tr>';
+  } else {
+    tableList.innerHTML = tables.map((table) => {
+      const tableName = Utils.string.escape(table.name || '');
+      const rows = table.rows === null || typeof table.rows === 'undefined' ? '-' : Number(table.rows).toLocaleString();
+      const size = table.size === null || typeof table.size === 'undefined' ? '-' : formatBytes(table.size);
+      return `<tr>
+        <td class="center"><input type="checkbox" class="db-row-checkbox" data-table="${tableName}" checked></td>
+        <td>${tableName}</td>
+        <td class="center"><input type="checkbox" class="db-structure-checkbox" data-table="${tableName}" checked></td>
+        <td class="center"><input type="checkbox" class="db-data-checkbox" data-table="${tableName}" checked></td>
+        <td class="center">${rows}</td>
+        <td class="right">${size}</td>
+      </tr>`;
+    }).join('');
+  }
+
+  if (progress && progressText) {
+    progress.value = 100;
+    progressText.textContent = 'Table list loaded';
+  }
+}
+
+window.initDatabaseBackupPage = initDatabaseBackupPage;
+window.bindDatabaseBackupTables = bindDatabaseBackupTables;
+
 function initAiTheme(element) {
   let _generated = null;
 
@@ -1774,7 +2076,7 @@ function initAiTheme(element) {
       };
       let layoutText = Now.translate('Single column (no sidebar)');
       for (const cls of Object.keys(layoutLabels)) {
-        if (doc.querySelector('.' + cls)) { layoutText = layoutLabels[cls]; break; }
+        if (doc.querySelector('.' + cls)) {layoutText = layoutLabels[cls]; break;}
       }
 
       // Friendly names for the standard containers
@@ -1885,7 +2187,7 @@ function initAiTheme(element) {
       const result = unwrapApiResponse(response);
 
       if (!result.success) {
-        NotificationManager.error(result.message || Now.translate('Generation failed.'));
+        NotificationManager.error(result.data?.message || result.message || Now.translate('Generation failed.'));
         return;
       }
 

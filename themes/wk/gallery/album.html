@@ -1,13 +1,12 @@
 <div class="gallery-album-page" data-album-id="{ID}" data-default-mode="{DEFAULT_MODE}">
-
   <!-- Album Header -->
   <header class="view-header">
     <div class="container">
       <nav class="breadcrumbs one_line">
         <ul>{BREADCRUMBS}</ul>
       </nav>
-      <h1>{TOPIC}</h1>
-      <p class="description">{DESCRIPTION}</p>
+      <h1 class="page__title">{TOPIC}</h1>
+      <p class="page__subtitle">{DESCRIPTION}</p>
       <div class="header-meta">
         <span class="icon-image"><strong>{COUNT}</strong> <span data-i18n>photos</span></span>
         <time class="date icon-event" datetime="{DATE}">{DATE {DATE} d M Y}</time>
@@ -31,26 +30,23 @@
       </div>
     </div>
   </header>
-
   <div class="container">
-    <div class="page-content">
-      <!-- Mode: Slideshow -->
-      <section class="gallery-slideshow-section" id="albumSlideshowSection">
-        <div class="gallery-slideshow" id="gallerySlideshow" data-slideshow data-count="{COUNT}">
-          {SLIDES}
-        </div>
-      </section>
-
-      <!-- Mode: Masonry Grid -->
-      <section class="gallery-grid-section" id="albumGridSection" style="display:none">
-        <div class="gallery-masonry-grid" id="galleryMasonryGrid"></div>
-      </section>
+    <div class="page-body">
+      <div class="section__content">
+        <!-- Mode: Slideshow -->
+        <section class="gallery-slideshow-section" id="albumSlideshowSection">
+          <div class="gallery-slideshow" id="gallerySlideshow" data-slideshow data-count="{COUNT}">{SLIDES}</div>
+        </section>
+        <!-- Mode: Masonry Grid -->
+        <section class="gallery-grid-section" id="albumGridSection" style="display:none">
+          <div class="gallery-masonry-grid" id="galleryMasonryGrid"></div>
+        </section>
+      </div>
     </div>
   </div>
 </div>
-
 <script>
-  (function() {
+  (function () {
     'use strict';
 
     function initAlbumModes() {
@@ -69,7 +65,7 @@
         if (!masonryGrid || masonryGrid.dataset.built) return;
         var slides = slideshowEl ? slideshowEl.querySelectorAll('.now-slide') : [];
         var html = '';
-        slides.forEach(function(slide, idx) {
+        slides.forEach(function (slide, idx) {
           var img = slide.querySelector('img');
           if (!img) return;
           html += '<div class="masonry-item" data-index="' + idx + '">' +
@@ -81,8 +77,8 @@
         masonryGrid.dataset.built = '1';
 
         // Wire clicks → open lightbox via GallerySlideshow instance
-        masonryGrid.querySelectorAll('.masonry-item').forEach(function(item) {
-          item.addEventListener('click', function() {
+        masonryGrid.querySelectorAll('.masonry-item').forEach(function (item) {
+          item.addEventListener('click', function () {
             var idx = parseInt(item.dataset.index, 10);
             var ss = slideshowEl && slideshowEl._ssInstance;
             if (ss) {
@@ -105,24 +101,24 @@
           slideshowSection.style.display = '';
           gridSection.style.display = 'none';
           var ss = slideshowEl && slideshowEl._ssInstance;
-          if (ss) {if (ss.options && ss.options.autoplay) ss.play();}
+          if (ss) { if (ss.options && ss.options.autoplay) ss.play(); }
         }
-        toggleBtns.forEach(function(btn) {
+        toggleBtns.forEach(function (btn) {
           btn.classList.toggle('active', btn.dataset.mode === mode);
         });
-        try {localStorage.setItem('gallery_album_view', mode);} catch (e) {}
+        try { localStorage.setItem('gallery_album_view', mode); } catch (e) { }
       }
 
       // ── Toggle button events ────────────────────────────────────
-      toggleBtns.forEach(function(btn) {
-        btn.addEventListener('click', function() {
+      toggleBtns.forEach(function (btn) {
+        btn.addEventListener('click', function () {
           setMode(btn.dataset.mode);
         });
       });
 
       // ── Restore last used mode (localStorage > default from settings) ──
       var savedMode = null;
-      try {savedMode = localStorage.getItem('gallery_album_view');} catch (e) {}
+      try { savedMode = localStorage.getItem('gallery_album_view'); } catch (e) { }
       setMode(savedMode || defaultMode);
     }
 
@@ -134,7 +130,7 @@
     }
 
     // Now.js SPA re-init
-    var re = function() {setTimeout(initAlbumModes, 0);};
+    var re = function () { setTimeout(initAlbumModes, 0); };
     if (window.EventManager) {
       EventManager.on('page:loaded', re);
     } else {

@@ -28,7 +28,7 @@ define('DATA_FOLDER', 'datas/');
  *
  * @var int
  */
-define('DEBUG', 2);
+define('DEBUG', 0);
 /**
  * กำหนดที่เก็บ error log
  * LOG_FILE   = บันทึกลงไฟล์ error_log.php ของระบบ
@@ -138,7 +138,7 @@ if (!headers_sent()) {
         "frame-ancestors 'self'",
         "object-src 'none'",
         "base-uri 'self'",
-        "form-action 'self'",
+        "form-action 'self'"
     ));
     header('Content-Security-Policy: '.$csp);
 }

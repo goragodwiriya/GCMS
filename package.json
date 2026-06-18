@@ -7,7 +7,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "dev": "vite",
-    "build": "npm run build:core && npm run build:table && npm run build:graph && npm run build:serviceworker && npm run build:queue && npm run build:eventcalendar && npm run build:editor && npm run build:formbuilder && npm run build:syntaxhighlighter && npm run build:designer",
+    "build": "npm run build:core && npm run build:table && npm run build:graph && npm run build:serviceworker && npm run build:queue && npm run build:eventcalendar && npm run build:editor && npm run build:formbuilder && npm run build:syntaxhighlighter",
     "build:core": "cross-env BUILD_TARGET=core vite build",
     "build:table": "cross-env BUILD_TARGET=table vite build",
     "build:graph": "cross-env BUILD_TARGET=graph vite build",
@@ -17,7 +17,6 @@
     "build:editor": "cross-env BUILD_TARGET=editor vite build",
     "build:formbuilder": "cross-env BUILD_TARGET=formbuilder vite build",
     "build:syntaxhighlighter": "cross-env BUILD_TARGET=syntaxhighlighter vite build",
-    "build:designer": "cross-env BUILD_TARGET=designer vite build",
     "build:all": "npm run build",
     "watch:formbuilder": "cross-env BUILD_TARGET=formbuilder vite build --watch"
   },

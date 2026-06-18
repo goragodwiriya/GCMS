@@ -1,31 +1,25 @@
 <!-- Personnel List Page – Hierarchical Org-Chart Style -->
 <div class="personnel-page" id="personnelPage">
-
   <!-- Page Hero -->
-  <div class="hero">
+  <div class="page-header hero">
     <div class="container">
-      <h1 class="hero-title">{TOPIC}</h1>
-      <p class="hero-subtitle">{DESCRIPTION}</p>
+      <h1 class="page__title">{TOPIC}</h1>
+      <p class="page__subtitle">{DESCRIPTION}</p>
     </div>
   </div>
-
   <div class="container">
     <div class="page-body">
-      <!-- Optional Detail -->
-      <section class="page-content">{DETAIL}</section>
-
-      <!-- Department Tabs -->
-      <nav class="cat-links category-buttons" id="deptTabs" aria-label="Department filter">
-        {DEPT_TABS}
-      </nav>
-
-      <!-- Personnel Hierarchy -->
-      <section id="personnelContainer">{PERSONNEL_LIST}</section>
+      <div class="section__content">
+        <!-- Optional Detail -->
+        <section class="section__content">{DETAIL}</section>
+        <!-- Department Tabs -->
+        <nav class="cat-links category-buttons" id="deptTabs" aria-label="Department filter"> {DEPT_TABS} </nav>
+        <!-- Personnel Hierarchy -->
+        <div id="personnelContainer">{PERSONNEL_LIST}</div>
+      </div>
     </div>
   </div>
-
 </div>
-
 <div id="personnel-modal" class="modal" aria-hidden="true" aria-modal="true" role="dialog" inert>
   <div class="modal-container">
     <div class="modal-content">
@@ -48,7 +42,7 @@
           <p class="modal-department icon-home" id="modalDepartment" data-modal-target="department"></p>
         </div>
         <div class="modal-contact" data-show="email || phone">
-          <h3 class="modal-section-title" data-i18n>{LNG_Personnel Information}</h3>
+          <h3 class="modal-section__header" data-i18n>{LNG_Personnel Information}</h3>
           <div class="modal-contact-item" data-show="phone">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path
@@ -66,7 +60,7 @@
           </div>
         </div>
         <div class="modal-bio" data-show="detail">
-          <h3 class="modal-section-title" data-i18n>{LNG_Biography}</h3>
+          <h3 class="modal-section__header" data-i18n>{LNG_Biography}</h3>
           <p id="modalBio" data-modal-target="detail"></p>
         </div>
       </div>

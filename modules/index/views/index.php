@@ -46,7 +46,7 @@ class View extends \Web\View
         // add template
         $template->add([
             // content
-            '/{DETAIL}/' => Gcms::showDetail(str_replace(['&#x007B;', '&#x007D;'], ['{', '}'], $index->detail), true, false),
+            '/{DETAIL}/' => Gcms::showDetail(str_replace(['&#x007B;', '&#x007D;'], ['{', '}'], $index->detail), false),
             // topic, description
             '/{TOPIC}/' => $index->topic,
             '/{DESCRIPTION}/' => $index->description,

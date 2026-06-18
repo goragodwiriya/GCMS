@@ -51,7 +51,8 @@ const SecurityManager = {
       enabled: true,
       directives: {
         'default-src': ["'self'"],
-        'script-src': ["'self'", "'unsafe-inline'"],
+        // Allow social SDK hosts; include 'unsafe-eval' if Telegram widget requires it.
+        'script-src': ["'self'", "https://accounts.google.com", "https://apis.google.com", "https://connect.facebook.net", "https://telegram.org", "https://*.telegram.org", "'unsafe-inline'", "'unsafe-eval'"],
         'style-src': ["'self'", "'unsafe-inline'"],
         'img-src': ["'self'", "data:", "https:"],
         'font-src': ["'self'"],

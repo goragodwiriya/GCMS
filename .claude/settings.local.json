@@ -1,7 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "Bash(php -l modules/index/controllers/aitheme.php)"
-    ]
-  }
-}

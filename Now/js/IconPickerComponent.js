@@ -26,7 +26,8 @@
  * Each entry: { value: 'icon-xxx', label: 'display name' }
  * Add new icons here to make them available everywhere.
  */
-export const ICON_LIST = [
+// Default (fallback) icon list — used immediately and as a last-resort fallback.
+const _DEFAULT_ICON_LIST = [
     {value: 'icon-home', label: 'home'},
     {value: 'icon-dashboard', label: 'dashboard'},
     {value: 'icon-menus', label: 'bars'},
@@ -102,6 +103,101 @@ export const ICON_LIST = [
     {value: 'icon-support', label: 'support'},
 ];
 
+// Exported list used by the picker. We initialize with the default list,
+// then attempt to refresh from selection.json or fonts.css on demand.
+export let ICON_LIST = _DEFAULT_ICON_LIST.slice();
+
+// Internal flag to avoid multiple concurrent refreshes
+let _iconsLoaded = false;
+
+/**
+ * Try to load icons from an IcoMoon `selection.json` file.
+ * Returns an array of `{value,label}` or null on failure.
+ */
+function _loadFromSelectionJson() {
+    const candidates = ['/Now/css/selection.json', '/Now/fonts/selection.json', '/Now/selection.json', 'Now/css/selection.json'];
+    const tryFetch = (url) => fetch(url, {cache: 'no-cache'}).then(r => {
+        if (!r.ok) throw new Error('not ok');
+        return r.json();
+    });
+
+    // Try each candidate in sequence
+    let p = Promise.reject();
+    candidates.forEach(url => {
+        p = p.catch(() => tryFetch(url));
+    });
+
+    return p.then(json => {
+        if (!json || !Array.isArray(json.icons)) return null;
+        const prefix = (json.preferences && json.preferences.fontPref && json.preferences.fontPref.prefix) || 'icon-';
+        const list = [];
+        json.icons.forEach(ic => {
+            const name = ic && ic.properties && ic.properties.name;
+            if (name) list.push({value: prefix + name, label: name});
+        });
+        return list.length ? list : null;
+    }).catch(() => null);
+}
+
+/**
+ * Parse a fonts.css content and extract `.icon-...:before` selectors.
+ * Returns array of `{value,label}` or null if none found.
+ */
+function _parseFontsCss(content) {
+    if (!content) return null;
+    const re = /\\.icon-([a-z0-9_\\-]+):before/gi;
+    const names = new Set();
+    let m;
+    while ((m = re.exec(content)) !== null) {
+        names.add(m[1]);
+    }
+    if (!names.size) return null;
+    const list = Array.from(names).map(n => ({value: 'icon-' + n, label: n}));
+    return list;
+}
+
+/**
+ * Try to load icons by fetching fonts.css and parsing it.
+ */
+function _loadFromFontsCss() {
+    const candidates = ['/Now/css/fonts.css', '/Now/fonts/fonts.css', '/Now/fonts.css', 'Now/css/fonts.css'];
+    const tryFetch = (url) => fetch(url, {cache: 'no-cache'}).then(r => {
+        if (!r.ok) throw new Error('not ok');
+        return r.text();
+    });
+
+    let p = Promise.reject();
+    candidates.forEach(url => {p = p.catch(() => tryFetch(url));});
+    return p.then(txt => _parseFontsCss(txt)).catch(() => null);
+}
+
+/**
+ * Refresh ICON_LIST using selection.json first, then fonts.css, dedupe results.
+ * Returns a Promise resolving to the updated ICON_LIST.
+ */
+export function refreshIconList() {
+    if (_iconsLoaded) return Promise.resolve(ICON_LIST);
+    _iconsLoaded = true;
+    return _loadFromSelectionJson().then(list => {
+        if (!list || !list.length) return _loadFromFontsCss();
+        return list;
+    }).then(list => {
+        if (!list || !list.length) return ICON_LIST; // keep default
+        // Deduplicate by `value`
+        const seen = new Set();
+        const merged = [];
+        // prefer incoming list order, then fall back to existing defaults
+        list.concat(ICON_LIST).forEach(item => {
+            if (!item || !item.value) return;
+            if (seen.has(item.value)) return;
+            seen.add(item.value);
+            merged.push(item);
+        });
+        ICON_LIST = merged;
+        return ICON_LIST;
+    }).catch(() => ICON_LIST);
+}
+
 /* ── Helpers ─────────────────────────────────────────────── */
 
 let _ipCounter = 0;
@@ -159,7 +255,8 @@ if (window.ComponentManager) {
             const name = this.props.name || 'icon';
             // data-value prop provides an immediate selection; omit it when relying on data-attr bindings.
             const value = this.props.value !== undefined ? this.props.value : null;
-            _ipBuild(el, name, value);
+            // Refresh the icon list (selection.json or fonts.css) then build.
+            refreshIconList().finally(() => _ipBuild(el, name, value));
         },
 
         destroyed() {
@@ -183,7 +280,8 @@ const IconPicker = {
      */
     create(el, {name = 'icon', value = ''} = {}) {
         el._ipId = ++_ipCounter;
-        _ipBuild(el, name, value);
+        // Ensure the latest icon list is loaded before building.
+        refreshIconList().finally(() => _ipBuild(el, name, value));
         return el;
     },
 

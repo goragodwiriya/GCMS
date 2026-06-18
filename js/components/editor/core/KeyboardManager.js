@@ -53,15 +53,35 @@ class KeyboardManager {
     // Select all
     this.register('ctrl+a', 'selectAll');
 
-    // Tab for indent (prevent default tab behavior)
+    // Tab inserts configurable soft tabs in the editor surface.
     this.register('tab', (e) => {
-      e.preventDefault();
-      this.editor.commands?.execute('indent');
+      const tabToSpaces = Number.isInteger(this.editor.options?.tabToSpaces)
+        ? Math.max(0, this.editor.options.tabToSpaces)
+        : 4;
+
+      if (tabToSpaces > 0) {
+        e.preventDefault();
+        const indent = '\u00A0'.repeat(tabToSpaces);
+        this.editor.selection?.insertText(indent);
+        return;
+      }
+
+      // Allow the browser's default Tab behavior when soft tabs are disabled.
     });
 
     this.register('shift+tab', (e) => {
-      e.preventDefault();
-      this.editor.commands?.execute('outdent');
+      const tabToSpaces = Number.isInteger(this.editor.options?.tabToSpaces)
+        ? Math.max(0, this.editor.options.tabToSpaces)
+        : 4;
+
+      if (tabToSpaces > 0) {
+        e.preventDefault();
+        const indent = '\u00A0'.repeat(tabToSpaces);
+        this.editor.selection?.removeTextBeforeCursor(indent);
+        return;
+      }
+
+      // Allow the browser's default Shift+Tab behavior when soft tabs are disabled.
     });
 
     // Escape to blur/close dialogs

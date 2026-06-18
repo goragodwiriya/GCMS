@@ -8,7 +8,7 @@
   <!-- Fonts: preconnect must be in <head> so browser starts DNS/TLS early -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&family=Sarabun:wght@300;400;500;600&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700&display=swap">
   <!-- Framework CSS -->
   <link rel="stylesheet" href="{WEBURL}Now/dist/now.core.min.css">
   <!-- GCMS Core CSS -->
@@ -49,7 +49,11 @@
       </div>
     </header>
     <main id="main" role="main">{MAIN}</main>
-    <div class="container textlinks-footer">{WIDGET_TEXTLINKS_footer}</div>
+    <section class="image-links" data-block-type="columns" data-editor-id="image-links">
+      <div class="container">
+        {WIDGET_TEXTLINKS_footer}
+      </div>
+    </section>
   </div>
   <!-- Footer -->
   <footer class="footer" id="contact">
@@ -82,7 +86,9 @@
           </ul>
         </div>
       </div>
-      <div class="footer-bottom">
+    </div>
+    <div class="footer-bottom">
+      <div class="container">
         <p> Copyright &copy; 2026 <a href="{WEBURL}">{WEBTITLE}</a> designed by <a href="https://www.kotchasan.com">Kotchasan.com</a> GCMS Version {VERSION} <a href="{WEBURL}terms"
              target="_blank" data-i18n>Terms of Service</a>
           <a href="{WEBURL}privacy" target="_blank" data-i18n>Privacy Policy</a>
@@ -99,6 +105,7 @@
   <!-- App Scripts -->
   <script src="{WEBURL}js/main.js"></script>
   <script src="{WEBURL}js/global.js"></script>
+  <script src="{WEBURL}js/designer.js"></script>
 </body>
 
 </html>

@@ -103,7 +103,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         enabled: true,
         defaultTheme: 'light',
         storageKey: 'crm_theme',
-        systemPreference: false, // Not use system Color scheme preference
+        systemPreference: false, // Not use system color scheme preference
 
         // Smooth transitions
         transition: {
@@ -249,6 +249,12 @@ document.addEventListener('DOMContentLoaded', async () => {
           '/api-settings': {
             template: 'settings/api.html',
             title: '{LNG_API Settings}',
+            requireAuth: true,
+            beforeEnter: requireAdmin
+          },
+          '/database-backup': {
+            template: 'settings/database-backup.html',
+            title: 'Database Import/Export Management',
             requireAuth: true,
             beforeEnter: requireAdmin
           },

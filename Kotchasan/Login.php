@@ -84,7 +84,13 @@ class Login extends KBase
             } elseif (empty(self::$login_params['password']) && self::$from_submit) {
                 self::$login_message = Language::get('Please fill up this form');
                 self::$login_input = 'password';
-            } elseif (!self::$from_submit || (self::$from_submit && $request->isReferer())) {
+            } elseif (self::$from_submit && $request->isReferer()) {
+                // Only attempt the actual login when the user genuinely submitted the
+                // login form (and the request passes the referer/CSRF check). A plain
+                // page load or an unauthenticated API call (e.g. GET .../auth/me) must
+                // NOT reach login(): the password is never restored from the session
+                // (see above), so checkLogin() would always fail and record a bogus
+                // brute-force attempt, eventually locking the visitor out of the system.
                 $obj->login($request, self::$login_params);
             }
         }

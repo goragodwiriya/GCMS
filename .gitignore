@@ -7,6 +7,22 @@
 *.swo
 *~
 
+!.github/instructions/
+!.github/instructions/repo-nowjs-gcms.instructions.md
+!.github/prompts/
+!.github/prompts/activate-project.prompt.md
+!.github/templates/
+!.github/templates/checklists/
+!.github/templates/checklists/new-project-activate-checklist.md
+!.github/templates/continuity/
+!.github/templates/continuity/transcript-continuity-layer.md
+!.github/templates/instructions/
+!.github/templates/instructions/project-kb-template.instructions.md
+!.vscode/
+/.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+
 # AI Assistant rules (keep private)
 .clinerules/
 .kilocode/
@@ -17,6 +33,7 @@
 .qoder/
 .augment/
 .antigravity/
+.copilot/transcripts/
 
 # Dependencies
 node_modules/
@@ -90,6 +107,16 @@ CLAUDE.md
 
 # Include only specific HTML files
 !example-cdn.html
+
+# Track shared activation and continuity assets
+!.github/copilot-instructions.md
+!.github/templates/
+!.github/templates/checklists/
+!.github/templates/checklists/new-project-activate-checklist.md
+!.github/templates/continuity/
+!.github/templates/continuity/transcript-continuity-layer.md
+!.github/templates/instructions/
+!.github/templates/instructions/project-kb-template.instructions.md
 
 # Keep core framework files:
 # - Now/ directory (framework core)

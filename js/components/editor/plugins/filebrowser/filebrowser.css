@@ -67,6 +67,7 @@
   background: none;
   border: none;
   border-bottom: 2px solid transparent;
+  border-radius: 0;
   cursor: pointer;
   color: var(--color-text-muted);
   transition: all var(--transition-duration, 0.2s);
