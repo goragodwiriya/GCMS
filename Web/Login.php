@@ -62,6 +62,14 @@ class Login extends \Kotchasan\Login
     protected static $jwtPayload = null;
 
     /**
+     * User record that Index\Auth\Model::getUserByToken() returned while the
+     * token was verified, reused by getUserFromDatabase() to skip a second query
+     *
+     * @var object|null
+     */
+    protected $tokenUser = null;
+
+    /**
      * Validates the login request and performs the login process.
      * ตรวจสอบทั้ง JWT Token และ Session
      *
@@ -154,7 +162,17 @@ class Login extends \Kotchasan\Login
         }
 
         // ใช้ Model ในการ verify token (ถ้ามี)
-        if (class_exists('\Index\Auth\Model') && method_exists('\Index\Auth\Model', 'verifyToken')) {
+        if (class_exists('\Index\Auth\Model') && method_exists('\Index\Auth\Model', 'getUserByToken')) {
+            // Same gate as the API: access tokens only, the token's sid is still an
+            // open session, and the account is not suspended. verifyToken() alone
+            // checks just the signature, exp and jti, so a 7-day refresh token, a
+            // token whose sessions were closed by logoutAllSessions() and a
+            // suspended account's token all logged in on the site.
+            $this->tokenUser = \Index\Auth\Model::getUserByToken($token);
+            if (!$this->tokenUser) {
+                return null;
+            }
+
             return \Index\Auth\Model::verifyToken($token);
         }
 
@@ -367,6 +385,12 @@ class Login extends \Kotchasan\Login
             return false;
         }
 
+        // Only access tokens log in; refresh and login-as tokens have their own endpoints.
+        // Tokens without `type` predate it and are read as access tokens, as the API does.
+        if (($payload['type'] ?? 'access') !== 'access') {
+            return false;
+        }
+
         return true;
     }
 
@@ -492,6 +516,10 @@ class Login extends \Kotchasan\Login
      */
     protected function getUserFromDatabase($userId)
     {
+        if ($this->tokenUser && (int) $this->tokenUser->id === (int) $userId) {
+            return $this->tokenUser;
+        }
+
         // ใช้ Auth Model ถ้ามี
         if (class_exists('\Index\Auth\Model') && method_exists('\Index\Auth\Model', 'getUserById')) {
             return \Index\Auth\Model::getUserById($userId);

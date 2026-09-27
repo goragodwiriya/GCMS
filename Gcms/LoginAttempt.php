@@ -260,7 +260,10 @@ class LoginAttempt extends \Kotchasan\KBase
             $ip = self::normalizeIp($ip);
             self::purgeStale($username, $ip);
 
-            $remaining = self::getRemainingLockTime($username, $ip);
+            // remainingLockTime(), not getRemainingLockTime(): the public one
+            // swallows a database error into 0, which would make this method
+            // fail open instead of reaching the catch below.
+            $remaining = self::remainingLockTime($username, $ip);
             if ($remaining > 0) {
                 return true;
             }
@@ -327,14 +330,28 @@ class LoginAttempt extends \Kotchasan\KBase
             $ip = self::normalizeIp($ip);
             self::purgeStale($username, $ip);
 
-            $normalized = self::normalizeUsername($username);
-            $ipRemaining = self::remainingForScope('ip_address', $ip);
-            $userRemaining = $normalized !== '' ? self::remainingForScope('username', $normalized) : 0;
-
-            return max($ipRemaining, $userRemaining);
+            return self::remainingLockTime($username, $ip);
         } catch (\Exception $e) {
             return 0;
         }
+    }
+
+    /**
+     * Remaining lockout seconds for the IP or username, whichever is longer.
+     * Lets a database error through so isLocked() can fail closed on it.
+     *
+     * @param string $username
+     * @param string $ip Already normalized
+     *
+     * @return int
+     */
+    private static function remainingLockTime($username, $ip)
+    {
+        $normalized = self::normalizeUsername($username);
+        $ipRemaining = self::remainingForScope('ip_address', $ip);
+        $userRemaining = $normalized !== '' ? self::remainingForScope('username', $normalized) : 0;
+
+        return max($ipRemaining, $userRemaining);
     }
 
     /**
