@@ -100,15 +100,26 @@ class Api extends \Kotchasan\ApiController
     }
 
     /**
-     * Role helper: Demo mode or Super Admin mode (social and demo_mode enabled)
+     * Role helper: บัญชีนี้ "ไม่ใช่" บัญชีตัวอย่างของ demo_mode ใช่หรือไม่
+     * บัญชีตัวอย่าง = เข้าระบบด้วยโซเชียล ในขณะที่เปิด demo_mode ไว้
      *
      * @param object $login
      *
-     * @return bool
+     * @return bool true = บัญชีปกติ (ทำงานได้เต็มที่), false = บัญชีตัวอย่าง (อ่านอย่างเดียว)
      */
     public static function isNotDemoMode($login)
     {
-        return $login && !empty($login->social) && !empty(self::$cfg->demo_mode) ? false : true;
+        if (!$login || empty(self::$cfg->demo_mode)) {
+            return true;
+        }
+
+        // คอลัมน์ user.social เป็น enum('user','facebook','google','line','telegram')
+        // DEFAULT 'user' · บัญชีที่สมัครตามปกติจึงเก็บค่า 'user' ไม่ใช่ค่าว่าง
+        // ถ้าเช็กแค่ !empty($login->social) แอดมินตัวจริงจะถูกนับเป็นบัญชีตัวอย่าง
+        // ไปด้วยทันทีที่เปิด demo_mode
+        $social = isset($login->social) ? strtolower(trim((string) $login->social)) : '';
+
+        return $social === '' || $social === 'user';
     }
 
     /**

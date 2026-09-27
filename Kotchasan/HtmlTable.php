@@ -1,5 +1,4 @@
 <?php
-
 namespace Kotchasan;
 
 /**
@@ -171,6 +170,149 @@ class HtmlTable
 
         $table[] = "</table>\n";
         return implode("\n", $table);
+    }
+
+    // =========================================================================
+    // Declarative data-table — สร้างตารางตามมาตรฐาน Now.js ปัจจุบัน (TableManager)
+    // จาก columns metadata (JSON เดียวกับที่ dynamic-columns ฝั่ง JS ใช้). tbody ว่าง
+    // TableManager โหลดแถวจาก data-source เอง. ใช้กับการ generate template file
+    // =========================================================================
+
+    /**
+     * สร้าง <table data-table ...> declarative จาก columns + options
+     *
+     * @param array $columns [{field, label, sort?, align?, format?, filter?, type?, template?}]
+     * @param array $opt {name, source, actionUrl, sort, pageSize, searchColumns, checkbox, actions, actionButton, rowActions}
+     *
+     * @return string
+     */
+    public static function dataTable(array $columns, array $opt = [])
+    {
+        $t = ['class="table border fullwidth"'];
+        if (!empty($opt['name'])) {
+            $t[] = 'data-table="'.self::attr($opt['name']).'"';
+        }
+        if (!empty($opt['source'])) {
+            $t[] = 'data-source="'.self::attr($opt['source']).'"';
+        }
+        $t[] = 'data-default-sort="'.self::attr($opt['sort'] ?? 'id asc').'"';
+        if (!empty($opt['pageSize'])) {
+            $t[] = 'data-page-size="'.(int) $opt['pageSize'].'"';
+        }
+
+        if (!empty($opt['searchColumns'])) {
+            $t[] = 'data-search-columns="'.self::attr($opt['searchColumns']).'"';
+        }
+        if (!empty($opt['checkbox'])) {
+            $t[] = 'data-show-checkbox="true"';
+        }
+        if (!empty($opt['editableRows'])) {
+            $t[] = 'data-editable-rows="true"';
+        }
+        if (!empty($opt['attr'])) {
+            $t[] = 'data-attr="data:'.self::attr($opt['attr']).'"';
+        }
+        if (!empty($opt['dynamicColumns'])) {
+            $t[] = 'data-dynamic-columns="true"';
+        }
+        if (!empty($opt['actions'])) {
+            $t[] = "data-actions='".self::attrJson($opt['actions'])."'";
+            if (!empty($opt['actionUrl'])) {
+                $t[] = 'data-action-url="'.self::attr($opt['actionUrl']).'"';
+            }
+            $t[] = 'data-action-button="'.self::attr($opt['actionButton'] ?? 'Process|btn-danger').'"';
+        }
+        if (!empty($opt['rowActions'])) {
+            $t[] = "data-row-actions='".self::attrJson($opt['rowActions'])."'";
+        }
+
+        $th = '';
+        foreach ($columns as $col) {
+            $th .= self::dataHead($col);
+        }
+
+        return "<div class=\"tablebody\">\n"
+        ."  <table ".implode(' ', $t).">\n"
+            ."    <thead>\n      <tr>\n".$th."      </tr>\n    </thead>\n"
+            ."    <tbody></tbody>\n  </table>\n</div>\n";
+    }
+
+    /**
+     * สร้าง <th> หนึ่งคอลัมน์ของ data-table
+     *
+     * @param array $col
+     *
+     * @return string
+     */
+    protected static function dataHead(array $col)
+    {
+        $a = ['data-field="'.self::attr($col['field'] ?? '').'"'];
+        if (!empty($col['sort'])) {
+            $a[] = 'data-sort="'.self::attr(is_string($col['sort']) ? $col['sort'] : ($col['field'] ?? '')).'"';
+        }
+        if (!empty($col['align'])) {
+            $a[] = 'class="'.self::attr($col['align']).'"';
+            $a[] = 'data-cell-class="'.self::attr($col['align']).'"';
+        }
+        if (!empty($col['format'])) {
+            $a[] = 'data-format="'.self::attr($col['format']).'"';
+        }
+        if (!empty($col['formatter'])) {
+            $a[] = 'data-formatter="'.self::attr($col['formatter']).'"';
+        }
+        if (!empty($col['filter'])) {
+            $a[] = 'data-filter="true"';
+            $a[] = 'data-type="'.self::attr($col['type'] ?? 'select').'"';
+        }
+        if (!empty($col['template'])) {
+            $a[] = "data-template='".str_replace("'", '&#39;', $col['template'])."'";
+        }
+        if (isset($col['label'])) {
+            $a[] = 'data-i18n';
+            $label = '{LNG_'.self::esc($col['label']).'}';
+        } else {
+            $label = self::esc($col['field'] ?? '');
+        }
+
+        return "        <th ".implode(' ', $a).">".$label."</th>\n";
+    }
+
+    /**
+     * escape ค่าเข้า attribute (double-quoted)
+     *
+     * @param string $v
+     *
+     * @return string
+     */
+    protected static function attr($v)
+    {
+        return htmlspecialchars((string) $v, ENT_QUOTES, 'UTF-8');
+    }
+
+    /**
+     * escape text ใน element
+     *
+     * @param string $v
+     *
+     * @return string
+     */
+    protected static function esc($v)
+    {
+        return htmlspecialchars((string) $v, ENT_QUOTES, 'UTF-8');
+    }
+
+    /**
+     * json สำหรับ single-quoted attribute (data-actions/data-row-actions)
+     *
+     * @param mixed $v array หรือ JSON string
+     *
+     * @return string
+     */
+    protected static function attrJson($v)
+    {
+        $json = is_string($v) ? $v : json_encode($v, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+
+        return str_replace("'", '&#39;', $json);
     }
 }
 

@@ -33,7 +33,7 @@ class Controller extends \Kotchasan\Controller
     {
         if (MAIN_INIT === 'indexhtml') {
             $page = max(1, $request->get('page')->toInt());
-            $limit = (self::$cfg->tag_cols ?? 3) * (self::$cfg->tag_rows ?? 3);
+            $limit = (self::$cfg->document_cols ?? 3) * (self::$cfg->document_rows ?? 3);
             $listModel = \Document\Tag\Model::create($index);
             $listModel->updateCount($index->alias);
             $pagination = $listModel->paginate($page, $limit);

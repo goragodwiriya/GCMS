@@ -81,6 +81,9 @@ const ApiService = {
       maxNetworkRetries: 3,
       backoffFactor: 1.5, // Multiply the time with this number on each retry
       retryStatusCodes: [408, 429, 500, 502, 503, 504],
+      // Only these may be replayed automatically — retrying a POST/PUT/PATCH
+      // that already reached the server duplicates its side effects
+      idempotentMethods: ['GET', 'HEAD', 'OPTIONS'],
       exponentialBackoff: true
     },
 
@@ -747,7 +750,18 @@ const ApiService = {
    * @returns {boolean} True when the request qualifies for a retry attempt.
    */
   shouldRetryRequest(error) {
-    const {retryOnNetworkError, retryStatusCodes} = this.config.connection;
+    const {retryOnNetworkError, retryStatusCodes, idempotentMethods} = this.config.connection;
+
+    // Never replay a non-idempotent request. A timeout or a 5xx means the reply
+    // was lost — not that the server declined the work. Re-sending a POST that
+    // already committed (imports, generated files, payments) duplicates it
+    // silently. Callers that know a POST is safe to replay can opt in per
+    // request with {retryNonIdempotent: true}.
+    const method = (error.config?.method || 'GET').toUpperCase();
+
+    if (!idempotentMethods.includes(method) && !error.config?.retryNonIdempotent) {
+      return false;
+    }
 
     // In the event of network errors
     if (retryOnNetworkError && (error.message.includes('network') || error.status === 0)) {

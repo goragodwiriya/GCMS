@@ -198,7 +198,6 @@ return array(
   'All Status' => 'ทั้งหมด',
   'All Target Tables' => 'ทั้งหมด',
   'Allow Forgot Password' => 'อนุญาตให้ลืมรหัสผ่าน',
-  'Allow No.' => 'เลขที่ใบอนุญาต',
   'Allow User Registration' => 'อนุญาตให้ลงทะเบียนผู้ใช้',
   'Allowed HTML tags: {tags}. Attributes: class, style only. Scripts, iframes, images, links and other disallowed tags are removed on apply.' => 'แท็ก HTML ที่อนุญาต: {tags} แอตทริบิวต์: class, style เท่านั้น สคริปต์, iframes, รูปภาพ, ลิงก์ และแท็กที่ไม่อนุญาตอื่นๆ จะถูกลบเมื่อใช้',
   'Allowed HTML tags: {tags}. Unsafe content such as scripts, iframes and event handlers is removed on apply.' => 'แท็ก HTML ที่อนุญาต: {tags} เนื้อหาที่ไม่ปลอดภัย เช่น สคริปต์, iframes และ event handlers จะถูกลบเมื่อใช้',

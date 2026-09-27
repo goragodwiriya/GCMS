@@ -9,6 +9,10 @@ const TableManager = {
     footerAggregates: {}, // e.g. {price: 'sum', quantity: 'sum', rating: 'avg'}
     searchColumns: [],
     persistColumnWidths: true,
+    // Bring the table back as the user left it (page size, sort, filters; page
+    // and search for the rest of the tab session) when the address carries no
+    // table parameters. data-remember-state="false" turns it off per table.
+    rememberState: true,
     rowSortable: false,
     allowRowModification: false,
     confirmDelete: true,
@@ -18,6 +22,7 @@ const TableManager = {
     method: 'GET', // HTTP method for API calls (GET or POST)
     cache: false,
     cacheTime: 60000,
+    refreshInterval: 0, // Seconds between automatic reloads from data-source. 0 disables it.
     actions: {}, // e.g. {delete:"Delete",activate:"Activate"}
     actionUrl: '',
     actionButton: 'Process',
@@ -35,6 +40,13 @@ const TableManager = {
     tables: new Map()
   },
 
+  /**
+   * Reports whether a table renders its own rows through data-bind or a
+   * data-attr binding, in which case this manager must not render them.
+   *
+   * @param {HTMLTableElement} table - Table element
+   * @returns {boolean} True when the markup owns the rendering
+   */
   hasDeclarativeDataBinding(table) {
     if (!table?.dataset) return false;
 
@@ -49,11 +61,26 @@ const TableManager = {
       .some(binding => binding.startsWith('data:'));
   },
 
+  /**
+   * Reports whether ElementManager has finished initializing, since cells that
+   * hold form elements cannot be built before it has.
+   *
+   * @returns {boolean} True when it is ready
+   */
   isElementManagerReady() {
     const manager = window.Now?.getManager ? Now.getManager('element') : window.ElementManager;
     return Boolean(manager?.state?.initialized);
   },
 
+  /**
+   * Retries a render on the next frame while its dependency is still starting
+   * up, giving up after 40 attempts so a missing dependency does not spin
+   * forever.
+   *
+   * @param {string} tableId - Table id
+   * @param {string} [reason='element-manager-not-ready'] - What is being waited for
+   * @returns {boolean} True when a retry was scheduled
+   */
   deferRenderUntilReady(tableId, reason = 'element-manager-not-ready') {
     const table = this.state.tables.get(tableId);
     if (!table) return false;
@@ -77,6 +104,16 @@ const TableManager = {
     return true;
   },
 
+  /**
+   * Initializes the manager: merges the configuration and starts watching the
+   * DOM for tables, through CoreObserver when it exists and its own observer
+   * otherwise.
+   *
+   * Calling it again once initialized is a no-op.
+   *
+   * @param {Object} [options={}] - Configuration merged over the defaults
+   * @returns {Promise<Object>} The manager instance
+   */
   async init(options = {}) {
     if (this.state.initialized) return this;
 
@@ -136,8 +173,23 @@ const TableManager = {
     const urlParams = new URLSearchParams(searchParams);
     const params = {};
 
-    // Parse URL parameters (simple format without table prefix)
-    for (const [key, value] of urlParams.entries()) {
+    // Several tables on one page keep their parameters apart as tableId.key;
+    // a lone table uses the plain names
+    const prefix = this.getUrlPrefix(tableId);
+    const tableIds = prefix ? this.getUrlTableIds() : [];
+
+    for (const [rawKey, value] of urlParams.entries()) {
+      let key = rawKey;
+      if (prefix) {
+        const dot = rawKey.indexOf('.');
+        if (rawKey.startsWith(prefix)) {
+          key = rawKey.substring(prefix.length);
+        } else if (dot > 0 && tableIds.includes(rawKey.substring(0, dot))) {
+          continue; // another table's parameter
+        } else if (['page', 'pageSize', 'search', 'sort'].includes(rawKey)) {
+          continue; // unprefixed table state is ambiguous here
+        }
+      }
       // Parse numeric parameters
       if (key === 'page' || key === 'pageSize') {
         params[key] = parseInt(value) || (key === 'page' ? 1 : 10);
@@ -155,6 +207,16 @@ const TableManager = {
     return params;
   },
 
+  /**
+   * Writes table parameters into the address bar, in history or hash mode as
+   * the router is configured, leaving the other query parameters alone.
+   *
+   * Does nothing when the table has URL parameters turned off.
+   *
+   * @param {string} tableId - Table id
+   * @param {Object} [newParams={}] - Parameters to write; empty ones are removed
+   * @returns {void}
+   */
   updateUrlParams(tableId, newParams = {}) {
     const table = this.state.tables.get(tableId);
     const urlParamsEnabled = table?.config?.urlParams !== undefined ? table.config.urlParams : this.config.urlParams;
@@ -194,31 +256,40 @@ const TableManager = {
       }
     }
 
+    // With several tables on the page each one writes tableId.key, and only its
+    // own state — the page's other parameters (module_id ...) stay as they are
+    const prefix = this.getUrlPrefix(tableId);
+    const ownKeys = prefix ? this.getTableStateKeys(table) : null;
+    if (ownKeys) {
+      columnFields.forEach(field => ownKeys.add(field));
+    }
+
     // Remove all table-related parameters (but not internal ones - they shouldn't be there anyway)
-    const keysToRemove = [...commonTableParams, ...columnFields];
+    const keysToRemove = ownKeys ? [...ownKeys] : [...commonTableParams, ...columnFields];
     keysToRemove.forEach(key => {
       // Remove all instances of the key (important for array params like sort[])
-      while (urlParams.has(key)) {
-        urlParams.delete(key);
+      while (urlParams.has(prefix + key)) {
+        urlParams.delete(prefix + key);
       }
     });
 
-    // Add new parameters (simple format without table prefix)
+    // Add new parameters (plain names, or tableId.key beside other tables)
     Object.entries(newParams).forEach(([key, value]) => {
       if (value === undefined || value === null || value === '') return;
 
       // Skip internal parameters that shouldn't appear in URLs
       if (internalParams.includes(key)) return;
+      if (ownKeys && !ownKeys.has(key)) return;
 
       if (Array.isArray(value)) {
         // Handle array parameters (for multi-sort)
         value.forEach(v => {
           if (v !== undefined && v !== null && v !== '') {
-            urlParams.append(key, v);
+            urlParams.append(prefix + key, v);
           }
         });
       } else {
-        urlParams.set(key, value);
+        urlParams.set(prefix + key, value);
       }
     });
 
@@ -236,15 +307,27 @@ const TableManager = {
     }
 
     try {
-      window.history.replaceState({}, '', newUrl);
+      window.history.replaceState(window.history.state, '', newUrl);
     } catch (e) {
       console.warn('Failed to update URL parameters:', e);
     }
   },
 
+  /**
+   * Mirrors the current sort, page and filters of a table into the address bar,
+   * so the view survives a reload and can be shared as a link.
+   *
+   * Internal parameters such as the record totals are not published.
+   *
+   * @param {string} tableId - Table id
+   * @returns {void}
+   */
   syncStateToUrl(tableId) {
     const table = this.state.tables.get(tableId);
     if (!table) return;
+
+    // Every sort, filter, page and page-size change comes through here
+    this.saveRememberedState(tableId);
 
     // Check if URL params are enabled for this table
     const urlParamsEnabled = table.config.urlParams !== undefined ? table.config.urlParams : this.config.urlParams;
@@ -290,6 +373,13 @@ const TableManager = {
     this.updateUrlParams(tableId, params);
   },
 
+  /**
+   * Applies the table parameters found in the address bar to a table, so a
+   * shared link opens on the same page, sort and filters.
+   *
+   * @param {string} tableId - Table id
+   * @returns {boolean} True when parameters were applied
+   */
   loadStateFromUrl(tableId) {
     const urlParams = this.getUrlParams(tableId);
     const table = this.state.tables.get(tableId);
@@ -327,6 +417,280 @@ const TableManager = {
     return true;
   },
 
+  /**
+   * The route part of the address: the path, or the route inside the hash.
+   *
+   * @returns {string}
+   */
+  getRoutePath() {
+    if (window.location.href.includes('#')) {
+      const hash = window.location.hash;
+      const queryIndex = hash.indexOf('?');
+      return queryIndex === -1 ? hash : hash.substring(0, queryIndex);
+    }
+    return window.location.pathname;
+  },
+
+  /**
+   * The query string of the route (history or hash mode), without the "?".
+   *
+   * @returns {string}
+   */
+  getRouteQuery() {
+    if (window.location.href.includes('#')) {
+      const hash = window.location.hash;
+      const queryIndex = hash.indexOf('?');
+      return queryIndex === -1 ? '' : hash.substring(queryIndex + 1);
+    }
+    return window.location.search.substring(1);
+  },
+
+  /**
+   * Ids of the tables on the page that keep their state in the address.
+   *
+   * @returns {string[]}
+   */
+  getUrlTableIds() {
+    return Array.from(document.querySelectorAll('table[data-table]'))
+      .filter(el => {
+        const setting = el.dataset.urlParams;
+        return setting !== undefined ? setting !== 'false' : this.config.urlParams !== false;
+      })
+      .map(el => el.dataset.table);
+  },
+
+  /**
+   * "tableId." when the page shows more than one table with URL state (their
+   * page, sort and filters would otherwise overwrite each other), else "".
+   *
+   * @param {string} tableId - Table id
+   * @returns {string}
+   */
+  getUrlPrefix(tableId) {
+    const ids = this.getUrlTableIds();
+    return ids.length > 1 && ids.includes(tableId) ? `${tableId}.` : '';
+  },
+
+  /**
+   * The parameters that are a table's own state: page, page size, search,
+   * sort and every filter control.
+   *
+   * @param {Object} table - Table instance
+   * @returns {Set<string>}
+   */
+  getTableStateKeys(table) {
+    const keys = new Set(['page', 'pageSize', 'search', 'sort']);
+    if (table?.filterElements) {
+      table.filterElements.forEach((entry, key) => keys.add(key));
+    }
+    return keys;
+  },
+
+  /**
+   * Where a table's remembered state is stored: the route, the address
+   * parameters that are not the table's own (the list of module_id=5 is not
+   * the list of module_id=6) and the table id.
+   *
+   * @param {Object} table - Table instance
+   * @returns {string}
+   */
+  getRememberKey(table) {
+    const own = this.getTableStateKeys(table);
+    const tableIds = this.getUrlTableIds();
+    const context = [];
+    new URLSearchParams(this.getRouteQuery()).forEach((value, key) => {
+      const dot = key.indexOf('.');
+      if (own.has(key) || (dot > 0 && tableIds.includes(key.substring(0, dot)))) return;
+      context.push(`${key}=${value}`);
+    });
+    context.sort();
+    return `now.table:${this.getRoutePath()}${context.length ? '?' + context.join('&') : ''}:${table.id}`;
+  },
+
+  /**
+   * Reads a JSON value from web storage; null when absent, unreadable or when
+   * storage is unavailable (private mode, blocked cookies).
+   *
+   * @param {string} area - 'local' or 'session'
+   * @param {string} key - Storage key
+   * @returns {*}
+   */
+  readStorage(area, key) {
+    try {
+      const raw = window[`${area}Storage`].getItem(key);
+      return raw === null ? null : JSON.parse(raw);
+    } catch (error) {
+      return null;
+    }
+  },
+
+  /**
+   * Writes a JSON value to web storage (null removes it); failures are ignored
+   * because remembering is a convenience.
+   *
+   * @param {string} area - 'local' or 'session'
+   * @param {string} key - Storage key
+   * @param {*} value - Value to store
+   * @returns {void}
+   */
+  writeStorage(area, key, value) {
+    try {
+      const storage = window[`${area}Storage`];
+      if (value === null || value === undefined) {
+        storage.removeItem(key);
+      } else {
+        storage.setItem(key, JSON.stringify(value));
+      }
+    } catch (error) {
+      // storage full or unavailable
+    }
+  },
+
+  /**
+   * Parses a compact sort ("name asc,status desc") keeping only the columns
+   * the table can sort by now.
+   *
+   * @param {Object} table - Table instance
+   * @param {string} sort - Compact sort
+   * @returns {Object} {field: 'asc'|'desc'}
+   */
+  parseRememberedSort(table, sort) {
+    const sortable = new Set(Array.from(table.element.querySelectorAll('thead th[data-sort]'))
+      .map(th => th.dataset.sort));
+    const state = {};
+    String(sort).split(',').forEach(pair => {
+      const [field, direction = 'asc'] = pair.trim().split(/\s+/);
+      const dir = direction.toLowerCase();
+      if (field && sortable.has(field) && ['asc', 'desc'].includes(dir)) {
+        state[field] = dir;
+      }
+    });
+    return state;
+  },
+
+  /**
+   * Stores what the user chose for a table: page size, sort and filters for
+   * good (localStorage), page and search for the tab session
+   * (sessionStorage) — coming back from an edit form lands on the same page,
+   * a new visit starts at page one without a stale search.
+   *
+   * @param {string} tableId - Table id
+   * @returns {void}
+   */
+  saveRememberedState(tableId) {
+    const table = this.state.tables.get(tableId);
+    if (!table || table.config.rememberState === false) return;
+
+    const params = table.config.params;
+    const key = this.getRememberKey(table);
+
+    const kept = {};
+    if (table.filterElements.has('pageSize') && params.pageSize > 0) {
+      kept.pageSize = params.pageSize;
+    }
+    const sortPairs = Object.entries(table.sortState || {}).map(([field, dir]) => `${field} ${dir}`);
+    if (sortPairs.length > 0) {
+      kept.sort = sortPairs.join(',');
+    }
+    const filters = {};
+    table.filterElements.forEach((entry, name) => {
+      if (name === 'pageSize' || name === 'search') return;
+      const value = params[name];
+      filters[name] = value === undefined || value === null ? '' : value;
+    });
+    if (Object.keys(filters).length > 0) {
+      kept.filters = filters;
+    }
+    this.writeStorage('local', key, Object.keys(kept).length > 0 ? kept : null);
+
+    const session = {};
+    if (parseInt(params.page, 10) > 1) {
+      session.page = parseInt(params.page, 10);
+    }
+    if (typeof params.search === 'string' && params.search !== '') {
+      session.search = params.search;
+    }
+    this.writeStorage('session', key, Object.keys(session).length > 0 ? session : null);
+  },
+
+  /**
+   * Applies the remembered state of a table (see saveRememberedState). Only
+   * what still fits is used: a page size the selector offers, filters that
+   * still exist and columns that can still be sorted.
+   *
+   * @param {string} tableId - Table id
+   * @returns {boolean} True when something was applied
+   */
+  loadRememberedState(tableId) {
+    const table = this.state.tables.get(tableId);
+    if (!table || table.config.rememberState === false) return false;
+
+    const key = this.getRememberKey(table);
+    const kept = this.readStorage('local', key);
+    const session = this.readStorage('session', key);
+    let applied = false;
+
+    if (kept && typeof kept === 'object') {
+      if (kept.pageSize !== undefined && table.filterElements.has('pageSize')) {
+        const sizes = (table.config.pageSizes || []).map(size => String(size).trim());
+        if (sizes.includes(String(kept.pageSize))) {
+          table.config.params.pageSize = parseInt(kept.pageSize, 10);
+          applied = true;
+        }
+      }
+      if (kept.filters && typeof kept.filters === 'object') {
+        Object.entries(kept.filters).forEach(([name, value]) => {
+          if (name !== 'pageSize' && name !== 'search' && table.filterElements.has(name)) {
+            table.config.params[name] = value;
+            applied = true;
+          }
+        });
+      }
+      if (typeof kept.sort === 'string' && kept.sort !== '') {
+        const sortState = this.parseRememberedSort(table, kept.sort);
+        if (Object.keys(sortState).length > 0) {
+          table.sortState = sortState;
+          applied = true;
+        }
+      }
+    }
+
+    if (session && typeof session === 'object') {
+      if (typeof session.search === 'string' && table.filterElements.has('search')) {
+        table.config.params.search = session.search;
+        applied = true;
+      }
+      const page = parseInt(session.page, 10);
+      if (page > 1) {
+        table.config.params.page = page;
+        applied = true;
+      }
+    }
+
+    return applied;
+  },
+
+  /**
+   * Forgets the remembered state of a table.
+   *
+   * @param {string} tableId - Table id
+   * @returns {void}
+   */
+  forgetRememberedState(tableId) {
+    const table = this.state.tables.get(tableId);
+    if (!table) return;
+    const key = this.getRememberKey(table);
+    this.writeStorage('local', key, null);
+    this.writeStorage('session', key, null);
+  },
+
+  /**
+   * Writes the loaded filter values back into the filter controls, so the UI
+   * shows what the table is actually filtered by.
+   *
+   * @param {string} tableId - Table id
+   * @returns {void}
+   */
   restoreFilterUIFromState(tableId) {
     const table = this.state.tables.get(tableId);
     if (!table || !table.filterElements) return;
@@ -356,6 +720,14 @@ const TableManager = {
     });
   },
 
+  /**
+   * Returns the tfoot of a table, building one that mirrors the header when the
+   * markup has none and the footer is enabled.
+   *
+   * @param {Object} table - Table instance
+   * @param {HTMLTableRowElement} [headerRow=null] - Row to mirror; the first header row by default
+   * @returns {HTMLTableSectionElement|null} The tfoot, or null when disabled
+   */
   ensureFooterStructure(table, headerRow = null) {
     if (!table?.element) return null;
 
@@ -403,6 +775,15 @@ const TableManager = {
     return tfoot;
   },
 
+  /**
+   * Fills the footer cells with their aggregates, reading each cell's
+   * data-aggregate and data-field, and formatting the result like the column.
+   *
+   * @param {Object} table - Table instance
+   * @param {Map} columns - Column definitions
+   * @param {HTMLTableSectionElement} tfoot - Footer to fill
+   * @returns {void}
+   */
   applyFooterAggregates(table, columns, tfoot) {
     const aggregates = table?.config?.footerAggregates;
     if (!tfoot || !aggregates || typeof aggregates !== 'object') return;
@@ -440,6 +821,13 @@ const TableManager = {
     });
   },
 
+  /**
+   * Maps the cells of a table section to their real column positions, following
+   * the colspan and rowspan of the cells above and beside them.
+   *
+   * @param {HTMLTableSectionElement} section - thead or tfoot
+   * @returns {Array[]} Per row, entries of {cell, columnIndex, colspan}
+   */
   getSectionCellLayout(section) {
     if (!section?.rows?.length) return [];
 
@@ -476,6 +864,13 @@ const TableManager = {
     });
   },
 
+  /**
+   * Remembers the markup and classes a footer cell started with, so an
+   * aggregate can be undone without losing what the page author wrote.
+   *
+   * @param {HTMLTableCellElement} cell - Footer cell
+   * @returns {void}
+   */
   captureFooterCellState(cell) {
     if (!cell) return;
 
@@ -492,6 +887,12 @@ const TableManager = {
     }
   },
 
+  /**
+   * Restores a footer cell to the markup and classes it started with.
+   *
+   * @param {HTMLTableCellElement} cell - Footer cell
+   * @returns {void}
+   */
   resetFooterCellState(cell) {
     if (!cell) return;
 
@@ -507,6 +908,12 @@ const TableManager = {
     delete cell.dataset.processed;
   },
 
+  /**
+   * Reads the aggregate a footer cell asks for from its data attributes.
+   *
+   * @param {HTMLTableCellElement} cell - Footer cell
+   * @returns {Object} {type, field, customFn}, all null when the cell asks for none
+   */
   getFooterAggregateConfig(cell) {
     if (!cell) {
       return {type: null, field: null, customFn: null};
@@ -535,6 +942,13 @@ const TableManager = {
     };
   },
 
+  /**
+   * Parses a cell value as a number for aggregation, tolerating thousands
+   * separators.
+   *
+   * @param {*} value - Value to parse
+   * @returns {number|null} The number, or null when it is not one
+   */
   parseAggregateNumber(value) {
     if (typeof value === 'number') {
       return Number.isFinite(value) ? value : null;
@@ -551,6 +965,16 @@ const TableManager = {
     return null;
   },
 
+  /**
+   * Computes an aggregate over a column, ignoring the rows whose value is
+   * empty.
+   *
+   * @param {Object[]} data - Rows to aggregate
+   * @param {string} field - Column to aggregate
+   * @param {string} type - 'sum', 'avg', 'count', 'min' or 'max'
+   * @returns {Object} {processable, value}, processable false when the column
+   *   holds nothing that can be aggregated
+   */
   getAggregateResult(data, field, type) {
     if (!Array.isArray(data) || !field) {
       return {processable: false, value: null};
@@ -590,6 +1014,14 @@ const TableManager = {
     }
   },
 
+  /**
+   * Applies the classes and alignment of a column to its footer cell, so the
+   * total lines up with the values above it.
+   *
+   * @param {HTMLTableCellElement} cell - Footer cell
+   * @param {Object} column - Column definition
+   * @returns {void}
+   */
   applyFooterCellPresentation(cell, column) {
     const classNames = new Set(
       (cell.dataset.footerOriginalClass || '')
@@ -605,14 +1037,18 @@ const TableManager = {
 
     classNames.add('aggregate-cell');
     cell.className = Array.from(classNames).join(' ');
-
-    const align = cell.dataset.align || column?.align;
     cell.style.textAlign = cell.dataset.footerOriginalAlign || '';
-    if (align) {
-      cell.style.textAlign = align;
-    }
   },
 
+  /**
+   * Initializes a table: reads its configuration from the data attributes,
+   * builds its structure, filters, actions and accessibility, restores the
+   * state from the URL and loads its data.
+   *
+   * @param {HTMLTableElement} table - Table carrying data-table
+   * @param {Object} [options={}] - Configuration merged over the attributes
+   * @returns {Object|undefined} The instance, or the result of handleError()
+   */
   initTable(table, options = {}) {
     if (!table) {
       return this.handleError('Table element is required', null, 'init');
@@ -700,10 +1136,21 @@ const TableManager = {
 
       // Load state from URL after setup so filter elements exist
       // URL sort takes precedence over data-default-sort
+      tableObj = this.state.tables.get(tableId);
+      const urlParamsNow = this.getUrlParams(tableId);
+      const ownKeys = this.getTableStateKeys(tableObj);
+      const urlHasTableState = Object.keys(urlParamsNow).some(key => ownKeys.has(key));
       const urlStateLoaded = this.loadStateFromUrl(tableId);
-      if (urlStateLoaded) {
+      // An address with table parameters (a reload, a shared link) is shown as
+      // it is; without them the table comes back as the user left it, and the
+      // address then says so
+      const rememberedStateLoaded = !urlHasTableState && this.loadRememberedState(tableId);
+      if (urlStateLoaded || rememberedStateLoaded) {
         // Restore filter UI values from loaded URL state
         this.restoreFilterUIFromState(tableId);
+      }
+      if (rememberedStateLoaded) {
+        this.syncStateToUrl(tableId);
       }
 
       // Load table data once (preventing redundant renders during init)
@@ -756,11 +1203,162 @@ const TableManager = {
         }
       }
 
+      // Off unless data-refresh-interval / config asked for it, so existing tables
+      // behave exactly as before
+      this.startAutoRefresh(tableId);
+
       return tableId;
 
     } catch (error) {
       return this.handleError('Failed to initialize table', error, 'init');
     }
+  },
+
+  /**
+   * Start reloading a table from its source on a timer.
+   *
+   * Reads `refreshInterval` (seconds) from the table config, which comes from
+   * `data-refresh-interval` or from options passed to `initTable()`. Zero, negative
+   * and non-numeric values leave the table alone, so this is safe to call on every
+   * table unconditionally.
+   *
+   * Deliberate behaviour, learned from screens people leave open all day:
+   *
+   *  - **Chained `setTimeout`, never `setInterval`.** The next tick is scheduled only
+   *    after the previous reload settles, so a slow endpoint can never stack requests.
+   *  - **Hidden tabs do not poll.** A page left open overnight would otherwise fire
+   *    thousands of requests nobody ever sees. When the tab comes back and a tick was
+   *    missed, it reloads once immediately because the data on screen is stale.
+   *  - **A tick is skipped while rows are selected.** Reloading calls `clearSelection`,
+   *    so refreshing under someone who is halfway through picking rows would silently
+   *    throw their selection away.
+   *
+   * @param {string} tableId
+   * @returns {boolean} true when a timer is now running
+   */
+  startAutoRefresh(tableId) {
+    const table = this.state.tables.get(tableId);
+    if (!table) return false;
+
+    this.stopAutoRefresh(tableId);
+
+    const seconds = Number(table.config?.refreshInterval) || 0;
+    if (!Number.isFinite(seconds) || seconds <= 0) return false;
+
+    // Nothing to reload from: declarative/state-bound tables get their data pushed in
+    if (!table.element?.dataset?.source) return false;
+
+    table._autoRefresh = {
+      seconds,
+      timer: null,
+      missedWhileHidden: false,
+      onVisibility: null
+    };
+
+    const tick = async () => {
+      const current = this.state.tables.get(tableId);
+      if (!current?._autoRefresh) return;
+
+      const hidden = typeof document !== 'undefined' && document.visibilityState === 'hidden';
+      const busy = Array.isArray(current.selectedRows) && current.selectedRows.length > 0;
+
+      if (hidden) {
+        current._autoRefresh.missedWhileHidden = true;
+      } else if (!busy) {
+        try {
+          await this.loadTableData(tableId, {force: true});
+
+          EventManager.emit('table:refreshed', {
+            tableId,
+            automatic: true,
+            timestamp: Date.now()
+          });
+        } catch (error) {
+          // A failed poll must not kill the timer — the endpoint may just be
+          // briefly unavailable, and stopping here would leave the screen frozen
+          // with no sign that refreshing has given up
+          this.handleError('Auto refresh failed', error, 'refresh');
+        }
+      }
+
+      schedule();
+    };
+
+    const schedule = () => {
+      const current = this.state.tables.get(tableId);
+      if (!current?._autoRefresh) return;
+
+      clearTimeout(current._autoRefresh.timer);
+      current._autoRefresh.timer = setTimeout(tick, seconds * 1000);
+    };
+
+    if (typeof document !== 'undefined') {
+      table._autoRefresh.onVisibility = () => {
+        const current = this.state.tables.get(tableId);
+        if (!current?._autoRefresh) return;
+
+        if (document.visibilityState !== 'visible') return;
+        if (!current._autoRefresh.missedWhileHidden) return;
+
+        current._autoRefresh.missedWhileHidden = false;
+        clearTimeout(current._autoRefresh.timer);
+        tick();
+      };
+
+      document.addEventListener('visibilitychange', table._autoRefresh.onVisibility);
+    }
+
+    schedule();
+
+    return true;
+  },
+
+  /**
+   * Stop the auto refresh timer for a table. Safe to call when none is running.
+   * @param {string} tableId
+   */
+  stopAutoRefresh(tableId) {
+    const table = this.state.tables.get(tableId);
+    if (!table?._autoRefresh) return;
+
+    clearTimeout(table._autoRefresh.timer);
+
+    if (table._autoRefresh.onVisibility && typeof document !== 'undefined') {
+      document.removeEventListener('visibilitychange', table._autoRefresh.onVisibility);
+    }
+
+    table._autoRefresh = null;
+  },
+
+  /**
+   * Change the refresh rate at runtime — the hook a UI control binds to.
+   *
+   * Pass 0 to turn refreshing off. The new value is written back to the table config
+   * so a later `startAutoRefresh()` keeps it.
+   *
+   * @param {string} tableId
+   * @param {number} seconds Seconds between reloads, 0 to stop
+   * @returns {boolean} true when a timer is now running
+   */
+  setRefreshInterval(tableId, seconds) {
+    const table = this.state.tables.get(tableId);
+    if (!table) return false;
+
+    const value = Number(seconds);
+    table.config.refreshInterval = Number.isFinite(value) && value > 0 ? value : 0;
+
+    return this.startAutoRefresh(tableId);
+  },
+
+  /**
+   * Seconds between automatic reloads, 0 when refreshing is off.
+   * @param {string} tableId
+   * @returns {number}
+   */
+  getRefreshInterval(tableId) {
+    const table = this.state.tables.get(tableId);
+
+    return Number(table?.config?.refreshInterval) || 0;
   },
 
   /**
@@ -832,6 +1430,16 @@ const TableManager = {
     }
   },
 
+  /**
+   * Reads the configuration an element declares through data attributes,
+   * coercing each value to the type of its default.
+   *
+   * Attributes with no matching default are ignored.
+   *
+   * @param {HTMLElement} element - Element to read
+   * @param {Object} defaultConfig - Defaults, which set the expected types
+   * @returns {Object} Configuration from the attributes
+   */
   extractDataAttributes(element, defaultConfig) {
     const config = {};
     Object.keys(element.dataset).forEach(key => {
@@ -863,6 +1471,14 @@ const TableManager = {
     return {...defaultConfig, ...config};
   },
 
+  /**
+   * Resolves a target given as an element or a selector, searching around the
+   * table first and then the document.
+   *
+   * @param {HTMLElement|string} target - Element or selector
+   * @param {Object} [table=null] - Table instance to search around
+   * @returns {HTMLElement|null} The element, or null
+   */
   resolveTargetElement(target, table = null) {
     if (!target) {
       return null;
@@ -893,6 +1509,14 @@ const TableManager = {
     return null;
   },
 
+  /**
+   * Normalizes a response into the {data, meta} shape the load target expects,
+   * treating a bare array as a single unpaginated page.
+   *
+   * @param {*} payload - Response body
+   * @param {Object} [table=null] - Table instance, for its configuration
+   * @returns {Object} {data, meta}
+   */
   normalizeLoadBindingPayload(payload, table = null) {
     const source = Array.isArray(payload)
       ? {data: payload}
@@ -939,6 +1563,14 @@ const TableManager = {
     };
   },
 
+  /**
+   * Renders a loaded response into the element named by data-load-target,
+   * through TemplateManager, so a table can drive a summary panel beside it.
+   *
+   * @param {string|Object} tableId - Table id or instance
+   * @param {*} payload - Response body
+   * @returns {Object|null} The binding, or null when there is no target
+   */
   bindLoadTarget(tableId, payload) {
     const table = typeof tableId === 'string' ? this.state.tables.get(tableId) : tableId;
     if (!table?.config?.loadTarget || !window.TemplateManager) {
@@ -972,6 +1604,14 @@ const TableManager = {
     return normalized;
   },
 
+  /**
+   * Adds the select-all checkboxes to the header and footer of a table whose
+   * rows are selectable.
+   *
+   * @param {Object} table - Table instance
+   * @param {string} tableId - Table id
+   * @returns {void}
+   */
   setupCheckboxes(table, tableId) {
     if (!table.config.showCheckbox) return;
 
@@ -980,6 +1620,23 @@ const TableManager = {
       if (tr) {
         let checkboxId = `select-all-${tableId}-${section}`;
         let checkbox = tr.querySelector('.select-all');
+        // Reuse the cell the markup or an earlier pass already put in place,
+        // whether or not it holds a checkbox yet, so the row never gains a
+        // second one and drifts out of step with the other sections.
+        let cell = checkbox
+          ? checkbox.closest('th, td')
+          : tr.querySelector('.check-column');
+
+        if (!cell) {
+          cell = document.createElement(section === 'thead' ? 'th' : 'td');
+          const rowspan = table.element.querySelectorAll(`${section} tr:first-child`).length;
+          if (rowspan > 1) {
+            cell.setAttribute('rowspan', rowspan);
+          }
+          tr.insertBefore(cell, tr.firstChild);
+        }
+        cell.classList.add('check-column');
+
         if (!checkbox) {
           const label = document.createElement('label');
           label.htmlFor = checkboxId;
@@ -987,16 +1644,8 @@ const TableManager = {
           checkbox = document.createElement('input');
           checkbox.type = 'checkbox';
 
-          const cell = document.createElement(section === 'thead' ? 'th' : 'td');
-          const rowspan = table.element.querySelectorAll(`${section} tr:first-child`).length;
-          if (rowspan > 1) {
-            cell.setAttribute('rowspan', rowspan);
-          }
-          cell.className = 'check-column';
-
           label.appendChild(checkbox);
           cell.appendChild(label);
-          tr.insertBefore(cell, tr.firstChild);
         } else {
           if (checkbox.id) {
             checkboxId = checkbox.id;
@@ -1005,7 +1654,6 @@ const TableManager = {
           if (label) {
             label.htmlFor = checkboxId;
           }
-          checkbox.closest('th, td').classList.add('check-column');
         }
         checkbox.className = 'select-all';
         checkbox.id = checkboxId;
@@ -1027,6 +1675,15 @@ const TableManager = {
     });
   },
 
+  /**
+   * Checks or clears every row checkbox and keeps the select-all boxes in the
+   * header and footer in step.
+   *
+   * @param {Object} table - Table instance
+   * @param {string} tableId - Table id
+   * @param {boolean} checked - New state
+   * @returns {void}
+   */
   handleSelectAll(table, tableId, checked) {
     if (!table?.element) return;
 
@@ -1043,6 +1700,14 @@ const TableManager = {
     this.handleRowSelection(table, tableId);
   },
 
+  /**
+   * Recomputes the selection after a row checkbox changed: updates the
+   * select-all boxes, including their indeterminate state, and the count.
+   *
+   * @param {Object} table - Table instance
+   * @param {string} tableId - Table id
+   * @returns {void}
+   */
   handleRowSelection(table, tableId) {
     const checkboxes = table.element.querySelectorAll('tbody .select-row');
     const checkedBoxes = table.element.querySelectorAll('tbody .select-row:checked');
@@ -1068,6 +1733,15 @@ const TableManager = {
     });
   },
 
+  /**
+   * Clears the row selection and the highlight that goes with it.
+   *
+   * @param {Object} table - Table instance
+   * @param {string} tableId - Table id
+   * @param {Object} [options={}] - Clear options
+   * @param {boolean} [options.emit=true] - Emit the selection event
+   * @returns {void}
+   */
   clearSelection(table, tableId, options = {}) {
     if (!table?.element || !table.config.showCheckbox) return;
 
@@ -1108,6 +1782,13 @@ const TableManager = {
     }
   },
 
+  /**
+   * Removes the listeners bound to the bulk-action controls, so rebinding them
+   * does not stack a second copy.
+   *
+   * @param {Object} table - Table instance
+   * @returns {void}
+   */
   cleanupActionBindings(table) {
     if (!table?.eventHandlers) return;
 
@@ -1123,6 +1804,14 @@ const TableManager = {
     }
   },
 
+  /**
+   * Binds the bulk-action controls: the action select and the submit button
+   * that applies it to the selected rows.
+   *
+   * @param {Object} table - Table instance
+   * @param {string} tableId - Table id
+   * @returns {void}
+   */
   bindActionWrapper(table, tableId) {
     table.eventHandlers ||= {};
     this.cleanupActionBindings(table);
@@ -1173,6 +1862,13 @@ const TableManager = {
     submitBtn.disabled = (this.getSelectedRowIds(table)?.length || 0) === 0;
   },
 
+  /**
+   * Builds the parts of a table around its data: the header, the footer, the
+   * checkbox column, the filter area, the action area and the pagination.
+   *
+   * @param {string} tableId - Table id
+   * @returns {void}
+   */
   setupTableStructure(tableId) {
     const table = this.state.tables.get(tableId);
     if (!table) return;
@@ -1262,6 +1958,14 @@ const TableManager = {
     }
   },
 
+  /**
+   * Binds the events of a table: sorting on the headers, and delegated click
+   * and change handlers on the table itself, so rows re-rendered later need no
+   * rebinding.
+   *
+   * @param {string} tableId - Table id
+   * @returns {void}
+   */
   setupEventListeners(tableId) {
     const table = this.state.tables.get(tableId);
     if (!table) return;
@@ -1350,6 +2054,12 @@ const TableManager = {
 
     tableEl.querySelectorAll('thead th[data-sort]').forEach(th => {
       const sortHandler = (e) => {
+        // Ignore the click that ends a column-resize drag.
+        // Use tableEl-level flag (data-col-resizing) because th.dataset.resizing
+        // may be on a different th instance when headers are re-rendered.
+        if (tableEl.dataset.colResizing || e.target.classList.contains('col-resizer')) {
+          return;
+        }
         e.preventDefault();
         e.stopPropagation();
         // Prevent text selection when Shift+clicking
@@ -1383,6 +2093,13 @@ const TableManager = {
     table.eventHandlers = handlers;
   },
 
+  /**
+   * Destroys the filter controls of a table through ElementManager, before the
+   * filter area is rebuilt.
+   *
+   * @param {Object} table - Table instance
+   * @returns {void}
+   */
   cleanupFilterEvents(table) {
     if (!table.filterElements) return;
 
@@ -1395,6 +2112,17 @@ const TableManager = {
     table.filterElements.clear();
   },
 
+  /**
+   * Sorts by the column of a header: cycles its direction, and adds it to the
+   * existing sort rather than replacing it when the modifier key is held.
+   *
+   * @param {Object} table - Table instance
+   * @param {string} tableId - Table id
+   * @param {HTMLTableCellElement} th - Header that was activated
+   * @param {Event} [event=null] - Originating event, read for the modifier key
+   * @returns {void}
+   * @throws {Error} When the arguments are not usable
+   */
   handleSort(table, tableId, th, event = null) {
     if (!table || !tableId || !(th instanceof HTMLElement)) {
       throw new Error('Invalid parameters');
@@ -1462,6 +2190,19 @@ const TableManager = {
     this.renderTable(tableId);
   },
 
+  /**
+   * Handles an edit made in a cell: writes the value back into the row data and
+   * posts it to the action endpoint.
+   *
+   * @param {Object} table - Table instance
+   * @param {string} tableId - Table id
+   * @param {string} field - Column that changed
+   * @param {*} value - New value
+   * @param {Object} rowData - Row that changed
+   * @param {HTMLElement} element - Control that changed
+   * @param {Object} [options={send: true}] - Set send false to update locally only
+   * @returns {void}
+   */
   handleFieldChange(table, tableId, field, value, rowData, element, options = {send: true}) {
     try {
       if (options.send !== false) {
@@ -1541,6 +2282,16 @@ const TableManager = {
     }
   },
 
+  /**
+   * Builds the filter controls of a table from the filterable columns.
+   *
+   * An external filter form keeps its own markup and only its metadata is read;
+   * an internal one is rebuilt from the headers.
+   *
+   * @param {Object} table - Table instance
+   * @param {string} tableId - Table id
+   * @returns {void}
+   */
   setupFilter(table, tableId) {
     if (!table?.filterWrapper) return;
 
@@ -1566,8 +2317,12 @@ const TableManager = {
       this.handleFilterChange(table, tableId, key, value, element);
     }, 1000);
 
-    // Add page size selector if configured (internal UI only)
-    if (!isExternalFilter && config.params.pageSize > 0 && Array.isArray(config.pageSizes) && config.pageSizes.length > 0) {
+    // Add page size selector if configured (internal UI only).
+    // Editable tables (data-editable-rows) load all rows for inline editing and
+    // save them together, so pagination/per-page makes no sense — skip the
+    // selector there (a bound-data table otherwise defaults pageSize to the row
+    // count, which would surface a spurious "Show N entries" control).
+    if (!isExternalFilter && !config.allowRowModification && config.params.pageSize > 0 && Array.isArray(config.pageSizes) && config.pageSizes.length > 0) {
       const pageSizeOptions = {};
       config.pageSizes.forEach(size => {
         pageSizeOptions[size] = `${size} {LNG_entries}`;
@@ -1621,10 +2376,31 @@ const TableManager = {
         label: attributes.label || field,
         placeholder: attributes.placeholder,
         value: config.params[field] || attributes.value || '',
-        // Prepare options - if showAll is enabled, ensure an "All" option is present at the start
+        // Prepare options - when showAll is enabled (default), prepend an "All"
+        // option so every dropdown filter can be reset to "no filter".
+        // Build an ARRAY (not object): an empty-string "All" value must stay
+        // first, but JS orders integer-like object keys ahead of '' — arrays
+        // preserve insertion order, objects don't.
         options: (() => {
-          // Keep provided options as-is. Do not insert an "All" option automatically.
-          return attributes.options || {};
+          const provided = attributes.options || {};
+          const arr = Array.isArray(provided)
+            ? provided.slice()
+            : Object.keys(provided).map(k => ({value: k, text: provided[k]}));
+          if (attributes.showAll === false) {
+            return arr;
+          }
+          const allValue = attributes.allValue !== undefined ? attributes.allValue : '';
+          const allValueStr = String(allValue);
+          // Dedup: skip if the provided options already contain the "All" value
+          // (mirrors setFilters() so the two filter paths behave the same).
+          if (arr.some(o => String(o && o.value !== undefined ? o.value : o) === allValueStr)) {
+            return arr;
+          }
+          const allLabel = window.Now && window.Now.translate
+            ? window.Now.translate(attributes.allLabel || 'All items')
+            : (attributes.allLabel || 'All items');
+          // Prepend "All" so it is always first and always present.
+          return [{value: allValueStr, text: allLabel}, ...arr];
         })(),
         datalist: attributes.datalist || null,
         autocomplete: attributes.autocomplete || null,
@@ -1656,7 +2432,8 @@ const TableManager = {
     if (!isExternalFilter && config.searchColumns?.length > 0) {
       const search = elementManager.create('search', {
         id: `search_${tableId}`,
-        itemClass: 'search',
+        wrapper: 'div',
+        wrapperClass: 'search',
         value: config.params.search || '',
         placeholder: `${Now.translate('Search in')}: ${config.searchColumns.join(', ')}`,
         minLength: 2,
@@ -1704,16 +2481,18 @@ const TableManager = {
       table._externalFilterCleanup = [];
     }
 
-    // Prevent default form submission
-    const submitHandler = (e) => {
-      e.preventDefault();
-      e.stopPropagation();
+    // Prevent default form submission (only for actual <form> elements)
+    if (form instanceof HTMLFormElement) {
+      const submitHandler = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
 
-      // Collect all form data and trigger reload
-      this.handleExternalFilterSubmit(table, tableId);
-    };
-    form.addEventListener('submit', submitHandler);
-    table._externalFilterCleanup.push(() => form.removeEventListener('submit', submitHandler));
+        // Collect all form data and trigger reload
+        this.handleExternalFilterSubmit(table, tableId);
+      };
+      form.addEventListener('submit', submitHandler);
+      table._externalFilterCleanup.push(() => form.removeEventListener('submit', submitHandler));
+    }
 
     // Find all form elements and register them
     const formElements = form.querySelectorAll('input, select, textarea');
@@ -1765,26 +2544,34 @@ const TableManager = {
     const form = table.externalFilterForm;
     if (!form) return;
 
-    // Collect all form values
-    const formData = new FormData(form);
     const params = {};
 
-    // Process all form fields, including range filters
-    for (const [key, value] of formData.entries()) {
-      params[key] = value;
-    }
-
-    // Also handle unchecked checkboxes and empty fields
-    const formElements = form.querySelectorAll('input, select, textarea');
-    formElements.forEach(element => {
-      const name = element.name || element.id;
-      if (!name) return;
-
-      // For checkboxes/radios not in formData, set to empty/false
-      if ((element.type === 'checkbox' || element.type === 'radio') && !formData.has(name)) {
-        params[name] = '';
+    if (form instanceof HTMLFormElement) {
+      // Real <form>: use FormData to capture submitted values correctly
+      const formData = new FormData(form);
+      for (const [key, value] of formData.entries()) {
+        params[key] = value;
       }
-    });
+      // Handle unchecked checkboxes / radios not present in FormData
+      form.querySelectorAll('input, select, textarea').forEach(element => {
+        const name = element.name || element.id;
+        if (!name) return;
+        if ((element.type === 'checkbox' || element.type === 'radio') && !formData.has(name)) {
+          params[name] = '';
+        }
+      });
+    } else {
+      // Non-form container (e.g. <div data-table-filter>): read values directly
+      form.querySelectorAll('input, select, textarea').forEach(element => {
+        const name = element.name || element.id;
+        if (!name) return;
+        if (element.type === 'checkbox' || element.type === 'radio') {
+          params[name] = element.checked ? (element.value || '1') : '';
+        } else {
+          params[name] = element.value;
+        }
+      });
+    }
 
     // Update table config params
     Object.assign(table.config.params, params);
@@ -1906,8 +2693,14 @@ const TableManager = {
       const selectElement = form.querySelector(`select[name="${fieldName}"]`);
       if (!selectElement) return;
 
-      // Store current value to restore after population
-      const currentValue = selectElement.value;
+      // Store current value to restore after population.
+      // An external filter form is authored by hand, so its <select> is empty
+      // until this runs — the value that came from the URL was applied to an
+      // option list that did not exist yet and was dropped. Fall back to the
+      // param the table is actually filtering by, or the filter comes back
+      // showing the first option while the list shows something else.
+      const currentValue = selectElement.value
+        || (table.config?.params?.[fieldName] ?? '');
 
       // Clear existing options (except first if it's a placeholder/all option)
       const firstOption = selectElement.options[0];
@@ -1953,6 +2746,17 @@ const TableManager = {
     });
   },
 
+  /**
+   * Applies a filter change: stores the value, returns to the first page,
+   * clears the selection, updates the URL and reloads.
+   *
+   * @param {Object} table - Table instance
+   * @param {string} tableId - Table id
+   * @param {string} filterKey - Parameter name of the filter
+   * @param {*} value - New value
+   * @param {HTMLElement} element - Control that changed
+   * @returns {void}
+   */
   handleFilterChange(table, tableId, filterKey, value, element) {
     // Update filter data, reset to page 1
     table.config.params['page'] = 1;
@@ -1975,6 +2779,15 @@ const TableManager = {
     this.renderTable(tableId);
   },
 
+  /**
+   * Applies the grid ARIA roles, the table label, the column headers and the
+   * live region used to announce row changes.
+   *
+   * @param {HTMLTableElement} table - Table element
+   * @param {string} tableId - Table id
+   * @param {Object} config - Table configuration
+   * @returns {void}
+   */
   setupAccessibility(table, tableId, config) {
     if (!table) return;
 
@@ -2029,6 +2842,13 @@ const TableManager = {
     }
   },
 
+  /**
+   * Makes the rows draggable through Sortable, and posts the new order to the
+   * action endpoint when a row is dropped.
+   *
+   * @param {string} tableId - Table id
+   * @returns {void}
+   */
   setupSortableRows(tableId) {
     const instance = this.state.tables.get(tableId);
     if (!instance?.element) return;
@@ -2101,6 +2921,12 @@ const TableManager = {
     return instance.sortable;
   },
 
+  /**
+   * Turns row dragging on: adds the handle column and starts Sortable.
+   *
+   * @param {string} tableId - Table id
+   * @returns {void}
+   */
   enableRowSort(tableId) {
     const instance = this.state.tables.get(tableId);
     if (!instance?.element) return;
@@ -2133,6 +2959,12 @@ const TableManager = {
     }
   },
 
+  /**
+   * Turns row dragging off: removes the handles and stops Sortable.
+   *
+   * @param {string} tableId - Table id
+   * @returns {void}
+   */
   disableRowSort(tableId) {
     const instance = this.state.tables.get(tableId);
     if (!instance?.element) return;
@@ -2185,6 +3017,14 @@ const TableManager = {
     }
   },
 
+  /**
+   * Drops the cached responses for the data source of a table, so the next load
+   * goes to the server.
+   *
+   * @param {string} tableId - Table id
+   * @param {string} [sourceOverride=null] - URL to invalidate instead
+   * @returns {number} How many cache entries were dropped
+   */
   invalidateTableDataSourceCache(tableId, sourceOverride = null) {
     try {
       const table = this.state.tables.get(tableId);
@@ -2200,6 +3040,15 @@ const TableManager = {
     return 0;
   },
 
+  /**
+   * Loads the data of a table from whichever source it declares: an API, a JSON
+   * file, the markup already in the table, or the state manager.
+   *
+   * @param {string} tableId - Table id
+   * @param {Object} [options={}] - Load options
+   * @param {boolean} [options.force] - Bypass the cache
+   * @returns {Promise<void>}
+   */
   async loadTableData(tableId, options = {}) {
     const table = this.state.tables.get(tableId);
     if (!table?.element) return;
@@ -2253,12 +3102,26 @@ const TableManager = {
     return false;
   },
 
+  /**
+   * Reports whether a table gets its rows from a URL, which is what decides
+   * whether sorting, filtering and paging run here or on the server.
+   *
+   * @param {Object} table - Table instance
+   * @returns {boolean} True for a server-side table
+   */
   isServerSideTable(table) {
     if (!table) return false;
     const source = table?.element?.dataset?.source || table?.config?.source || '';
     return this.isUrlSource(source);
   },
 
+  /**
+   * Returns the next synthetic row key, used to identify rows of an editable
+   * table that the server has not given an id yet.
+   *
+   * @param {Object} table - Table instance
+   * @returns {string} New row key
+   */
   nextEditableRowKey(table) {
     if (!table) return '';
 
@@ -2270,6 +3133,14 @@ const TableManager = {
     return `row_${table._rowIdentityCounter}`;
   },
 
+  /**
+   * Gives a row of an editable table a synthetic key when it has none, so it
+   * stays identifiable across renders.
+   *
+   * @param {Object} table - Table instance
+   * @param {Object} rowData - Row to key; mutated
+   * @returns {string} The row key, empty when the table is not editable
+   */
   ensureEditableRowKey(table, rowData) {
     if (!table?.config?.allowRowModification || !rowData || typeof rowData !== 'object') {
       return '';
@@ -2282,6 +3153,15 @@ const TableManager = {
     return String(rowData.__rowKey);
   },
 
+  /**
+   * Returns the identity of a row: its synthetic key in an editable table, its
+   * id column otherwise, and its position as a last resort.
+   *
+   * @param {Object} table - Table instance
+   * @param {Object} rowData - Row to identify
+   * @param {number} [index=0] - Position, used when the row has no id
+   * @returns {string} Row identity
+   */
   getRowIdentity(table, rowData, index = 0) {
     if (!rowData || typeof rowData !== 'object') {
       return String(index);
@@ -2298,6 +3178,13 @@ const TableManager = {
     return String(index);
   },
 
+  /**
+   * Finds the position of a row in the data by its identity.
+   *
+   * @param {Object} table - Table instance
+   * @param {Object} rowData - Row to find
+   * @returns {number} Index, or -1 when not found
+   */
   findRowIndex(table, rowData) {
     if (!table || !Array.isArray(table.data) || !rowData) {
       return -1;
@@ -2309,6 +3196,13 @@ const TableManager = {
     return index !== -1 ? index : table.data.indexOf(rowData);
   },
 
+  /**
+   * Builds a blank row for an editable table, with a counter-based id so the
+   * element ids of its cells stay predictable.
+   *
+   * @param {Object} table - Table instance
+   * @returns {Object} The new row
+   */
   createEmptyRow(table) {
     // Use counter instead of timestamp for predictable IDs
     // This ensures element IDs like tableId_field_new_1 are consistent
@@ -2327,6 +3221,16 @@ const TableManager = {
     return row;
   },
 
+  /**
+   * Reads the current values out of the controls in a rendered row, so edits
+   * the user has not committed yet are not lost.
+   *
+   * @param {Object} table - Table instance
+   * @param {string} tableId - Table id
+   * @param {Object} item - Row data to update
+   * @param {number} [index=0] - Position of the row
+   * @returns {Object} The row with the values from the DOM
+   */
   captureRowValues(table, tableId, item, index = 0) {
     if (!table?.element) return item;
 
@@ -2364,6 +3268,16 @@ const TableManager = {
     return updated;
   },
 
+  /**
+   * Loads rows from an API endpoint, sending the current filters, sort and page
+   * as query parameters.
+   *
+   * @param {Object} table - Table instance
+   * @param {string} tableId - Table id
+   * @param {string} source - Endpoint URL
+   * @param {Object} [options={}] - Load options
+   * @returns {Promise<void>}
+   */
   async loadFromApi(table, tableId, source, options = {}) {
     const params = {
       ...this.getFilterParams(table),
@@ -2381,6 +3295,16 @@ const TableManager = {
     });
   },
 
+  /**
+   * Loads rows from a static JSON file, which is then filtered, sorted and
+   * paged here rather than on the server.
+   *
+   * @param {string} tableId - Table id
+   * @param {string} source - File URL
+   * @param {Object} [options={}] - Load options
+   * @param {boolean} [options.force] - Bypass the cache
+   * @returns {Promise<void>}
+   */
   async loadFromJson(tableId, source, options = {}) {
     const requestOptions = {
       method: 'GET',
@@ -2393,11 +3317,30 @@ const TableManager = {
     await this.fetchAndSet(tableId, source, requestOptions);
   },
 
+  /**
+   * Parses a cache lifetime, falling back when the value is missing or not a
+   * non-negative number.
+   *
+   * @param {*} value - Configured lifetime in milliseconds
+   * @param {number} [fallback=60000] - Value to use instead
+   * @returns {number} Lifetime in milliseconds
+   */
   normalizeCacheTime(value, fallback = 60000) {
     const parsed = parseInt(value, 10);
     return Number.isFinite(parsed) && parsed >= 0 ? parsed : fallback;
   },
 
+  /**
+   * Works out whether a request may be cached and for how long.
+   *
+   * Only GET is ever cached; an explicit override wins over the table
+   * configuration.
+   *
+   * @param {Object} table - Table instance
+   * @param {string} [method='GET'] - HTTP method
+   * @param {boolean|Object} [cacheOverride] - Explicit override
+   * @returns {Object} {enabled, time, override}
+   */
   getRequestCacheSettings(table, method = 'GET', cacheOverride) {
     if (method !== 'GET') {
       return {enabled: false, time: 0, override: cacheOverride};
@@ -2431,6 +3374,15 @@ const TableManager = {
     };
   },
 
+  /**
+   * Builds the request options for a table request: headers, credentials and
+   * the cache settings for the method.
+   *
+   * @param {Object} table - Table instance
+   * @param {string} method - HTTP method
+   * @param {Object} [options={}] - Options to extend
+   * @returns {Object} Options for the HTTP client
+   */
   buildApiRequestOptions(table, method, options = {}) {
     const {
       headers = {},
@@ -2489,6 +3441,44 @@ const TableManager = {
     };
   },
 
+  /**
+   * Whether a table is still a live, mounted part of the page
+   *
+   * A response can arrive after its `<table>` was already removed — most often
+   * a `data-if` that hid it the moment the page rendered, well before the
+   * network round-trip finished (see ApiComponent.isAlive() for the same
+   * reasoning, which applies identically here — a table is a separate
+   * component system with its own request path, not something ApiComponent's
+   * guard covers). A table the user was never even shown has no business
+   * hijacking navigation over its own failed, moot request.
+   */
+  isAlive(tableId) {
+    const table = this.state.tables.get(tableId);
+    return !!table && !!table.element && document.body.contains(table.element);
+  },
+
+  /**
+   * Where a 403 response should send the user — see ApiComponent.getForbiddenTarget()
+   */
+  getForbiddenTarget() {
+    return window.RouterManager?.config?.auth?.redirects?.forbidden || '/forbidden';
+  },
+
+  /**
+   * Requests rows and installs the response into the table, handling the
+   * loading state, the errors and the not-authorized redirect.
+   *
+   * A response arriving after the table was destroyed is discarded.
+   *
+   * @param {string} tableId - Table id
+   * @param {string} url - Endpoint URL
+   * @param {Object} [options={}] - Request options
+   * @param {string} [options.method='GET'] - HTTP method
+   * @param {Object} [options.headers] - Extra headers
+   * @param {Object} [options.params] - Query parameters
+   * @param {*} [options.body] - Request body
+   * @returns {Promise<void>}
+   */
   async fetchAndSet(tableId, url, options = {}) {
     try {
       const {
@@ -2526,16 +3516,22 @@ const TableManager = {
         throw new Error(`Unsupported request method: ${upperMethod}`);
       }
 
-      // Handle 403 Forbidden - redirect to 403 page
+      // Handle 403 Forbidden - redirect to the forbidden page, but only if this
+      // table is still actually part of the page (see isAlive())
       if (response?.status === 403) {
+        if (!this.isAlive(tableId)) {
+          return;
+        }
+
         console.warn('TableManager: Access forbidden (403) for table data');
 
         const forbiddenMessage = response?.data?.message || response?.data?.data?.message || '';
         const forbiddenParams = forbiddenMessage ? {message: forbiddenMessage} : {};
-        const forbiddenUrl = forbiddenMessage ? `/403?message=${encodeURIComponent(forbiddenMessage)}` : '/403';
+        const forbiddenTarget = this.getForbiddenTarget();
+        const forbiddenUrl = forbiddenMessage ? `${forbiddenTarget}?message=${encodeURIComponent(forbiddenMessage)}` : forbiddenTarget;
 
         if (window.RouterManager?.navigate) {
-          window.RouterManager.navigate('/403', forbiddenParams);
+          window.RouterManager.navigate(forbiddenTarget, forbiddenParams);
           return;
         }
 
@@ -2548,8 +3544,12 @@ const TableManager = {
         return;
       }
 
-      // Handle 401 Unauthorized - redirect to login
+      // Handle 401 Unauthorized - redirect to login, same liveness guard as 403
       if (response?.status === 401) {
+        if (!this.isAlive(tableId)) {
+          return;
+        }
+
         console.warn('TableManager: Unauthorized (401) for table data');
 
         if (window.RouterManager?.navigate) {
@@ -2595,6 +3595,15 @@ const TableManager = {
     }
   },
 
+  /**
+   * Reads the rows a table already has in its markup into its data, so a
+   * server-rendered table gains sorting, filtering and paging without a
+   * request.
+   *
+   * @param {Object|HTMLTableElement} table - Table instance or element
+   * @param {string} tableId - Table id
+   * @returns {void}
+   */
   loadFromHtml(table, tableId) {
     // Support being passed either the internal table state object or a DOM element.
     let tableObj = null;
@@ -2687,6 +3696,15 @@ const TableManager = {
     }
   },
 
+  /**
+   * Loads rows from a path in the state manager and follows it, so the table
+   * re-renders whenever that state changes.
+   *
+   * @param {string} tableId - Table id
+   * @param {string} stateKey - State path holding the rows
+   * @returns {void}
+   * @throws {Error} When the state manager is unavailable
+   */
   loadFromState(tableId, stateKey) {
     // Prefer using the registered state manager if available
     const stateManager = Now.getManager ? Now.getManager('state') : null;
@@ -2731,6 +3749,17 @@ const TableManager = {
     console.warn(`State key ${stateKey} not found and state manager has no subscribe; table ${tableId} will remain empty until data is set`);
   },
 
+  /**
+   * Installs a set of rows into a table and renders it.
+   *
+   * Accepts a bare array or a response envelope carrying data, meta and column
+   * metadata; dynamic headers are rebuilt when the columns changed.
+   *
+   * @param {string} tableId - Table id
+   * @param {Object[]|Object} data - Rows, or a response envelope
+   * @returns {void}
+   * @throws {Error} When the table id is missing
+   */
   setData(tableId, data) {
     if (!tableId) {
       throw new Error('Invalid parameters');
@@ -2820,6 +3849,10 @@ const TableManager = {
 
             // Bind sort event listeners
             const sortHandler = (e) => {
+              // Ignore the click that ends a column-resize drag.
+              if (e.currentTarget.closest('table')?.dataset.colResizing || e.target.classList.contains('col-resizer')) {
+                return;
+              }
               e.preventDefault();
               e.stopPropagation();
               if (e.shiftKey) {
@@ -2860,6 +3893,19 @@ const TableManager = {
           // Setup checkboxes for dynamic headers (both thead and tfoot)
           this.setupCheckboxes(table, tableId);
 
+          // Derive searchColumns from API metadata BEFORE setupFilter so the
+          // built-in search box renders on this same pass (API-driven search).
+          // Stored as an array to match data-search-columns parsing and the
+          // consumers at searchFilter()/placeholder rendering.
+          if (!table.config.searchColumns || table.config.searchColumns.length === 0) {
+            const searchableFields = columnsMetadata
+              .filter(col => col.searchable === true)
+              .map(col => col.field);
+            if (searchableFields.length > 0) {
+              table.config.searchColumns = searchableFields;
+            }
+          }
+
           // Setup filters for new headers
           this.setupFilter(table, tableId);
 
@@ -2868,17 +3914,6 @@ const TableManager = {
 
           // Setup accessibility after all components are created
           this.setupAccessibility(table.element, tableId, table.config);
-
-          // Update search columns from column metadata if not already set
-          if (!table.config.searchColumns || table.config.searchColumns.length === 0) {
-            const searchableFields = columnsMetadata
-              .filter(col => col.searchable === true)
-              .map(col => col.field);
-
-            if (searchableFields.length > 0) {
-              table.config.searchColumns = searchableFields.join(',');
-            }
-          }
         }
       }
 
@@ -2974,8 +4009,40 @@ const TableManager = {
       const {
         sort: _metaSort,
         order: _metaOrder,
-        ...metaParams
+        ...metaRest
       } = normalized.meta || {};
+
+      /*
+       * Only scalars come back out of meta as request parameters.
+       *
+       * Every key of meta used to be spread straight into config.params, and
+       * getFilterParams() then put all of them in the query string. An endpoint
+       * whose meta carried its own payload — a findings array, a nested options
+       * object — therefore wrote that payload into the URL, one
+       * `key=[object Object]` per element, on every single request. The URL grew
+       * without bound and the table's search, filters and paging all stopped
+       * working, because the parameters they set were buried in thousands of
+       * characters of stringified objects (reported on a findings page carrying
+       * ~200 rows).
+       *
+       * meta is what the server says *about* the response. A value the client can
+       * legitimately send back is a string, a number or a boolean; an array or an
+       * object is data that leaked into the wrong half of the envelope, and
+       * forwarding it can only ever corrupt the next request.
+       */
+      const metaParams = {};
+
+      Object.keys(metaRest).forEach(key => {
+        const value = metaRest[key];
+
+        if (value === null || value === undefined) {
+          return;
+        }
+
+        if (typeof value !== 'object') {
+          metaParams[key] = value;
+        }
+      });
 
       const {
         sort: _currentSort,
@@ -3014,6 +4081,7 @@ const TableManager = {
       }
 
       table.data = tableContent;
+      table.lastApiResponse = normalized;
       this.bindLoadTarget(tableId, normalized);
 
       // If API/state did not provide filter option lists, derive them from data for select filters
@@ -3072,6 +4140,14 @@ const TableManager = {
     }
   },
 
+  /**
+   * Reports whether the headers already in the DOM match the column metadata of
+   * a response, so unchanged headers can be left in place.
+   *
+   * @param {HTMLTableSectionElement} thead - Current header
+   * @param {Object[]} columnsMetadata - Columns from the response
+   * @returns {boolean} True when they match
+   */
   dynamicHeadersMatch(thead, columnsMetadata) {
     if (!thead || !Array.isArray(columnsMetadata)) {
       return false;
@@ -3117,6 +4193,14 @@ const TableManager = {
     });
   },
 
+  /**
+   * Removes the sort listeners from the headers, optionally only those inside a
+   * subtree that is about to be replaced.
+   *
+   * @param {Object} table - Table instance
+   * @param {HTMLElement} [root=null] - Limit to headers inside this element
+   * @returns {void}
+   */
   cleanupSortHandlers(table, root = null) {
     if (!table?.eventHandlers?.sort || !(table.eventHandlers.sort instanceof Map)) {
       return;
@@ -3133,6 +4217,13 @@ const TableManager = {
     });
   },
 
+  /**
+   * Sets the options offered by the select filters of a table.
+   *
+   * @param {string} tableId - Table id
+   * @param {Object} filters - Options keyed by filter name
+   * @returns {void}
+   */
   setFilters(tableId, filters) {
     const table = this.state.tables.get(tableId);
     if (!table) return;
@@ -3278,6 +4369,13 @@ const TableManager = {
     }
   },
 
+  /**
+   * Builds the options of the select filters from the distinct values in the
+   * data, for the filterable columns that were given none.
+   *
+   * @param {Object} table - Table instance
+   * @returns {Object} Options keyed by filter name
+   */
   deriveFiltersFromData(table) {
     if (!table || !Array.isArray(table.data)) return {};
 
@@ -3305,6 +4403,15 @@ const TableManager = {
     return result;
   },
 
+  /**
+   * Renders a table: filters, sorts and pages the data for a client-side table,
+   * writes the rows, then updates the footer, caption and pagination.
+   *
+   * The render is deferred while ElementManager is still starting up.
+   *
+   * @param {string} tableId - Table id
+   * @returns {void}
+   */
   renderTable(tableId) {
     const table = this.state.tables.get(tableId);
     if (!table) return;
@@ -3411,6 +4518,7 @@ const TableManager = {
       if (window.TemplateManager && typeof TemplateManager.processDataOnLoad === 'function' && isServerSide) {
         try {
           const context = {
+            ...(table.lastApiResponse || {}),
             state: {data: baseData},
             data: baseData
           };
@@ -3424,6 +4532,13 @@ const TableManager = {
     }
   },
 
+  /**
+   * Puts the sort classes and aria-sort of the headers back in step with the
+   * sort state, after the header was re-rendered.
+   *
+   * @param {Object} table - Table instance
+   * @returns {void}
+   */
   restoreSortUI(table) {
     if (!table || !table.element) return;
 
@@ -3448,6 +4563,16 @@ const TableManager = {
     this.updateSortOrderIndicators(table);
   },
 
+  /**
+   * Builds one table row: its identity, its checkbox, its cells and its action
+   * cell.
+   *
+   * @param {Object} table - Table instance
+   * @param {string} tableId - Table id
+   * @param {Object} item - Row data
+   * @param {number} index - Position on the current page
+   * @returns {HTMLTableRowElement} The row
+   */
   renderRow(table, tableId, item, index) {
     const tr = document.createElement('tr');
     const rowIdentity = this.getRowIdentity(table, item, index);
@@ -3568,6 +4693,14 @@ const TableManager = {
     return tr;
   },
 
+  /**
+   * Returns the running number of a row across pages, so an auto-number column
+   * continues counting on page two.
+   *
+   * @param {Object} table - Table instance
+   * @param {number} index - Position on the current page
+   * @returns {number} Row number, starting at 1
+   */
   getRowSequence(table, index) {
     const params = table?.config?.params || {};
     const page = Math.max(1, parseInt(params.page, 10) || 1);
@@ -3622,6 +4755,16 @@ const TableManager = {
     }
   },
 
+  /**
+   * Duplicates a row: captures the values currently in its controls, inserts
+   * the copy after it, and posts it to the action endpoint on a server-side
+   * table.
+   *
+   * @param {Object} table - Table instance
+   * @param {string} tableId - Table id
+   * @param {Object} item - Row to copy
+   * @returns {Promise<void>}
+   */
   async handleCopyRow(table, tableId, item) {
     try {
       // Capture current DOM values to ensure edits are preserved
@@ -3688,6 +4831,17 @@ const TableManager = {
     }
   },
 
+  /**
+   * Asks the user to confirm, then deletes the row.
+   *
+   * The confirmation is skipped when the table sets data-confirm-delete to
+   * false.
+   *
+   * @param {Object} table - Table instance
+   * @param {string} tableId - Table id
+   * @param {Object} item - Row to delete
+   * @returns {Promise<void>}
+   */
   async handleDeleteRow(table, tableId, item) {
     try {
       if (window.DialogManager && table.config.confirmDelete !== false) {
@@ -3708,6 +4862,15 @@ const TableManager = {
     }
   },
 
+  /**
+   * Deletes a row: tells the action endpoint on a server-side table, and
+   * removes it from the data and the DOM.
+   *
+   * @param {Object} table - Table instance
+   * @param {string} tableId - Table id
+   * @param {Object} item - Row to delete
+   * @returns {Promise<void>}
+   */
   async deleteRow(table, tableId, item) {
     try {
       const actionUrl = table.element.dataset.actionUrl || table.config.actionUrl;
@@ -3754,6 +4917,13 @@ const TableManager = {
     }
   },
 
+  /**
+   * Reads the column definitions from the header cells: field, label, sort,
+   * filter, format, cell element and the merge information of grouped headers.
+   *
+   * @param {Object} table - Table instance
+   * @returns {Map} Definitions keyed by field, empty when there is no header
+   */
   getColumnDefinitions(table) {
     const columns = new Map();
     const mergeInfo = new Map();
@@ -3818,6 +4988,7 @@ const TableManager = {
             class: '',
             cellClass: '',
             cellElement: '',
+            checkedValue: '',
             autocomplete: 'off',
             template: '',
             autoNumber: false,
@@ -3925,8 +5096,8 @@ const TableManager = {
       if (col.placeholder !== undefined) th.dataset.placeholder = col.placeholder;
       if (col.template !== undefined) th.dataset.template = col.template;
       if (col.cellElement !== undefined) th.dataset.cellElement = col.cellElement;
+      if (col.checkedValue !== undefined) th.dataset.checkedValue = col.checkedValue;
       if (col.optionsKey !== undefined) th.dataset.optionsKey = col.optionsKey;
-      if (col.align !== undefined) th.dataset.align = col.align;
       if (col.emptyText !== undefined) th.dataset.emptyText = col.emptyText;
       if (col.autoNumber !== undefined) th.dataset.autoNumber = col.autoNumber ? 'true' : 'false';
 
@@ -3991,41 +5162,20 @@ const TableManager = {
     return thead;
   },
 
+  /**
+   * Builds the footer of a table: its checkbox cell and the aggregate cells,
+   * lined up with the columns above.
+   *
+   * @param {Object} table - Table instance
+   * @returns {void}
+   */
   setupFooter(table) {
     const tfoot = this.ensureFooterStructure(table);
     if (!tfoot) return;
 
-    // Add checkbox column to footer if enabled
-    if (table.config.showCheckbox) {
-      tfoot.querySelectorAll('tr').forEach(tr => {
-        // Check if checkbox column already exists
-        if (!tr.querySelector('.check-column')) {
-          const td = document.createElement('td');
-          td.className = 'check-column';
-
-          // Add checkbox if specified
-          if (tr.dataset.showCheckbox === 'true') {
-            const checkboxId = `select-all-${table.id}-footer`;
-            const label = document.createElement('label');
-            label.htmlFor = checkboxId;
-
-            const checkbox = document.createElement('input');
-            checkbox.type = 'checkbox';
-            checkbox.className = 'select-all';
-            checkbox.id = checkboxId;
-            checkbox.setAttribute('aria-label', Now.translate('Select all'));
-            checkbox.addEventListener('change', (e) => {
-              this.handleSelectAll(table, table.id, e.target.checked);
-            });
-
-            label.appendChild(checkbox);
-            td.appendChild(label);
-          }
-
-          tr.insertBefore(td, tr.firstChild);
-        }
-      });
-    }
+    // The checkbox cell of the footer belongs to setupCheckboxes, which builds
+    // it for the header and the footer in one place. Adding one here as well
+    // gave the footer a column the header did not have.
 
     const columns = this.getColumnGroups(table);
     const footerLayout = this.getSectionCellLayout(tfoot);
@@ -4142,11 +5292,29 @@ const TableManager = {
     });
   },
 
+  /**
+   * Computes an aggregate over a column, returning 0 when the column holds
+   * nothing that can be aggregated.
+   *
+   * @param {Object[]} data - Rows to aggregate
+   * @param {string} field - Column to aggregate
+   * @param {string} type - 'sum', 'avg', 'count', 'min' or 'max'
+   * @returns {number} The aggregate
+   */
   calculateAggregate(data, field, type) {
     const aggregateResult = this.getAggregateResult(data, field, type);
     return aggregateResult.processable ? aggregateResult.value : 0;
   },
 
+  /**
+   * Computes an aggregate over the sum of several columns per row, used by a
+   * grouped header that totals its own columns.
+   *
+   * @param {Object[]} data - Rows to aggregate
+   * @param {string[]} fields - Columns summed within each row
+   * @param {string} type - 'sum', 'avg', 'count', 'min' or 'max'
+   * @returns {number} The aggregate
+   */
   calculateGroupAggregate(data, fields, type) {
     if (!data?.length || !fields?.length) return 0;
 
@@ -4160,6 +5328,14 @@ const TableManager = {
     return this.calculateAggregate(values, 'value', type);
   },
 
+  /**
+   * Reads the grouped header structure, mapping each group to the columns its
+   * colspan covers.
+   *
+   * @param {Object} table - Table instance
+   * @param {HTMLTableRowElement} [referenceRow=null] - Row to read instead of the header
+   * @returns {Object[]} Groups with their columns
+   */
   getColumnGroups(table, referenceRow = null) {
     const groups = [];
 
@@ -4171,8 +5347,7 @@ const TableManager = {
           format: cell.dataset.format || null,
           formatter: cell.dataset.formatter || null,
           class: cell.dataset.class || null,
-          cellClass: cell.dataset.cellClass || null,
-          align: cell.dataset.align || null
+          cellClass: cell.dataset.cellClass || null
         };
 
         for (let i = 0; i < colspan; i++) {
@@ -4198,8 +5373,7 @@ const TableManager = {
         format: entry.cell.dataset.format || null,
         formatter: entry.cell.dataset.formatter || null,
         class: entry.cell.dataset.class || null,
-        cellClass: entry.cell.dataset.cellClass || null,
-        align: entry.cell.dataset.align || null
+        cellClass: entry.cell.dataset.cellClass || null
       };
 
       for (let offset = 0; offset < entry.colspan; offset++) {
@@ -4210,6 +5384,15 @@ const TableManager = {
     return groups.filter(column => column !== undefined);
   },
 
+  /**
+   * Writes the caption of a table: the range shown, the total, and the search
+   * term when one is active.
+   *
+   * @param {Object} table - Table instance
+   * @param {number} totalRecords - Total number of rows
+   * @param {number} totalPages - Total number of pages
+   * @returns {void}
+   */
   updateTableCaption(table, totalRecords, totalPages) {
     if (!table?.element || !table.config.showCaption) return;
 
@@ -4229,34 +5412,33 @@ const TableManager = {
       searchText = "All {count} entries, displayed {start} to {end}, page {page} of {total} pages";
     }
 
+    // The caption is HTML (the term is wrapped in <strong>), and the search term
+    // is whatever the visitor typed — it went in raw, so `<img onerror>` in the
+    // search box ran. Escape it here; the numbers need nothing. Now.translate()
+    // fills every {param} itself, and a second interpolate pass over the result
+    // would substitute a {count} the visitor typed, so there is none.
     const params = {
       count: totalRecords,
       start: (page - 1) * pageSize + 1,
       end: Math.min(page * pageSize, totalRecords),
       page: page,
       total: totalPages,
-      search: search
+      search: this.escapeCellValue(search)
     };
 
-    let translated = Now.translate(searchText, params);
-
-    if (typeof translated === 'string' && /\{[^}]+\}/.test(translated)) {
-      try {
-        const i18n = Now.getManager ? Now.getManager('i18n') : window.I18nManager;
-        if (i18n && typeof i18n.interpolate === 'function') {
-          translated = i18n.interpolate(translated, params, i18n.getTranslations?.());
-        } else {
-          // Fallback simple interpolation
-          translated = String(translated).replace(/\{([^}]+)\}/g, (m, k) => {
-            return params[k] !== undefined ? params[k] : m;
-          });
-        }
-      } catch (err) {}
-    }
-
-    caption.innerHTML = translated;
+    caption.innerHTML = Now.getManager?.('i18n')
+      ? Now.translate(searchText, params)
+      : searchText.replace(/\{(\w+)\}/g, (m, k) => (params[k] !== undefined ? params[k] : m));
   },
 
+  /**
+   * Filters rows for a client-side table: the search term against the
+   * searchable columns, and each filter parameter against its own column.
+   *
+   * @param {Object} table - Table instance
+   * @param {Object[]} data - Rows to filter
+   * @returns {Object[]} Rows that matched
+   */
   filterData(table, data) {
     if (!table || !table.config.params || Object.keys(table.config.params).length === 0) {
       return data;
@@ -4306,6 +5488,14 @@ const TableManager = {
     });
   },
 
+  /**
+   * Sorts a copy of the rows by the sort state, applying each column in the
+   * order it was added.
+   *
+   * @param {Object} table - Table instance
+   * @param {Object[]} data - Rows to sort
+   * @returns {Object[]} Sorted copy
+   */
   sortData(table, data) {
     if (!table || !table.sortState || Object.keys(table.sortState).length === 0) {
       return data;
@@ -4332,28 +5522,54 @@ const TableManager = {
     });
   },
 
+  /**
+   * Cuts the rows down to the current page.
+   *
+   * A page size of zero or less means no paging, and every row is returned.
+   *
+   * @param {Object} table - Table instance
+   * @param {Object[]} data - Rows to page
+   * @returns {Object} {pageData, totalPages, totalRecords}
+   */
   paginateData(table, data) {
     if (!table || table.config.params.pageSize <= 0) {
       return {pageData: data, totalPages: 1, totalRecords: data.length};
     }
 
-    const {pageSize, page} = table.config.params;
-    const start = (page - 1) * pageSize;
-    let pageData;
-    if (table.serverSide) {
-      // Assume server returned the page's rows already
-      pageData = data;
-    } else {
-      pageData = data.slice(start, start + pageSize);
-    }
+    const {pageSize} = table.config.params;
 
     // If server provided a total (via meta), use it; otherwise derive from data length
     const totalRecords = parseInt(table.config.params.total || data.length || 0);
     const totalPages = pageSize > 0 ? Math.max(1, Math.ceil(totalRecords / pageSize)) : 1;
 
+    let pageData;
+    if (table.serverSide) {
+      // Assume server returned the page's rows already
+      pageData = data;
+    } else {
+      // A remembered or linked page past the end (fewer rows now) shows the last page
+      if (table.config.params.page > totalPages) {
+        table.config.params.page = totalPages;
+      }
+      const start = (table.config.params.page - 1) * pageSize;
+      pageData = data.slice(start, start + pageSize);
+    }
+
     return {pageData, totalPages, totalRecords};
   },
 
+  /**
+   * Rebuilds the pagination controls: a window of page numbers centred on the
+   * current page, plus the first, previous, next and last links.
+   *
+   * Nothing is rendered when everything fits on one page.
+   *
+   * @param {Object} table - Table instance
+   * @param {string} tableId - Table id
+   * @param {number} totalRecords - Total number of rows
+   * @param {number} totalPages - Total number of pages
+   * @returns {void}
+   */
   updatePagination(table, tableId, totalRecords, totalPages) {
     if (!table) return;
 
@@ -4383,6 +5599,17 @@ const TableManager = {
     this.updateTableCaption(table, totalRecords, totalPages);
   },
 
+  /**
+   * Adds one button to the pagination bar, rendering the current page as a
+   * marked, non-interactive item.
+   *
+   * @param {Object} table - Table instance
+   * @param {string} tableId - Table id
+   * @param {number} page - Page the button leads to
+   * @param {string} text - Button label
+   * @param {number} currentPage - Page currently shown
+   * @returns {void}
+   */
   addPaginationButton(table, tableId, page, text, currentPage) {
     const button = document.createElement('button');
     button.textContent = text;
@@ -4405,6 +5632,13 @@ const TableManager = {
 
   // Entity-encode an untrusted scalar cell value before inlining it into a
   // template HTML string. Uses the central SecurityManager when available.
+  /**
+   * Escapes a cell value for insertion as HTML, through SecurityManager where
+   * it is available and with its own encoding otherwise.
+   *
+   * @param {*} value - Value to escape
+   * @returns {string} Escaped text
+   */
   escapeCellValue(value) {
     const sm = window.SecurityManager;
     if (sm && typeof sm.escapeHtml === 'function') return sm.escapeHtml(value);
@@ -4415,12 +5649,51 @@ const TableManager = {
 
   // Sanitize HTML that a column explicitly opted into (a {html} cell value)
   // before it reaches innerHTML. Falls back to full escaping if no sanitizer.
+  /**
+   * Cleans markup meant to be rendered inside a cell.
+   *
+   * Falls back to escaping the markup entirely when SecurityManager is absent,
+   * so unsanitized HTML never reaches the DOM.
+   *
+   * @param {string} html - Markup to clean
+   * @returns {string} Cleaned markup, or escaped text
+   */
+  /**
+   * Marks a cell whose content is a plain row value (not a template) so that
+   * I18nManager's DOM observer leaves it alone: a stored value such as
+   * `{LNG_Documents}` must show exactly as stored, not translated. Uses the
+   * standard HTML `translate="no"` attribute, which I18nManager honours on an
+   * element and all of its descendants. Template cells are marked once their
+   * own {LNG_...} tokens have been resolved. Formatter cells are not marked —
+   * a formatter owns its cell: it calls Now.translate() or renders `data-i18n`
+   * for labels, and sets translate="no" itself around user-supplied text.
+   *
+   * @param {HTMLTableCellElement} cell
+   */
+  markDataCell(cell) {
+    cell.setAttribute('translate', 'no');
+  },
+
   sanitizeCellHtml(html) {
     const sm = window.SecurityManager;
     if (sm && typeof sm.sanitizeHtml === 'function') return sm.sanitizeHtml(html);
     return this.escapeCellValue(html);
   },
 
+  /**
+   * Builds one cell: resolves its value, applies the column format, and renders
+   * it as text, as markup, as a link or as a form element according to the
+   * column definition.
+   *
+   * @param {Object} table - Table instance
+   * @param {string} tableId - Table id
+   * @param {HTMLTableRowElement} row - Row being built
+   * @param {string} field - Column
+   * @param {Object} attributes - Column definition
+   * @param {Object} rowData - Row data
+   * @param {number} index - Position on the current page
+   * @returns {HTMLTableCellElement} The cell
+   */
   renderCell(table, tableId, row, field, attributes, rowData, index) {
     const cell = document.createElement('td');
     cell.dataset.field = field;
@@ -4436,6 +5709,15 @@ const TableManager = {
       }
       return v;
     };
+
+    // An `{html}` value is server-composed markup. With `i18n: true` the server
+    // is saying "this carries {LNG_...} markers, resolve them here" — so the
+    // catalog is applied on every render (the table re-renders from the raw
+    // value on locale change, so the cell follows the UI language without a
+    // request, unlike markup translated once by PHP). Only the marker is
+    // touched; any other brace in the markup stays. Without the flag the
+    // markup is inserted as it came.
+    const renderHtmlValue = (v) => this.sanitizeCellHtml(v.i18n === true ? this.translateValue(v.html) : v.html);
 
     const rawValue = value;
     const primValue = normalizeValue(value);
@@ -4472,11 +5754,8 @@ const TableManager = {
         cell.style.display = 'none';
       }
 
-      if (attributes.align) {
-        cell.style.textAlign = attributes.align;
-      }
-
       if (isDisplayOnly) {
+        this.markDataCell(cell);
         cell.textContent = displayValue ?? (attributes.emptyText || '');
         row.appendChild(cell);
         return;
@@ -4514,29 +5793,66 @@ const TableManager = {
         // 2. Filter options (table.filterOptions)
         // 3. HTML data-options (attributes.options)
         const formatOptions = attributes.format === 'lookup' ? lookupOptions : fmtAttributes;
+        this.markDataCell(cell);
         cell.textContent = this.formatValue(primValue, attributes.format, formatOptions);
       } else if (attributes.template) {
         // Template-based rendering
-        // 1) Replace ${key} placeholders with row values
-        let template = attributes.template.replace(/\${(\w+)}/g, (match, key) => {
-          const v = rowData[key];
-          if (v === undefined) return match;
-          // The template markup itself is developer-authored (trusted), but the
-          // row values interpolated into it are untrusted server data. Escape
-          // scalars; sanitize explicit {html} opt-in values. Prevents XSS via
-          // table data flowing into innerHTML at line ~4576.
-          if (v && typeof v === 'object' && v.html !== undefined) {
-            return this.sanitizeCellHtml(v.html);
+        // 1) Replace ${key} placeholders with opaque slot tokens.
+        //
+        // The template markup is developer-authored (trusted); the row values are
+        // untrusted server data. They used to be pasted straight into the template
+        // string, which then went through i18n.interpolate and TemplateManager —
+        // so a stored value of `{{7*7}}` rendered as 49 and `{LNG_Delete}` came
+        // out translated (template injection through table data). The values are
+        // now put back only into the *final* HTML, after every template pass, so
+        // neither engine ever sees them. Scalars are escaped; explicit {html}
+        // opt-in values are sanitized. The token contains no brace, quote or
+        // angle bracket, so it survives every pass and every attribute context.
+        // A `${...}` that is not a plain field name (an expression such as
+        // `${id != 1}` meant for data-if) is kept verbatim behind a token too, or
+        // i18n.interpolate would strip its braces on the way through.
+        //
+        // `{LNG_${key}}` is the author asking for the row's value to be looked up
+        // as a catalog key (a status such as `active` shown as its translation).
+        // Slotting `${key}` alone would hand i18n the key `%%NOWCELL0%%`, so that
+        // pattern is resolved here first — the value is only ever a lookup key,
+        // never parsed, and the result is escaped like any other value.
+        const slots = [];
+        const lookupI18n = window.Now && Now.getManager ? Now.getManager('i18n') : null;
+        const translateKey = (key) => {
+          if (lookupI18n && typeof lookupI18n.getTranslations === 'function') {
+            return lookupI18n.getTranslations()[key] ?? key;
           }
-          return this.escapeCellValue(normalizeValue(v));
+          return window.Now && typeof Now.translate === 'function' ? Now.translate(key) : key;
+        };
+        let template = attributes.template.replace(/\{LNG_\$\{(\w+)\}\}/g, (match, key) => {
+          const v = rowData[key];
+          if (v === undefined || (v !== null && typeof v === 'object' && v.html !== undefined)) {
+            return match;
+          }
+          const text = String(normalizeValue(v) ?? '');
+          slots.push(this.escapeCellValue(text === '' ? '' : translateKey(text)));
+          return '%%NOWCELL' + (slots.length - 1) + '%%';
         });
+        template = template.replace(/\$\{([^}]*)\}/g, (match, key) => {
+          const v = /^\w+$/.test(key) ? rowData[key] : undefined;
+          if (v === undefined) {
+            slots.push(match);
+          } else {
+            slots.push(v && typeof v === 'object' && v.html !== undefined
+              ? renderHtmlValue(v)
+              : this.escapeCellValue(normalizeValue(v)));
+          }
+          return '%%NOWCELL' + (slots.length - 1) + '%%';
+        });
+        const fillSlots = (html) => html.replace(/%%NOWCELL(\d+)%%/g, (m, i) => slots[Number(i)] ?? '');
 
         // 2) Run i18n interpolation on the resulting HTML string so tokens like
         //    {LNG_*} (including patterns formed like {LNG_${status_text}}) are resolved
         try {
           const i18n = window.Now && Now.getManager ? Now.getManager('i18n') : null;
           if (i18n && typeof i18n.interpolate === 'function') {
-            template = i18n.interpolate(template);
+            template = i18n.interpolate(template, {});
           } else if (window.Now && typeof Now.translate === 'function') {
             // Fallback: if translate exists but no interpolate, attempt a best-effort
             // Translate plain tokens that match exactly one token inside the template
@@ -4581,8 +5897,25 @@ const TableManager = {
           }
         }
 
-        // 3) Insert HTML
-        cell.innerHTML = template;
+        // 3) Put the row values back (already escaped) and insert the HTML
+        cell.innerHTML = fillSlots(template);
+
+        // 3.5) data-if inside a cell. TemplateManager hides an element
+        //      asynchronously (it awaits the hide animation before removing it),
+        //      so when the container's innerHTML was read back above the element
+        //      was still there and every conditional button showed on every row.
+        //      Decide it here, synchronously, against the row. `${field}` values
+        //      have been substituted by now, so both `data-if="${id != 1}"` and
+        //      `data-if="can_edit"` work.
+        cell.querySelectorAll('[data-if]').forEach((el) => {
+          // A `${flag}` that held null/'' has become an empty expression by now:
+          // that is a falsy row value, not "no condition" — hide.
+          const expression = (el.getAttribute('data-if') || '').trim();
+          el.removeAttribute('data-if');
+          if (expression === '' || !this.evaluateTableCondition(expression, rowData)) {
+            el.remove();
+          }
+        });
 
         // 4) Immediately translate any elements inside the inserted HTML that carry data-i18n
         try {
@@ -4619,12 +5952,21 @@ const TableManager = {
         } catch (e) {
           // ignore translation errors for cell post-processing
         }
+
+        // 5) Everything the template authored is translated by now (step 2 and
+        //    step 4). What remains inside the cell is row data, which the i18n
+        //    DOM observer must not touch — the table re-renders on locale change.
+        this.markDataCell(cell);
       } else {
         // Default rendering - prefer HTML when original value had an html property.
         // Sanitize the opt-in HTML before it reaches innerHTML.
         if (rawValue && typeof rawValue === 'object' && rawValue.html !== undefined) {
-          cell.innerHTML = this.sanitizeCellHtml(rawValue.html);
+          // Translated here means the observer has nothing left to do; mark the
+          // cell so it re-renders on locale change instead of being re-scanned.
+          if (rawValue.i18n === true) this.markDataCell(cell);
+          cell.innerHTML = renderHtmlValue(rawValue);
         } else {
+          this.markDataCell(cell);
           cell.textContent = primValue;
         }
       }
@@ -4653,7 +5995,15 @@ const TableManager = {
     }
   },
 
+  /**
+   * Translates a cell value, using the i18n interpolation when it is available
+   * so embedded placeholders are resolved too.
+   *
+   * @param {string} value - Value to translate
+   * @returns {string} Translated value
+   */
   translateValue(value) {
+    if (typeof value !== 'string' || !value.includes('{')) return value;
     try {
       const i18n = window.Now && Now.getManager ? Now.getManager('i18n') : null;
       if (i18n && typeof i18n.interpolate === 'function') {
@@ -4666,6 +6016,13 @@ const TableManager = {
     return value;
   },
 
+  /**
+   * Retranslates the filter controls of a table after the locale changed, both
+   * the internal ones and an external filter form.
+   *
+   * @param {Object} table - Table instance
+   * @returns {void}
+   */
   retranslateFilter(table) {
     if (!table) return;
 
@@ -4681,6 +6038,21 @@ const TableManager = {
     }
   },
 
+  /**
+   * Renders a cell as a form element through ElementManager, so the column can
+   * be edited in place.
+   *
+   * Falls back to plain text when ElementManager is unavailable.
+   *
+   * @param {HTMLTableCellElement} cell - Cell to fill
+   * @param {Object} table - Table instance
+   * @param {string} tableId - Table id
+   * @param {string} field - Column
+   * @param {Object} attributes - Column definition
+   * @param {Object} rowData - Row data
+   * @param {number} index - Position on the current page
+   * @returns {void}
+   */
   renderElementCell(cell, table, tableId, field, attributes, rowData, index) {
     const elementManager = Now.getManager('element');
     const value = rowData[field];
@@ -4740,6 +6112,20 @@ const TableManager = {
     }
   },
 
+  /**
+   * Builds the ElementManager configuration for an editable cell: its type, id,
+   * value, options and change handler.
+   *
+   * data-type is accepted as a shorthand for data-cell-element.
+   *
+   * @param {Object} table - Table instance
+   * @param {string} tableId - Table id
+   * @param {string} field - Column
+   * @param {Object} attributes - Column definition
+   * @param {Object} rowData - Row data
+   * @param {number} index - Position on the current page
+   * @returns {Object|null} Element configuration, or null when the column is not editable
+   */
   getElementConfig(table, tableId, field, attributes, rowData, index) {
     // Allow using data-type as a shorthand for data-cell-element.
     if (!attributes.cellElement && attributes.type) {
@@ -4886,10 +6272,28 @@ const TableManager = {
 
       case 'checkbox':
       case 'radio':
-        // Checkbox/radio
-        config.checked = value === true || value === '1' || value === 'true';
+      case 'switch':
+        // Checkbox/radio/switch. The value arrives as it was stored, so a flag
+        // saved as the number 1 has to tick the box just like the string '1'
+        // does — the same truthiness rule the element factories apply.
+        config.checked = !['', '0', 'false', 'null', 'undefined'].includes(String(value).toLowerCase());
         if (attributes.options) {
           config.options = attributes.options;
+        }
+        // `size` describes a text box, not a box that is ticked.
+        delete config.size;
+        if (attributes.cellElement === 'switch') {
+          // The toggle carries no visible text in a cell, so the column header
+          // is what a screen reader announces for it.
+          config.ariaLabel = attributes.ariaLabel || attributes.label;
+        }
+        if (attributes.cellElement !== 'radio') {
+          // What gets submitted when the box is ticked. Keeping the stored
+          // value here would post the off value ('0') of a row the user just
+          // switched on, so the on value is what the input carries.
+          config.value = attributes.checkedValue !== undefined && attributes.checkedValue !== null && attributes.checkedValue !== ''
+            ? attributes.checkedValue
+            : '1';
         }
         break;
 
@@ -4917,10 +6321,24 @@ const TableManager = {
     return config;
   },
 
+  /**
+   * Releases everything a table holds: its refresh timer first, then its
+   * listeners, its enhanced cells, its filter controls and its state binding.
+   *
+   * The timer goes first because one outliving its table would keep requesting
+   * data for a screen the user has already left.
+   *
+   * @param {string} tableId - Table id
+   * @returns {void}
+   */
   cleanupTableResources(tableId) {
     try {
       const table = this.state.tables.get(tableId);
       if (!table) return;
+
+      // Stop polling first — a timer that outlives its table would keep firing
+      // requests for a screen the user has already navigated away from
+      this.stopAutoRefresh(tableId);
 
       // Cleanup external filter form handlers
       if (table._externalFilterCleanup && Array.isArray(table._externalFilterCleanup)) {
@@ -5046,14 +6464,35 @@ const TableManager = {
   },
 
   // Delegated event handlers
+  /**
+   * Handles every click inside a table: pagination, row actions, the select-all
+   * and row checkboxes, and the bulk-action submit.
+   *
+   * Elements carrying an EventSystemManager data-action are left alone, so the
+   * declarative binding stays in charge of them.
+   *
+   * @param {MouseEvent} e - Click event
+   * @param {string} tableId - Table id
+   * @returns {void}
+   */
   _handleDelegatedClick(e, tableId) {
     const table = this.state.tables.get(tableId);
     if (!table) return;
 
+    const isDeclarativeEventAction = (action) => {
+      if (!action || typeof action !== 'string') return false;
+      // EventSystemManager format: event(.modifier)*:actionName
+      return /^[a-z]+(?:\.[a-z]+)*:/i.test(action.trim());
+    };
+
     const btn = e.target.closest('[data-action]');
     if (btn && table.element.contains(btn)) {
-      e.preventDefault();
       const action = btn.dataset.action;
+      if (isDeclarativeEventAction(action)) {
+        // Let EventSystemManager handle declarative actions (e.g. click.prevent:requestApi)
+        return;
+      }
+      e.preventDefault();
       const params = btn.dataset.params ? JSON.parse(btn.dataset.params) : null;
       const tr = btn.closest('tr');
       const id = tr?.dataset?.id;
@@ -5071,6 +6510,10 @@ const TableManager = {
       // if it has data-field or data-action via other attrs, treat accordingly
       const action = iconBtn.dataset.action;
       if (action) {
+        if (isDeclarativeEventAction(action)) {
+          // Let EventSystemManager handle declarative actions (e.g. click.prevent:requestApi)
+          return;
+        }
         e.preventDefault();
         const tr = iconBtn.closest('tr');
         const id = tr?.dataset?.id;
@@ -5081,6 +6524,14 @@ const TableManager = {
     }
   },
 
+  /**
+   * Handles every change inside a table: the selection checkboxes, the filter
+   * controls and the editable cells.
+   *
+   * @param {Event} e - Change event
+   * @param {string} tableId - Table id
+   * @returns {void}
+   */
   _handleDelegatedChange(e, tableId) {
     const table = this.state.tables.get(tableId);
     if (!table) return;
@@ -5116,12 +6567,25 @@ const TableManager = {
   },
 
   // Helper to get selected row ids (from tbody .select-row checkboxes)
+  /**
+   * Returns the ids of the selected rows.
+   *
+   * @param {Object} table - Table instance
+   * @returns {string[]} Selected row ids
+   */
   getSelectedRowIds(table) {
     if (!table || !table.element) return [];
     const checked = table.element.querySelectorAll('tbody .select-row:checked');
     return Array.from(checked).map(cb => cb.value);
   },
 
+  /**
+   * Applies the chosen bulk action to the selected rows by posting them to the
+   * action endpoint.
+   *
+   * @param {string} tableId - Table id
+   * @returns {void}
+   */
   _performActionWrapperSubmission(tableId) {
     const table = this.state.tables.get(tableId);
     if (!table) return;
@@ -5183,6 +6647,27 @@ const TableManager = {
     }).catch(err => console.error('Action submit error', err));
   },
 
+  /**
+   * Where a table's column widths are stored: the route and the table id.
+   *
+   * @param {Object} table - Table instance
+   * @returns {string}
+   */
+  getColumnWidthsKey(table) {
+    return `now.table.columns:${this.getRoutePath()}:${table.id}`;
+  },
+
+  /**
+   * Lets the user resize the columns by dragging the header borders (mouse,
+   * touch or pen), or with the arrow keys on a focused border, and remembers
+   * the widths per column field for the next visit. Double-clicking a border
+   * returns every column to its automatic width.
+   *
+   * On by default; data-persist-column-widths="false" turns it off.
+   *
+   * @param {string} tableId - Table id
+   * @returns {void}
+   */
   setupColumnResizing(tableId) {
     const tableObj = this.state.tables.get(tableId);
     if (!tableObj || !tableObj.element) return;
@@ -5192,101 +6677,227 @@ const TableManager = {
     const thead = tableEl.querySelector('thead');
     if (!thead) return;
 
-    // Load saved widths if present
-    try {
-      const saved = localStorage.getItem(`table_${tableId}_columns`);
-      if (saved) {
-        const widths = JSON.parse(saved);
-        const cols = thead.querySelectorAll('th');
-        cols.forEach((th, idx) => {
-          if (widths[idx]) th.style.width = widths[idx];
+    const headerRow = thead.querySelector('tr:last-child') || thead.querySelector('tr');
+    if (!headerRow) return;
+
+    const headers = Array.from(headerRow.querySelectorAll('th'));
+    if (headers.length <= 1) return;
+
+    const storageKey = this.getColumnWidthsKey(tableObj);
+    // Widths follow the column, not its position: hiding or moving a column
+    // must not hand its width to a neighbour
+    const columnKey = (th, idx) => th.dataset.field || th.dataset.sort || `#${idx}`;
+    const isWidth = (value) => typeof value === 'string' && /^\d+(\.\d+)?px$/.test(value);
+
+    let saved = this.readStorage('local', storageKey);
+    // Older releases kept an array in table order under table_<id>_columns:
+    // converted once when nothing newer is stored, dropped either way
+    const legacyKey = `table_${tableId}_columns`;
+    const legacy = this.readStorage('local', legacyKey);
+    if (legacy !== null) {
+      if (!saved && Array.isArray(legacy) && legacy.length === headers.length) {
+        saved = {};
+        headers.forEach((th, idx) => {
+          if (isWidth(legacy[idx])) saved[columnKey(th, idx)] = legacy[idx];
         });
+        this.writeStorage('local', storageKey, saved);
       }
-    } catch (err) {
-      // ignore
+      this.writeStorage('local', legacyKey, null);
+    }
+    if (saved && typeof saved === 'object') {
+      let restored = 0;
+      headers.forEach((th, idx) => {
+        const width = saved[columnKey(th, idx)];
+        if (isWidth(width)) {
+          th.style.width = width;
+          restored++;
+        }
+      });
+      // Every width known = the fixed layout the user left
+      if (restored === headers.length) {
+        tableEl.style.tableLayout = 'fixed';
+      }
     }
 
-    // Add simple resizer handles to last row headers
-    const headers = thead.querySelectorAll('th');
-    headers.forEach((th, idx) => {
-      // Skip if already has resizer
-      if (th.querySelector('.col-resizer')) return;
+    const freezeColumns = () => {
+      headers.forEach(c => {
+        if (!c.style.width) c.style.width = `${c.offsetWidth}px`;
+      });
+      tableEl.style.tableLayout = 'fixed';
+    };
 
+    const saveWidths = () => {
+      const widths = {};
+      headers.forEach((c, idx) => {
+        if (c.style.width) widths[columnKey(c, idx)] = c.style.width;
+      });
+      this.writeStorage('local', storageKey, Object.keys(widths).length > 0 ? widths : null);
+    };
+
+    const resetWidths = () => {
+      headers.forEach(c => {
+        c.style.width = '';
+      });
+      tableEl.style.tableLayout = '';
+      this.writeStorage('local', storageKey, null);
+      headers.forEach(c => {
+        const handle = c.querySelector(':scope > .col-resizer');
+        if (handle) handle.setAttribute('aria-valuenow', String(c.offsetWidth));
+      });
+    };
+
+    const setWidth = (th, width, handle) => {
+      const px = Math.max(30, Math.round(width));
+      th.style.width = `${px}px`;
+      if (handle) handle.setAttribute('aria-valuenow', String(px));
+    };
+
+    // Attach resizer handles. Remove any existing ones first so re-calling is safe.
+    headers.forEach((th, idx) => {
+      th.querySelectorAll('.col-resizer').forEach(el => el.remove());
+
+      // Handlers live on the TH (not on the handle) so they survive innerHTML
+      // rewrites of the header by translation/template layers
+      ['click', 'pointerdown', 'dblclick', 'keydown'].forEach(type => {
+        const handler = th[`_colResize_${type}`];
+        if (handler) th.removeEventListener(type, handler);
+      });
+      if (th._colResizeClickHandler) th.removeEventListener('click', th._colResizeClickHandler);
+      if (th._colResizeMouseDownHandler) th.removeEventListener('mousedown', th._colResizeMouseDownHandler);
+
+      // Skip last column: there is no boundary to drag on the right side.
+      if (idx === headers.length - 1) return;
+
+      // Guarantee the th is a positioned container for the absolute resizer.
+      th.style.position = 'relative';
+
+      const label = (th.textContent || '').trim() || columnKey(th, idx);
       const resizer = document.createElement('div');
       resizer.className = 'col-resizer';
       resizer.setAttribute('role', 'separator');
-      resizer.style.position = 'absolute';
-      resizer.style.top = '0';
-      resizer.style.right = '0';
-      resizer.style.width = '6px';
-      resizer.style.cursor = 'col-resize';
-      resizer.style.userSelect = 'none';
-      resizer.style.height = '100%';
-      resizer.style.zIndex = '5';
-
+      resizer.setAttribute('aria-orientation', 'vertical');
+      resizer.setAttribute('aria-label', `${Now.translate('Resize column')}: ${label}`);
+      resizer.setAttribute('aria-valuenow', String(th.offsetWidth || 0));
+      resizer.tabIndex = 0;
       th.appendChild(resizer);
 
-      let startX = 0;
-      let startWidth = 0;
+      const isHandle = (e) => e.target?.classList?.contains('col-resizer');
 
-      const onMouseDown = (e) => {
+      // The click that ends a drag must not sort the column
+      const onClick = (e) => {
+        if (isHandle(e)) e.stopPropagation();
+      };
+
+      const onPointerDown = (e) => {
+        if (!isHandle(e) || (e.button !== undefined && e.button !== 0)) return;
         e.preventDefault();
-        startX = e.clientX;
-        startWidth = th.offsetWidth;
-        document.addEventListener('mousemove', onMouseMove);
-        document.addEventListener('mouseup', onMouseUp);
+        e.stopPropagation();
+        freezeColumns();
+
+        const handle = e.target;
+        const startX = e.clientX;
+        const startWidth = th.offsetWidth;
+
+        // Flag on table element for all sort handlers.
+        tableEl.dataset.colResizing = '1';
+        th.dataset.resizing = '';
+        document.body.style.cursor = 'col-resize';
+
+        const onMove = (ev) => {
+          if (ev.pointerId !== e.pointerId) return;
+          setWidth(th, startWidth + (ev.clientX - startX), handle);
+        };
+
+        const onUp = (ev) => {
+          if (ev.pointerId !== e.pointerId) return;
+          document.removeEventListener('pointermove', onMove);
+          document.removeEventListener('pointerup', onUp);
+          document.removeEventListener('pointercancel', onUp);
+          document.body.style.cursor = '';
+          delete th.dataset.resizing;
+
+          // Keep flag set until AFTER the synthetic post-pointerup click fires.
+          setTimeout(() => {delete tableEl.dataset.colResizing;}, 0);
+
+          saveWidths();
+        };
+
+        document.addEventListener('pointermove', onMove);
+        document.addEventListener('pointerup', onUp);
+        document.addEventListener('pointercancel', onUp);
       };
 
-      const onMouseMove = (e) => {
-        const dx = e.clientX - startX;
-        const newWidth = Math.max(30, startWidth + dx);
-        th.style.width = `${newWidth}px`;
+      const onDblClick = (e) => {
+        if (!isHandle(e)) return;
+        e.preventDefault();
+        e.stopPropagation();
+        resetWidths();
       };
 
-      const onMouseUp = (e) => {
-        document.removeEventListener('mousemove', onMouseMove);
-        document.removeEventListener('mouseup', onMouseUp);
-
-        // save widths
-        try {
-          const cols = Array.from(thead.querySelectorAll('th'));
-          const widths = cols.map(c => c.style.width || window.getComputedStyle(c).width);
-          localStorage.setItem(`table_${tableId}_columns`, JSON.stringify(widths));
-        } catch (err) {
-          console.warn('Failed to persist column widths', err);
-        }
+      const onKeyDown = (e) => {
+        if (!isHandle(e) || (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight')) return;
+        e.preventDefault();
+        e.stopPropagation();
+        freezeColumns();
+        const step = (e.shiftKey ? 50 : 10) * (e.key === 'ArrowRight' ? 1 : -1);
+        setWidth(th, th.offsetWidth + step, e.target);
+        saveWidths();
       };
 
-      resizer.addEventListener('mousedown', onMouseDown);
+      th.addEventListener('click', onClick);
+      th.addEventListener('pointerdown', onPointerDown);
+      th.addEventListener('dblclick', onDblClick);
+      th.addEventListener('keydown', onKeyDown);
+      th._colResize_click = onClick;
+      th._colResize_pointerdown = onPointerDown;
+      th._colResize_dblclick = onDblClick;
+      th._colResize_keydown = onKeyDown;
     });
   },
 
+  /**
+   * Finds the row data behind a row id.
+   *
+   * @param {string} tableId - Table id
+   * @param {string|number} id - Row identity
+   * @returns {Object|null} The row, or null when not found
+   */
   getRowObjectById(tableId, id) {
     const table = this.state.tables.get(tableId);
     if (!table || !table.data) return null;
     return table.data.find((row, index) => this.getRowIdentity(table, row, index) === String(id)) || null;
   },
 
+  /**
+   * Drops what a table persisted: its column widths and its remembered
+   * page size, sort, filters, page and search.
+   *
+   * @param {string} tableId - Table id
+   * @returns {void}
+   */
   clearTableCache(tableId) {
     try {
       const table = this.state.tables.get(tableId);
       if (!table) return;
 
-      if (table.config.persistColumnWidths) {
-        localStorage.removeItem(`table_${tableId}_columns`);
-      }
+      this.writeStorage('local', this.getColumnWidthsKey(table), null);
+      this.forgetRememberedState(tableId);
 
-      localStorage.removeItem(`table_${tableId}_filters`);
-
-      localStorage.removeItem(`table_${tableId}_sort`);
-
-      localStorage.removeItem(`table_${tableId}_page`);
-
+      // Keys of older releases
+      ['columns', 'filters', 'sort', 'page'].forEach(name => {
+        this.writeStorage('local', `table_${tableId}_${name}`, null);
+      });
     } catch (error) {
       this.handleError('Clear table cache', error, 'clearCache');
     }
   },
 
+  /**
+   * Destroys one table, releases its resources and emits table:destroyed.
+   *
+   * @param {string} tableId - Table id
+   * @returns {void}
+   */
   destroyTable(tableId) {
     try {
       this.cleanupTableResources(tableId);
@@ -5302,6 +6913,11 @@ const TableManager = {
     }
   },
 
+  /**
+   * Destroys every registered table and clears the registry.
+   *
+   * @returns {void}
+   */
   destroy() {
     try {
       this.state.tables.forEach((_, tableId) => {
@@ -5334,6 +6950,14 @@ const TableManager = {
     }
   },
 
+  /**
+   * Binds a table to a path in the state manager, so it re-renders whenever
+   * that state changes.
+   *
+   * @param {string} tableId - Table id
+   * @param {string} statePath - State path holding the rows
+   * @returns {void|*} The result of handleError() on bad input
+   */
   bindToState(tableId, statePath) {
     if (!tableId || !statePath) {
       return this.handleError('Invalid parameters for bindToState', null, 'bindToState');
@@ -5430,6 +7054,12 @@ const TableManager = {
     }, {priority: 5, delay: 0});
   },
 
+  /**
+   * Watches the document for tables added later and initializes them, the
+   * fallback used when CoreObserver is not present.
+   *
+   * @returns {void}
+   */
   setupDynamicTableObserver() {
     if (!window.MutationObserver) return;
 
@@ -5493,6 +7123,14 @@ const TableManager = {
     this.dynamicObserver = observer;
   },
 
+  /**
+   * Reports a table error to ErrorManager, tagged with the method it came from.
+   *
+   * @param {string} message - Description of what failed
+   * @param {Error|null} error - Error that was caught, if there was one
+   * @param {string} type - Method name, used to build the context
+   * @returns {*} Result of ErrorManager.handle
+   */
   handleError(message, error, type) {
     const errorObj = error || new Error(message);
 
@@ -5512,6 +7150,15 @@ const TableManager = {
     });
   },
 
+  /**
+   * Adds the touch gestures of a table: a long press to select a row, and a
+   * horizontal swipe to page.
+   *
+   * Does nothing on a device without touch.
+   *
+   * @param {HTMLTableElement} table - Table element
+   * @returns {void}
+   */
   setupTouchEvents(table) {
     if (!('ontouchstart' in window)) return;
 
@@ -5571,6 +7218,14 @@ const TableManager = {
     });
   },
 
+  /**
+   * Builds the bulk-action area of a table: the action select, the submit
+   * button and the selected-row counter.
+   *
+   * @param {Object} table - Table instance
+   * @param {string} tableId - Table id
+   * @returns {void}
+   */
   setupActions(table, tableId) {
     if (!table?.actionWrapper) return;
 
@@ -5791,7 +7446,10 @@ const TableManager = {
             }
 
             const rawResponse = resp?.data ?? resp;
-            const responseData = resp?.data?.data ?? resp?.data ?? resp;
+            // แกะให้ถึงชั้นที่มี actions จริง — ชั้นที่ลึกไปหนึ่งขั้นทำให้ modal/redirect ที่ API สั่งมาหายเงียบ ๆ
+            const responseData = window.ResponseHandler
+              ? ResponseHandler.payloadOf(resp)
+              : (resp?.data?.data ?? resp?.data ?? resp);
             const success = responseData?.success !== false;
             if (success) {
               this.invalidateTableDataSourceCache(tableId);
@@ -5827,6 +7485,13 @@ const TableManager = {
     });
   },
 
+  /**
+   * Collects the action list out of one or more response shapes, so a response
+   * that nests its payload is handled the same as a flat one.
+   *
+   * @param {...Object} payloads - Response bodies to search
+   * @returns {Object[]} The actions found
+   */
   extractResponseActions(...payloads) {
     const actions = [];
 
@@ -5845,6 +7510,16 @@ const TableManager = {
     return actions;
   },
 
+  /**
+   * Shows the message of a response as a notification, but only when the
+   * response did not already carry a notification or alert action of its own,
+   * so the user never sees the same message twice.
+   *
+   * @param {Object} responseData - Response body
+   * @param {Object} [rawResponse=null] - Full response, searched as well
+   * @param {boolean} [success=true] - Show it as a success rather than an error
+   * @returns {void}
+   */
   showResponseMessageFallback(responseData, rawResponse = null, success = true) {
     if (!window.NotificationManager) {
       return;
@@ -5866,6 +7541,48 @@ const TableManager = {
     }
   },
 
+  /**
+   * Tells the user that the button they just pressed is currently active. and prevent pressing it again during that time
+   *
+   * **Why do I need to prevent repeated presses? It doesn't just show the status:** Button that is pressed and nothing happens.
+   * Make people click again naturally · With commands like "Restart Service" pressing five times
+   * This is five consecutive restarts. Which is more dangerous than not having status.
+   *
+   * Use `disabled` for actual buttons (browser prevents clicking them for you) Accessible with keyboard)
+   * and `aria-busy` to be recognized by screen readers. It's not just people who see spinners.
+   *
+   * @param {HTMLElement|null} el
+   * @param {boolean} busy
+   */
+  setActionBusy(el, busy) {
+    if (!el || !el.classList) return;
+
+    el.classList.toggle('loading', !!busy);
+    el.setAttribute?.('aria-busy', busy ? 'true' : 'false');
+
+    if ('disabled' in el) {
+      el.disabled = !!busy;
+    } else if (busy) {
+      el.setAttribute?.('aria-disabled', 'true');
+    } else {
+      el.removeAttribute?.('aria-disabled');
+    }
+  },
+
+  /**
+   * Posts a table action to its endpoint and applies the response: the actions
+   * it carries, its message, and a reload of the table when it asks for one.
+   *
+   * The submit control is held busy for the duration, so a double click cannot
+   * send the action twice.
+   *
+   * @param {string} actionUrl - Endpoint URL
+   * @param {Object} data - Action payload, sent with the table id added
+   * @param {string} tableId - Table id
+   * @param {HTMLElement} submitEl - Control that triggered the action
+   * @param {Object} [context={}] - Extra context for the response handling
+   * @returns {Promise<Object|undefined>} Response body, or undefined on failure
+   */
   async sendAction(actionUrl, data, tableId, submitEl, context = {}) {
     try {
       if (!actionUrl) {
@@ -5882,7 +7599,7 @@ const TableManager = {
       }
 
       const submitButton = submitEl || document.createElement('button');
-      submitButton.classList.add?.('loading');
+      this.setActionBusy(submitButton, true);
 
       const requestData = {
         ...data,
@@ -5890,7 +7607,19 @@ const TableManager = {
       };
 
       // Use HttpClient (window.http) with CSRF protection, fallback to simpleFetch
-      const resp = await window.http.post(actionUrl, requestData);
+      //
+      // The verb comes from the action config so a row action can call a REST
+      // resource directly (`DELETE /api/users/12`). Anything unknown — or no
+      // method at all — stays on POST, which is what every existing table uses.
+      const verb = String(context.method || 'post').toLowerCase();
+      const send = typeof window.http[verb] === 'function' ? window.http[verb] : window.http.post;
+
+      // GET/DELETE take (url, options) — anything to send has to go in the query
+      // string, so only send what was explicitly asked for. `tableId` alone is
+      // never worth putting in a URL.
+      const resp = (verb === 'get' || verb === 'delete')
+        ? await send.call(window.http, actionUrl, Object.keys(data).length ? {params: data} : {})
+        : await send.call(window.http, actionUrl, requestData);
 
       // Handle 403 Forbidden - let ResponseHandler show the error message
       if (resp?.status === 403) {
@@ -5898,7 +7627,7 @@ const TableManager = {
         const responseData = resp?.data?.data ?? resp?.data ?? resp;
         NotificationManager.error(responseData?.message || 'Access forbidden');
 
-        submitButton.classList.remove?.('loading');
+        this.setActionBusy(submitButton, false);
 
         EventManager.emit('table:error', {
           tableId,
@@ -5922,12 +7651,15 @@ const TableManager = {
           currentPath: window.location.pathname
         });
 
-        submitButton.classList.remove?.('loading');
+        this.setActionBusy(submitButton, false);
         return false;
       }
 
       const rawResponse = resp?.data ?? resp;
-      const responseData = resp?.data?.data ?? resp?.data ?? resp;
+      // เช่นเดียวกับ action ในแถว — ต้องได้ชั้นที่ถือ actions ไม่ใช่ชั้นข้อมูล
+      const responseData = window.ResponseHandler
+        ? ResponseHandler.payloadOf(resp)
+        : (resp?.data?.data ?? resp?.data ?? resp);
       const success = responseData.success !== false;
       let didReloadTable = false;
 
@@ -5984,15 +7716,14 @@ const TableManager = {
         timestamp: Date.now()
       });
 
-      submitButton.classList.remove?.('loading');
+      this.setActionBusy(submitButton, false);
 
       return success;
 
     } catch (error) {
       console.error('Table action error:', error);
 
-      const submitButton = submitEl || {classList: {remove: () => {}}};
-      submitButton.classList.remove?.('loading');
+      this.setActionBusy(submitEl, false);
 
       if (window.NotificationManager) {
         NotificationManager.clear();
@@ -6010,6 +7741,13 @@ const TableManager = {
     }
   },
 
+  /**
+   * Removes rows from the DOM by id, used after a bulk delete succeeded.
+   *
+   * @param {Object} table - Table instance
+   * @param {Array<string|number>} ids - Row identities to remove
+   * @returns {void}
+   */
   removeTableRows(table, ids) {
     if (!table?.element || !ids?.length) return;
 
@@ -6033,6 +7771,13 @@ const TableManager = {
     });
   },
 
+  /**
+   * Refreshes what depends on the number of rows on screen, and puts the empty
+   * message in place when the last row is gone.
+   *
+   * @param {Object} table - Table instance
+   * @returns {void}
+   */
   updateTableInfo(table) {
     const rowCount = table.element.querySelectorAll('tbody tr').length;
 
@@ -6059,6 +7804,14 @@ const TableManager = {
     }
   },
 
+  /**
+   * Adds keyboard navigation to a table: the arrow keys move between rows and
+   * headers, Enter sorts, and Space selects.
+   *
+   * @param {HTMLTableElement} table - Table element
+   * @param {string} tableId - Table id
+   * @returns {void}
+   */
   setupKeyboardNavigation(table, tableId) {
     if (!table) return;
 
@@ -6125,6 +7878,14 @@ const TableManager = {
     table.eventHandlers.keyboard = handleKeydown;
   },
 
+  /**
+   * Moves focus to the next or previous sortable header, wrapping at the ends.
+   *
+   * @param {HTMLTableElement} table - Table element
+   * @param {HTMLTableCellElement} currentHeader - Header holding focus
+   * @param {boolean} forward - Move forward rather than back
+   * @returns {void}
+   */
   navigateHeaders(table, currentHeader, forward) {
     const headers = Array.from(table.querySelectorAll('th[data-sort]'));
     const currentIndex = headers.indexOf(currentHeader);
@@ -6139,6 +7900,14 @@ const TableManager = {
     headers[nextIndex].focus();
   },
 
+  /**
+   * Announces the row that gained focus to screen readers, through the live
+   * region named by data-announcer.
+   *
+   * @param {HTMLTableElement} table - Table element
+   * @param {number} rowIndex - Position of the row
+   * @returns {void}
+   */
   announceRowChange(table, rowIndex) {
     const announcer = document.getElementById(table.dataset.announcer);
     if (announcer) {
@@ -6148,6 +7917,15 @@ const TableManager = {
     }
   },
 
+  /**
+   * Loads rows from a source with explicit parameters, guarding against a
+   * second load starting while one is still running.
+   *
+   * @param {string} tableId - Table id
+   * @param {string} source - Endpoint URL
+   * @param {Object} [params={}] - Query parameters
+   * @returns {Promise<void>}
+   */
   async loadData(tableId, source, params = {}) {
     const table = this.state.tables.get(tableId);
     if (!table) return;
@@ -6183,11 +7961,23 @@ const TableManager = {
     }
   },
 
+  /**
+   * Replaces the body of a table with a loading row.
+   *
+   * @param {Object} table - Table instance
+   * @returns {void}
+   */
   showLoading(table) {
     const tbody = table.element.querySelector('tbody');
     tbody.innerHTML = `<tr><td colspan="100%" class="text-center">${Now.translate('Loading')}...</td></tr>`;
   },
 
+  /**
+   * Collects the rows that are currently selected.
+   *
+   * @param {HTMLTableElement} table - Table element
+   * @returns {Array} The selected rows
+   */
   updateSelectedRows(table) {
     const checkboxes = table.querySelectorAll('.select-all');
 
@@ -6218,12 +8008,24 @@ const TableManager = {
     return selectedRows;
   },
 
+  /**
+   * Reads the visible text of the cells in a row.
+   *
+   * @param {HTMLTableRowElement} row - Row to read
+   * @returns {string[]} Cell text, in column order
+   */
   getRowData(row) {
     const cells = row.querySelectorAll('td');
     return Array.from(cells).map(cell => cell.textContent.trim());
   },
 
-  // Parse data-row-actions attribute. Accepts JSON object or shorthand string 'print,edit,delete'
+  /**
+   * Parses the data-row-actions attribute, accepting a JSON object or array as
+   * well as the shorthand list 'print,edit,delete'.
+   *
+   * @param {string|Object} raw - Attribute value
+   * @returns {Object|Array|null} Parsed actions, or null when the attribute is empty
+   */
   parseRowActions(raw) {
     if (!raw) return null;
     if (typeof raw === 'object') return raw;
@@ -6243,6 +8045,16 @@ const TableManager = {
     }, {});
   },
 
+  /**
+   * Works out the visible label and the tooltip of a row action.
+   *
+   * An action given a title but no label renders as an icon with a tooltip; one
+   * given neither falls back to its key for both.
+   *
+   * @param {string} key - Action key
+   * @param {Object} [cfg={}] - Action configuration
+   * @returns {Object} {label, title}
+   */
   getRowActionTextConfig(key, cfg = {}) {
     const hasLabel = Object.prototype.hasOwnProperty.call(cfg, 'label');
     const explicitTitle = Object.prototype.hasOwnProperty.call(cfg, 'title')
@@ -6258,6 +8070,14 @@ const TableManager = {
     };
   },
 
+  /**
+   * Writes the label and tooltip of a row action onto its button, translating
+   * both.
+   *
+   * @param {HTMLElement} element - Action button
+   * @param {Object} actionText - Result of getRowActionTextConfig()
+   * @returns {void}
+   */
   applyRowActionText(element, actionText) {
     if (!element) {
       return;
@@ -6279,6 +8099,16 @@ const TableManager = {
   // Create action cell for a row. actions can be:
   // { key: "Label" }
   // { key: { label: "Label", title: "Tooltip", params: { id: "{id}" }, method: 'POST', submenu: { ... } } }
+  /**
+   * Builds the action cell of a row: one button per action the row allows,
+   * after its condition has been evaluated against the row data.
+   *
+   * @param {Object} table - Table instance
+   * @param {string} tableId - Table id
+   * @param {Object} item - Row data
+   * @param {Object} actions - Actions declared for the table
+   * @returns {HTMLTableCellElement} The action cell
+   */
   createActionCell(table, tableId, item, actions) {
     const td = document.createElement('td');
     td.className = 'row-actions-cell';
@@ -6335,7 +8165,7 @@ const TableManager = {
           this.applyRowActionText(m, subActionText);
           m.addEventListener('click', (e) => {
             e.preventDefault();
-            this._executeRowAction(tableId, actionUrl, item, subKey, subObj);
+            this._executeRowAction(tableId, actionUrl, item, subKey, subObj, e.currentTarget);
           });
           menu.appendChild(m);
         });
@@ -6365,20 +8195,45 @@ const TableManager = {
         this.applyRowActionText(btnEl, actionText);
         btnEl.addEventListener('click', (e) => {
           e.preventDefault();
-          this._executeRowAction(tableId, actionUrl, item, key, cfg);
+          this._executeRowAction(tableId, actionUrl, item, key, cfg, e.currentTarget);
         });
         wrapper.appendChild(btnEl);
       }
     });
 
-    if (!wrapper.childNodes.length) {
-      return null;
+    /*
+     * **A cell is returned even when nothing goes in it.**
+     *
+     * The header column is added whenever `data-row-actions` is present, without
+     * asking any row whether it will use it — so a row that returned nothing here
+     * simply ended one `<td>` early. The browser does not leave a hole where the
+     * missing cell was: it stops the row short, and with borders or zebra striping
+     * on, that row visibly fails to reach the right-hand edge of the table.
+     *
+     * That is the ordinary case, not a rare one. `condition` exists precisely so a
+     * button appears only on the rows it applies to, and any table whose actions all
+     * depend on state has rows where none of them do.
+     *
+     * The `btn-group` wrapper is left out of an empty cell rather than added empty,
+     * so it contributes no spacing of its own.
+     */
+    if (wrapper.childNodes.length) {
+      td.appendChild(wrapper);
     }
 
-    td.appendChild(wrapper);
     return td;
   },
 
+  /**
+   * Evaluates the condition that decides whether an action applies to a row,
+   * accepting a boolean, a field name or a comparison expression.
+   *
+   * An empty condition means the action always applies.
+   *
+   * @param {boolean|string} condition - Condition to evaluate
+   * @param {Object} item - Row data to evaluate against
+   * @returns {boolean} True when the action applies
+   */
   evaluateTableCondition(condition, item) {
     if (condition === undefined || condition === null || condition === '') {
       return true;
@@ -6388,8 +8243,14 @@ const TableManager = {
     }
 
     let expression = String(condition).trim();
-    if (expression.startsWith('${') && expression.endsWith('}')) {
-      expression = expression.slice(2, -1).trim();
+
+    // `${...}` is a wrapper the author may write once around the whole condition
+    // (`${can_manage && enabled}`) or once around each operand
+    // (`${can_manage} && ${enabled}`) — both mean the same thing · stripping only
+    // an outermost pair turned the second form into the nonsense `can_manage} &&
+    // ${enabled`, which evaluated to undefined and silently hid the button
+    if (expression.includes('${')) {
+      expression = expression.replace(/\$\{([\s\S]*?)\}/g, '$1').trim();
     }
 
     try {
@@ -6408,8 +8269,14 @@ const TableManager = {
     return !!(item && item[expression]);
   },
 
-  // Internal executor for per-row actions
-  async _executeRowAction(tableId, actionUrl, item, actionKey, cfg = null) {
+  /**
+   * Internal executor for per-row actions
+   *
+   * @param {HTMLElement|null} triggerEl The button actually pressed by the user — used to show the running status.
+   * This parameter was not originally available. Everywhere creates a floating button that isn't in the DOM.
+   * The `loading` class goes to an element that no one can see = Press it and the screen is completely still.
+   */
+  async _executeRowAction(tableId, actionUrl, item, actionKey, cfg = null, triggerEl = null) {
     const table = this.state.tables.get(tableId);
     if (!table) return;
 
@@ -6419,7 +8286,13 @@ const TableManager = {
     try {
       let confirmMsg = null;
       if (cfg && cfg.confirm) {
-        confirmMsg = typeof cfg.confirm === 'string' ? cfg.confirm : Now.translate('Are you sure you want to perform this action?');
+        // A custom message is authored the same way every other label in
+        // `data-row-actions` is — as an English source string that the language
+        // file translates. Passing it through untranslated left one raw English
+        // sentence in the middle of an otherwise translated confirm dialog.
+        confirmMsg = typeof cfg.confirm === 'string'
+          ? Now.translate(cfg.confirm)
+          : Now.translate('Are you sure you want to perform this action?');
       } else if (actionKey === 'delete' && table.config.confirmDelete !== false) {
         confirmMsg = Now.translate('Are you sure you want to delete this item?');
       }
@@ -6479,30 +8352,99 @@ const TableManager = {
     }
 
     // Build base payload
-    let payload = {action: actionKey, id: item.id, row: item};
+    //
+    // The `{action, id, row}` envelope exists for the table-wide `data-action-url`
+    // style, where one endpoint receives every action and branches on `action`.
+    // A per-action `url` already names the resource and the verb, so it carries
+    // only what the action explicitly asked for — sending the whole row to a REST
+    // endpoint puts it in the query string (and the access log) for GET/DELETE.
+    const restStyle = !!(cfg && typeof cfg.url === 'string' && cfg.url !== '');
+    let payload = restStyle ? {} : {action: actionKey, id: item.id, row: item};
+
+    // Reads {field} out of the row, supporting nested keys like user.id.
+    //
+    // Used by both `params` and `url` so a row action can target a REST resource
+    // (`/api/users/{id}/password-reset`) instead of one action endpoint that
+    // receives `{action, id}` and branches server-side.
+    const readField = (key) => {
+      const parts = String(key).split('.');
+      let cur = item;
+      for (let p of parts) {
+        if (cur == null) return null;
+        cur = cur[p];
+      }
+      return cur;
+    };
+
+    // Into a URL.
+    //
+    // A placeholder that is *part* of a URL is one component of it —
+    // `/api/users/{id}/reset` — so it is escaped on the way in, or a value holding
+    // a `/` would silently invent a path segment.
+    //
+    // **A placeholder that is the whole value is not a component, it is the URL.**
+    // A row that carries a ready-made link (`"url": "{evidence_url}"`, holding
+    // something like `/logs?source=site:3:access`) had every one of its slashes,
+    // its `?` and its `&` escaped, turning the address into one opaque word — which
+    // no longer even starts with `/`, so the SPA router declined it and the browser
+    // resolved the wreckage against the current page. There is no reading of
+    // "escape this" that is right for a value that is already a URL.
+    const interpolateUrl = (val) => {
+      if (typeof val !== 'string') return val;
+
+      const whole = val.match(/^\{([^}]+)\}$/);
+
+      if (whole) {
+        const cur = readField(whole[1]);
+
+        return cur == null ? '' : String(cur);
+      }
+
+      return val.replace(/\{([^}]+)\}/g, (m, key) => {
+        const cur = readField(key);
+        return cur != null ? encodeURIComponent(cur) : '';
+      });
+    };
+
+    // Into a param, where it must stay raw.
+    //
+    // **Params used to be escaped here too, whatever they were about to travel in.**
+    // A POST therefore carried the escaped text inside its JSON body, where nothing
+    // ever unescapes it, and a GET or DELETE had it escaped a second time on the way
+    // out (by URLSearchParams when navigating, by the HTTP client's query serializer
+    // otherwise). A value with no reserved characters in it survived both routes
+    // unharmed — `"confirm_domain": "{domain}"` is why this went unnoticed — but
+    // anything holding a `/`, a space or an `&` arrived as `%2F`, `%20`, `%26`, and a
+    // file path sent that way names no file that exists.
+    //
+    // Escaping belongs to whoever builds the string, and for a param that is never
+    // this function.
+    const interpolateValue = (val) => {
+      if (typeof val !== 'string') return val;
+
+      // A lone `{field}` hands back the value itself, so a number stays a number
+      // and a boolean stays a boolean rather than becoming "true"
+      const whole = val.match(/^\{([^}]+)\}$/);
+
+      if (whole) {
+        const cur = readField(whole[1]);
+        return cur == null ? '' : cur;
+      }
+
+      return val.replace(/\{([^}]+)\}/g, (m, key) => {
+        const cur = readField(key);
+        return cur != null ? String(cur) : '';
+      });
+    };
 
     // If action config provides params, interpolate templates against row data
     if (cfg && cfg.params && typeof cfg.params === 'object') {
-      const interpolate = (val) => {
-        if (typeof val !== 'string') return val;
-        return val.replace(/\{([^}]+)\}/g, (m, key) => {
-          // support nested keys like user.id
-          const parts = key.split('.');
-          let cur = item;
-          for (let p of parts) {
-            if (cur == null) return '';
-            cur = cur[p];
-          }
-          return cur != null ? cur : '';
-        });
-      };
-
       const resolved = {};
       Object.entries(cfg.params).forEach(([k, v]) => {
-        if (typeof v === 'object') {
+        if (v && typeof v === 'object') {
           resolved[k] = JSON.stringify(v); // simple fallback
         } else {
-          resolved[k] = interpolate(v);
+          resolved[k] = interpolateValue(v);
         }
       });
 
@@ -6512,27 +8454,90 @@ const TableManager = {
     // Allow overriding method (GET will perform navigation with query string)
     const method = (cfg && cfg.method) ? cfg.method.toUpperCase() : 'POST';
 
-    if (actionUrl) {
-      if (method === 'GET') {
+    // A per-action `url` wins over the table-wide `data-action-url`.
+    // Keeping the fallback means existing tables that post every action to one
+    // endpoint keep working exactly as before.
+    const targetUrl = (cfg && typeof cfg.url === 'string' && cfg.url !== '')
+      ? interpolateUrl(cfg.url)
+      : actionUrl;
+
+    // A GET row action navigates by default — that is how "open the editor page" tables
+    // have always worked, and changing it would break every one of them. `"navigate": false`
+    // asks for the opposite: fetch the resource and let ResponseHandler run whatever the
+    // server sends back. That is what a shared Add/Edit form needs — the row hands its id
+    // to the API, the API answers with `actions: [{type:'modal', template}]`, and the same
+    // form that Add opens comes up filled in.
+    const navigates = !(cfg && cfg.navigate === false);
+
+    if (targetUrl) {
+      if (method === 'GET' && navigates) {
         const params = new URLSearchParams();
         Object.entries(payload).forEach(([k, v]) => {
           if (typeof v === 'object') params.append(k, JSON.stringify(v));
           else params.append(k, v == null ? '' : v);
         });
-        const dest = actionUrl + (actionUrl.indexOf('?') === -1 ? '?' : '&') + params.toString();
-        window.location.href = dest;
+        const query = params.toString();
+        const dest = query === ''
+          ? targetUrl
+          : targetUrl + (targetUrl.indexOf('?') === -1 ? '?' : '&') + query;
+        const target = cfg?.target || '_self';
+        const isDownload = !!cfg?.download && cfg.download !== 'false';
+
+        if (isDownload) {
+          // A bare `<a download>` click looked right, but Chrome/Edge fetch a
+          // download-attributed anchor as a different request kind than a
+          // normal navigation — an expired/invalid session redirects it to
+          // the HTML login page same as any other request, and the browser
+          // saves *that* under the requested filename with no way for us to
+          // notice. Fetching explicitly lets us check the response actually
+          // succeeded (and wasn't redirected somewhere else) before saving it,
+          // the same way exportData() already does for CSV/JSON.
+          try {
+            const resp = await fetch(dest, {credentials: 'same-origin'});
+            if (!resp.ok || resp.redirected) {
+              this.handleError(
+                `Download failed for action "${actionKey}" (status ${resp.status}${resp.redirected ? ', redirected to ' + resp.url : ''})`,
+                null,
+                'rowActionDownload'
+              );
+              return;
+            }
+            const blob = await resp.blob();
+            let filename = typeof cfg.download === 'string' ? String(interpolateValue(cfg.download)) : '';
+            if (!filename) {
+              const disposition = resp.headers.get('content-disposition') || '';
+              const m = disposition.match(/filename\*=UTF-8''([^;\n\r]+)/i) || disposition.match(/filename="?([^";\n\r]+)"?/i);
+              if (m && m[1]) filename = decodeURIComponent(m[1]);
+            }
+            this.downloadBlob(blob, filename || 'download');
+          } catch (err) {
+            this.handleError(`Download request failed for action "${actionKey}"`, err, 'rowActionDownload');
+          }
+          return;
+        }
+
+        if (target === '_blank') {
+          window.open(dest, '_blank', 'noopener,noreferrer');
+          return;
+        }
+
+        // A same-origin app route should not reload the whole page
+        if (window.RouterManager && typeof RouterManager.navigate === 'function' && dest.startsWith('/')) {
+          RouterManager.navigate(dest);
+        } else {
+          window.location.href = dest;
+        }
         return;
       }
 
-      // use existing sendAction helper which handles response (POST)
+      // use existing sendAction helper which handles response
       try {
-        const fakeButton = document.createElement('button');
-        fakeButton.className = 'loading';
-        await this.sendAction(actionUrl, payload, tableId, fakeButton, {
+        await this.sendAction(targetUrl, payload, tableId, triggerEl, {
           modalConfig: modalConfig,
           table: table,
           row: item,
-          action: actionKey
+          action: actionKey,
+          method: method
         });
       } catch (err) {
         console.error('Row action error:', err);
@@ -6543,6 +8548,14 @@ const TableManager = {
     }
   },
 
+  /**
+   * Writes the number of selected rows into the counter and hides it when
+   * nothing is selected.
+   *
+   * @param {HTMLTableElement} table - Table element
+   * @param {number} count - Rows selected
+   * @returns {void}
+   */
   updateSelectedCount(table, count) {
     const selectedCountElement = table.closest('.table-container')
       ?.querySelector('.selected-count');
@@ -6554,6 +8567,16 @@ const TableManager = {
     }
   },
 
+  /**
+   * Formats a cell value by the format its column declares: number, currency,
+   * percent, date, datetime, time, boolean, file size and the text transforms.
+   *
+   * @param {*} value - Value to format
+   * @param {string} format - Format name, with its arguments after a colon
+   * @param {Object} [options={}] - Format options
+   * @param {string} [options.emptyText] - Shown when the value is null or undefined
+   * @returns {string|*} Formatted value, or the value itself when no format applies
+   */
   formatValue(value, format, options = {}) {
     if (value === null || value === undefined) {
       return options.emptyText || '';
@@ -6583,12 +8606,20 @@ const TableManager = {
         case 'boolean':
           return value ? (options.trueText || 'Yes') : (options.falseText || 'No');
 
-        case 'lookup':
+        case 'lookup': {
           // For select options display - support multiple formats
           // options can be: object {value: label}, array [{value, text/label}], or Map
           if (!options) {
             return value; // No options provided, return raw value
           }
+
+          // A label comes from the option list (a catalog the developer or the
+          // API wrote), so a `{LNG_...}` in it is a request to translate — the
+          // same option shows translated in the column's filter select. The
+          // cell itself is translate="no", so it is resolved here. Only the
+          // marker is touched; a plain label passes through as written. A raw
+          // row value that matched nothing is returned untranslated.
+          const label = (text) => (typeof text === 'string' ? this.translateValue(text) : text);
 
           // Handle array format from API: [{value: "active", label: "Active"}, ...]
           if (Array.isArray(options)) {
@@ -6600,22 +8631,24 @@ const TableManager = {
               return String(opt) === String(value);
             });
             if (found) {
-              return found.label || found.text || String(found.value || found);
+              return label(found.label || found.text || String(found.value || found));
             }
             return value; // No data available, return raw value
           }
 
           // Handle Map format
           if (options instanceof Map) {
-            return options.get(value) || value;
+            const mapped = options.get(value);
+            return mapped ? label(mapped) : value;
           }
 
           // Handle object format: {value: label, ...}
           if (typeof options === 'object') {
-            return options[value] !== undefined ? options[value] : value;
+            return options[value] !== undefined ? label(options[value]) : value;
           }
 
           return value;
+        }
 
         case 'number':
           const numberDecimals = getDecimals(0);
@@ -6695,6 +8728,13 @@ const TableManager = {
   },
 
   // Get sort parameters for API
+  /**
+   * Builds the sort query parameters from the sort state, in the compact
+   * 'name asc,status desc' form the URL uses.
+   *
+   * @param {Object} table - Table instance
+   * @returns {Object} Sort parameters
+   */
   getSortParams(table) {
     const params = {};
 
@@ -6712,6 +8752,12 @@ const TableManager = {
   },
 
   // Get pagination parameters for API
+  /**
+   * Builds the page and pageSize query parameters.
+   *
+   * @param {Object} table - Table instance
+   * @returns {Object} Pagination parameters
+   */
   getPaginationParams(table) {
     const params = {};
 
@@ -6730,6 +8776,13 @@ const TableManager = {
     return params;
   },
 
+  /**
+   * Builds the filter query parameters, leaving out the pagination, sort and
+   * total keys that are not filters.
+   *
+   * @param {Object} table - Table instance
+   * @returns {Object} Filter parameters
+   */
   getFilterParams(table) {
     const params = {};
     const excludeKeys = ['page', 'pageSize', 'search', 'total', 'totalPages', 'sort', 'order'];
@@ -6740,7 +8793,15 @@ const TableManager = {
         const value = table.config.params[key];
         // Only include non-null/undefined values (allow empty strings)
         if (value !== null && value !== undefined) {
-          params[key] = value;
+          // A filter is a scalar. An array or an object here is response data
+          // that found its way into params, and stringifying it produces
+          // `key=[object Object]` in the query string — which is how a URL grows
+          // until the parameters that matter can no longer be seen or set.
+          // Filtered at the source too (see the meta merge in updateTableData);
+          // this is the second gate, because params can be written from several places.
+          if (typeof value !== 'object') {
+            params[key] = value;
+          }
         }
       }
     });
@@ -6748,6 +8809,17 @@ const TableManager = {
     return params;
   },
 
+  /**
+   * Exports the rows of a table as a file.
+   *
+   * A server-side table asks its endpoint for the export so every page is
+   * included; a client-side one builds the file from the data it holds.
+   *
+   * @param {string} tableId - Table id
+   * @param {string} [format='csv'] - Export format
+   * @param {Object} [options={}] - Export options
+   * @returns {Promise<void|*>} The result of handleError() when the table is unknown
+   */
   async exportData(tableId, format = 'csv', options = {}) {
     const table = this.state.tables.get(tableId);
     if (!table) {
@@ -6906,6 +8978,14 @@ const TableManager = {
     }
   },
 
+  /**
+   * Hands a blob to the browser as a download and releases the object URL
+   * afterwards.
+   *
+   * @param {Blob} blob - Content to download
+   * @param {string} filename - Name to save it as
+   * @returns {void}
+   */
   downloadBlob(blob, filename) {
     try {
       const url = window.URL.createObjectURL(blob);
@@ -6923,6 +9003,12 @@ const TableManager = {
     }
   },
 
+  /**
+   * Clears the registry and configuration, returning the manager to its
+   * pre-init state. Used by the tests.
+   *
+   * @returns {void}
+   */
   resetState() {
     this.state = {
       initialized: false,

@@ -12,7 +12,8 @@ class TextElementFactory extends ElementFactory {
       delay: 300,
       level: null,
       dependent: null,
-      callback: null
+      callback: null,
+      fill: null
     },
     validationMessages: {
       email: 'Please enter a valid email address',
@@ -32,7 +33,7 @@ class TextElementFactory extends ElementFactory {
         return element.value;
       },
       set(instance, newValue) {
-        const {element} = instance;
+        const { element } = instance;
 
         // Hierarchy inputs: delegate to HierarchicalTextFactory which resolves code → display name
         if (element.hasAttribute('data-hierarchy') && window.HierarchicalTextFactory) {
@@ -80,6 +81,15 @@ class TextElementFactory extends ElementFactory {
     }
   };
 
+  /**
+   * Normalize one option into the standard `{value, text}` shape.
+   *
+   * The value is looked up as `value` → `id` → `key`, and the text as `text` →
+   * `label` → `name`, so differently-shaped API payloads work without conversion.
+   *
+   * @param {Object} value - The raw option.
+   * @returns {Object|null} - `{value, text}`, or null when it is not an object.
+   */
   static normalizeOptionValue(value) {
     if (!value || Array.isArray(value) || typeof value !== 'object') {
       return null;
@@ -115,6 +125,14 @@ class TextElementFactory extends ElementFactory {
     }
   };
 
+  /**
+   * Read the autocomplete settings the element declares through data attributes.
+   *
+   * @param {HTMLElement} element - The input being configured.
+   * @param {Object} def - The defaults for this type.
+   * @param {DOMStringMap} dataset - The element’s `data-*` attributes.
+   * @returns {Object} - The config for this element.
+   */
   static extractCustomConfig(element, def, dataset) {
     return {
       autocomplete: {
@@ -126,7 +144,8 @@ class TextElementFactory extends ElementFactory {
         level: dataset.hierarchy || dataset.level || def.autocomplete?.level,
         dependent: dataset.dependent || def.autocomplete?.dependent,
         depends: dataset.depends || def.autocomplete?.depends || null, // comma-separated field names for dependent filtering
-        callback: dataset.callback ? window[dataset.callback] : def.autocomplete?.callback
+        callback: dataset.callback ? window[dataset.callback] : def.autocomplete?.callback,
+        fill: dataset.fill || def.autocomplete?.fill // fields to fill from the selected item
       },
       formatter: dataset.formatter ? window[dataset.formatter] : def.formatter,
       // Hierarchical search configuration
@@ -135,8 +154,17 @@ class TextElementFactory extends ElementFactory {
     };
   }
 
+  /**
+   * Prepare the input with autocomplete and a hidden input holding the real value.
+   *
+   * Options set before the element was enhanced are held in
+   * `data-pending-options` and applied here.
+   *
+   * @param {Object} instance - element instance
+   * @returns {void}
+   */
   static setupElement(instance) {
-    const {config, element} = instance;
+    const { config, element } = instance;
     const acConfig = config.autocomplete;
 
     // Check for pending options (stored before element was enhanced)
@@ -190,7 +218,7 @@ class TextElementFactory extends ElementFactory {
             }
           }
         }
-      } catch (e) {}
+      } catch (e) { }
     }
 
     // Initialize from existing value (if any)
@@ -200,10 +228,10 @@ class TextElementFactory extends ElementFactory {
     }
 
     // Default stubs for autocomplete methods (will be overwritten by setupAutocomplete)
-    instance.hide = () => {};
-    instance.highlightItem = () => {};
-    instance.populate = () => {};
-    instance.selectItem = () => {};
+    instance.hide = () => { };
+    instance.highlightItem = () => { };
+    instance.populate = () => { };
+    instance.selectItem = () => { };
     instance.escapeRegExp = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
     // Initialize autocomplete if configured
@@ -212,7 +240,7 @@ class TextElementFactory extends ElementFactory {
     }
 
     // Validation
-    instance.validateSpecific = function(value) {
+    instance.validateSpecific = function (value) {
       const validators = {
         ...TextElementFactory.validators,
         ...(window.validators || {}),
@@ -247,7 +275,7 @@ class TextElementFactory extends ElementFactory {
 
     // Provide a destroy hook to clean up DOM nodes created by this factory
     const originalDestroy = instance.destroy;
-    instance.destroy = function() {
+    instance.destroy = function () {
       try {
         // Hide dropdown panel if open
         if (this.dropdownPanel?.isOpen() && this.dropdownPanel.currentTarget === element) {
@@ -268,22 +296,22 @@ class TextElementFactory extends ElementFactory {
             if (formEl && window.FormManager && typeof FormManager.getInstanceByElement === 'function') {
               const formInstance = FormManager.getInstanceByElement(formEl);
               if (formInstance && formInstance.elements && formInstance.elements.has(hiddenName)) {
-                try {formInstance.elements.delete(hiddenName);} catch (e) {}
+                try { formInstance.elements.delete(hiddenName); } catch (e) { }
               }
             }
-          } catch (e) {}
+          } catch (e) { }
 
           this.hiddenInput.parentNode.removeChild(this.hiddenInput);
           this.hiddenInput = null;
         }
         // If HierarchicalTextFactory registered this instance, try to unregister
-        try {if (window.HierarchicalTextFactory && typeof HierarchicalTextFactory.unregister === 'function') HierarchicalTextFactory.unregister(this);} catch (e) {}
+        try { if (window.HierarchicalTextFactory && typeof HierarchicalTextFactory.unregister === 'function') HierarchicalTextFactory.unregister(this); } catch (e) { }
       } catch (err) {
         console.warn('Error during TextElementFactory.destroy', err);
       }
 
       if (typeof originalDestroy === 'function') {
-        try {originalDestroy.call(this);} catch (e) {console.warn('Original destroy threw', e);}
+        try { originalDestroy.call(this); } catch (e) { console.warn('Original destroy threw', e); }
       }
 
       return this;
@@ -292,6 +320,12 @@ class TextElementFactory extends ElementFactory {
     return instance;
   }
 
+  /**
+   * Read options from the `<datalist>` the input points at with `list`.
+   *
+   * @param {HTMLElement} element - The input carrying a `list` attribute.
+   * @returns {Array|null} - The option list, or null when there is no datalist.
+   */
   static readFromDatalist(element) {
     const listId = element.getAttribute('list');
     if (!listId) return null;
@@ -305,7 +339,7 @@ class TextElementFactory extends ElementFactory {
     options.forEach(option => {
       const text = option.label || option.textContent;
       const key = option.value || text;
-      data.push({value: key, text});
+      data.push({ value: key, text });
     });
 
     element.removeAttribute('list');
@@ -313,8 +347,18 @@ class TextElementFactory extends ElementFactory {
     return data.length > 0 ? data : null;
   }
 
+  /**
+   * Set the input’s initial value and find the text that matches it.
+   *
+   * The submitted value lives in the hidden input while the visible input shows the
+   * text, so the value-text pair has to be resolved from the source first.
+   *
+   * @param {Object} instance - element instance
+   * @param {*} initialValue - The initial value.
+   * @returns {void}
+   */
   static setInitialValue(instance, initialValue) {
-    const {config, element, hiddenInput} = instance;
+    const { config, element, hiddenInput } = instance;
     const acConfig = config.autocomplete;
 
     if (acConfig.source) {
@@ -337,11 +381,20 @@ class TextElementFactory extends ElementFactory {
     hiddenInput.value = '';
   }
 
+  /**
+   * Attach the autocomplete system to the input.
+   *
+   * @param {Object} instance - element instance
+   * @returns {void}
+   */
   static setupAutocomplete(instance) {
-    const {element, config, hiddenInput} = instance;
+    const { element, config, hiddenInput } = instance;
     const acConfig = config.autocomplete;
 
     instance.selectedValue = null;
+    instance.selectedItem = null;
+    instance._fillMap = TextElementFactory.parseFillMap(acConfig.fill);
+    instance._filledFields = [];
 
     // Use DropdownPanel instead of creating dropdown element
     instance.dropdownPanel = DropdownPanel.getInstance();
@@ -371,6 +424,8 @@ class TextElementFactory extends ElementFactory {
         // Apply search filter
         if (!search || filter.test(item.text)) {
           const li = instance.createListItem(item.value, item.text, search);
+          // Keep the whole source item so `data-fill` can read its extra properties
+          li._sourceItem = item;
           instance.list.push(li);
           instance.dropdown.appendChild(li);
           count++;
@@ -414,7 +469,7 @@ class TextElementFactory extends ElementFactory {
         // - string -> if it contains HTML tags, set innerHTML, otherwise set textContent
         // - array -> append each item (string or Node)
         try {
-          const result = acConfig.callback({key, value, search, level: acConfig.level});
+          const result = acConfig.callback({ key, value, search, level: acConfig.level });
 
           const appendStringSafely = (str) => {
             const wrapper = document.createElement('div');
@@ -519,10 +574,10 @@ class TextElementFactory extends ElementFactory {
           displayValue: element.value
         };
         // Dispatch change on visible input for UI listeners
-        element.dispatchEvent(new Event('change', {bubbles: true}));
+        element.dispatchEvent(new Event('change', { bubbles: true }));
         try {
-          instance.hiddenInput && instance.hiddenInput.dispatchEvent(new Event('change', {bubbles: true}));
-        } catch (err) {}
+          instance.hiddenInput && instance.hiddenInput.dispatchEvent(new Event('change', { bubbles: true }));
+        } catch (err) { }
         // Call onChange callback if provided
         try {
           if (config && typeof config.onChange === 'function') {
@@ -538,6 +593,9 @@ class TextElementFactory extends ElementFactory {
       element.value = value;
       hiddenInput.value = key;
       instance.selectedValue = key;
+      instance.selectedItem = selectedLi?._sourceItem || null;
+      // Copy the other properties of the selected item into the fields data-fill points at
+      TextElementFactory.fillRelatedFields(instance, instance.selectedItem);
       instance.hide();
       instance._lastAutocompleteSelectionChange = {
         timestamp: Date.now(),
@@ -545,12 +603,12 @@ class TextElementFactory extends ElementFactory {
         displayValue: element.value
       };
       // Dispatch change on visible input for UI listeners
-      element.dispatchEvent(new Event('change', {bubbles: true}));
+      element.dispatchEvent(new Event('change', { bubbles: true }));
       // Also dispatch change on hidden input so FormManager detects the actual
       // submitted field name (the hidden input holds the real value/key)
       try {
-        instance.hiddenInput && instance.hiddenInput.dispatchEvent(new Event('change', {bubbles: true}));
-      } catch (err) {}
+        instance.hiddenInput && instance.hiddenInput.dispatchEvent(new Event('change', { bubbles: true }));
+      } catch (err) { }
       if (instance.manager) instance.manager.onSelectionChange(instance);
       // Call onChange callback if provided
       try {
@@ -561,6 +619,280 @@ class TextElementFactory extends ElementFactory {
         console.warn('Error in onChange handler (selectItem):', err);
       }
     };
+  }
+
+  /**
+   * Reserved keys of the autocomplete protocol, never auto-filled.
+   *
+   * `value`/`text`/`label`/`key`/`options` describe the suggestion itself, and
+   * `id` almost always means the record the API returned, not the record the
+   * form is editing — auto-filling it would overwrite the form's own id.
+   * `data-fill` can still map any of them on purpose.
+   */
+  static fillReservedKeys = ['value', 'text', 'label', 'key', 'options', 'id'];
+
+  /**
+   * Input types that hold no fillable value.
+   */
+  static fillSkipTypes = ['file', 'submit', 'button', 'reset', 'image'];
+
+  /**
+   * Read the `data-fill` setting.
+   *
+   * Three notations are accepted:
+   * - `"false"` / `"none"` / `"off"` → auto-fill disabled for this input
+   * - list: `"topic, price:unit_price"` → field `topic` takes the item's `topic`
+   *   property, field `price` takes its `unit_price` property
+   * - JSON: `'{"topic":"topic","price":"unit_price"}'` → same mapping
+   *
+   * With no `data-fill` at all the mapping is derived from the item itself: every
+   * property is written to the field of the same id or name.
+   *
+   * @param {string|Object} fill - The raw `data-fill` value.
+   * @returns {Array<Object>|false|null} - `[{target, prop}]` for an explicit map,
+   *   false when auto-fill is turned off, null when nothing is declared.
+   */
+  static parseFillMap(fill) {
+    if (fill === false) return false;
+    if (!fill) return null;
+
+    let map = fill;
+    if (typeof fill === 'string') {
+      const text = fill.trim();
+      if (!text) return null;
+      if (['false', 'none', 'off', '0'].includes(text.toLowerCase())) return false;
+
+      if (text.startsWith('{')) {
+        try {
+          map = JSON.parse(text);
+        } catch (e) {
+          console.warn('[TextElementFactory] Invalid data-fill JSON:', fill);
+          return null;
+        }
+      } else {
+        map = {};
+        text.split(',').forEach(pair => {
+          const [target, prop] = pair.split(':').map(part => (part || '').trim());
+          if (target) map[target] = prop || target;
+        });
+      }
+    }
+
+    if (!map || typeof map !== 'object') return null;
+
+    const entries = Object.entries(map)
+      .filter(([target]) => target)
+      .map(([target, prop]) => ({target: String(target), prop: String(prop || target)}));
+
+    return entries.length ? entries : null;
+  }
+
+  /**
+   * Work out which fields the selected item should fill.
+   *
+   * An explicit `data-fill` map wins. Without one, the item's own properties are
+   * the map: each property fills the field carrying the same id or name, which
+   * lets the API decide what a selection fills without touching the markup.
+   *
+   * @param {Object} instance - Element instance that owns the autocomplete.
+   * @param {Object} item - The selected source item.
+   * @returns {Array<Object>} - `[{target, prop}]`, empty when there is nothing to fill.
+   */
+  static resolveFillEntries(instance, item) {
+    if (instance._fillMap === false) return [];
+    if (instance._fillMap) return instance._fillMap;
+    if (!item || typeof item !== 'object') return [];
+
+    return Object.keys(item)
+      .filter(key => !this.fillReservedKeys.includes(key))
+      .filter(key => {
+        const value = item[key];
+        return value === null || typeof value !== 'object';
+      })
+      .map(key => ({target: key, prop: key}));
+  }
+
+  /**
+   * Escape a value so it can be used inside an attribute selector.
+   *
+   * @param {string} value - Raw attribute value.
+   * @returns {string} - The escaped value.
+   */
+  static escapeAttrValue(value) {
+    return String(value).replace(/(["\\])/g, '\\$1');
+  }
+
+  /**
+   * Find the element a fill target name refers to.
+   *
+   * The id is tried first — that is the element the page author sees — then the
+   * visible field, because an autocomplete target renames its own input to
+   * `name_text` and keeps the plain name on its hidden input; writing to the
+   * hidden one alone would leave stale text on screen.
+   *
+   * @param {Element|Document} container - Form the search is limited to.
+   * @param {string} name - Target id or field name.
+   * @returns {HTMLElement|null} - The element, or null when the form has no such target.
+   */
+  static resolveFillTarget(container, name) {
+    if (!container || !name) return null;
+
+    const escaped = this.escapeAttrValue(name);
+    const asId = (window.CSS && typeof CSS.escape === 'function') ? CSS.escape(name) : escaped;
+
+    const selectors = [
+      `#${asId}`,
+      `[name="${escaped}"]:not([type="hidden"])`,
+      `[name="${escaped}_text"]`,
+      `[name="${escaped}"]`
+    ];
+
+    for (const selector of selectors) {
+      let field = null;
+      try {
+        field = container.querySelector(selector);
+      } catch (e) {
+        continue;
+      }
+      if (field) return field;
+    }
+
+    return null;
+  }
+
+  /**
+   * Write one value into a target element.
+   *
+   * Every element type is handled: a checkbox is ticked by the truthiness of the
+   * value, a radio group selects the member whose value matches, a multiple
+   * select selects each value in a list, an enhanced field is written through its
+   * instance so its own display and hidden value stay in step, and an element
+   * that is not a form control receives text — which is how a read-only display
+   * node gets filled.
+   *
+   * @param {HTMLElement} field - Element to write to.
+   * @param {*} value - Value to write; null/undefined clears it.
+   * @returns {boolean} - True when the element was written to.
+   */
+  static setFillValue(field, value) {
+    if (!field) return false;
+
+    const newValue = value == null ? '' : value;
+
+    if (field instanceof HTMLInputElement) {
+      const type = (field.getAttribute('type') || field.type || 'text').toLowerCase();
+
+      if (this.fillSkipTypes.includes(type)) return false;
+
+      if (type === 'checkbox') {
+        field.checked = !['', '0', 'false', 'null', 'undefined'].includes(String(newValue).toLowerCase());
+        field.dispatchEvent(new Event('change', {bubbles: true}));
+        return true;
+      }
+
+      if (type === 'radio') {
+        const name = field.getAttribute('name');
+        const scope = field.form || field.ownerDocument || document;
+        const group = name
+          ? scope.querySelectorAll(`input[type="radio"][name="${this.escapeAttrValue(name)}"]`)
+          : [field];
+
+        group.forEach(radio => {
+          radio.checked = String(radio.value) === String(newValue);
+        });
+        field.dispatchEvent(new Event('change', {bubbles: true}));
+        return true;
+      }
+    }
+
+    if (field instanceof HTMLSelectElement && field.multiple) {
+      const wanted = (Array.isArray(newValue) ? newValue : String(newValue).split(','))
+        .map(entry => String(entry).trim());
+
+      Array.from(field.options).forEach(option => {
+        option.selected = wanted.includes(String(option.value));
+      });
+      field.dispatchEvent(new Event('change', {bubbles: true}));
+      return true;
+    }
+
+    const isFormControl = field instanceof HTMLInputElement ||
+      field instanceof HTMLSelectElement ||
+      field instanceof HTMLTextAreaElement;
+
+    if (!isFormControl) {
+      field.textContent = Array.isArray(newValue) ? newValue.join(', ') : newValue;
+      return true;
+    }
+
+    const instance = window.ElementManager?.getInstanceByElement?.(field);
+    if (instance) {
+      try {
+        instance.value = newValue;
+      } catch (e) {
+        field.value = newValue;
+      }
+    } else {
+      field.value = newValue;
+    }
+
+    field.dispatchEvent(new Event('change', {bubbles: true}));
+    return true;
+  }
+
+  /**
+   * Copy the selected item into the elements that match its property names.
+   *
+   * Only elements inside the same form are written to, so two forms on one page
+   * do not fill each other. Elements filled by the previous selection that this
+   * one does not cover are emptied, so no field keeps showing data belonging to
+   * an item that is no longer selected.
+   *
+   * @param {Object} instance - Element instance that owns the autocomplete.
+   * @param {Object|null} item - The selected source item, or null to clear.
+   * @returns {void}
+   */
+  static fillRelatedFields(instance, item) {
+    const previous = instance._filledFields || [];
+    const entries = this.resolveFillEntries(instance, item);
+    const container = instance.element.closest('form') || document;
+    const filled = [];
+
+    entries.forEach(({target, prop}) => {
+      const field = this.resolveFillTarget(container, target);
+      if (!field || field === instance.element || field === instance.hiddenInput) return;
+      if (filled.includes(field)) return;
+
+      if (this.setFillValue(field, item ? item[prop] : '')) {
+        filled.push(field);
+      }
+    });
+
+    // Empty what the previous selection filled and this one no longer covers
+    previous.forEach(field => {
+      if (!filled.includes(field) && field.isConnected) {
+        this.setFillValue(field, '');
+      }
+    });
+
+    instance._filledFields = filled;
+  }
+
+  /**
+   * Empty every element the last selection filled.
+   *
+   * @param {Object} instance - Element instance that owns the autocomplete.
+   * @returns {void}
+   */
+  static clearRelatedFields(instance) {
+    const previous = instance._filledFields;
+    if (!previous || !previous.length) return;
+
+    previous.forEach(field => {
+      if (field.isConnected) this.setFillValue(field, '');
+    });
+
+    instance._filledFields = [];
   }
 
   /**
@@ -589,6 +921,17 @@ class TextElementFactory extends ElementFactory {
     return params.length ? '&' + params.join('&') : '';
   }
 
+  /**
+   * Fetch options from an endpoint through HttpClient.
+   *
+   * **`window.http` is required** with no fallback — when it is missing an error is
+   * logged and the user is told through an alert to refresh the page.
+   *
+   * @param {Object} instance - element instance
+   * @param {string} url - The target URL.
+   * @param {string} [query=''] - The search term sent along.
+   * @returns {void}
+   */
   static loadFromAjax(instance, url, query = '') {
     // Use HttpClient only - no fallback
     if (!window.http || typeof window.http.get !== 'function') {
@@ -610,7 +953,7 @@ class TextElementFactory extends ElementFactory {
       requestUrl = `${url}${separator}${dependsParams.substring(1)}`;
     }
 
-    window.http.get(requestUrl, {throwOnError: false})
+    window.http.get(requestUrl, { throwOnError: false })
       .then(resp => {
         if (resp && resp.success) {
           instance.populate(resp.data);
@@ -628,7 +971,7 @@ class TextElementFactory extends ElementFactory {
    * Searches across all related hierarchical data and displays in format: "province => district => subdistrict"
    */
   static searchHierarchical(instance, query) {
-    const {config, element} = instance;
+    const { config, element } = instance;
 
     if (!config.searchApi || !config.searchField) {
       console.warn('[TextElementFactory] searchApi or searchField not configured');
@@ -645,7 +988,7 @@ class TextElementFactory extends ElementFactory {
     formData.append('query', query);
     formData.append('field', config.searchField);
 
-    window.http.post(config.searchApi, formData, {throwOnError: false})
+    window.http.post(config.searchApi, formData, { throwOnError: false })
       .then(resp => {
         if (resp && resp.success && resp.data) {
           // Handle nested API response structure: {success, message, code, data: {results: [...]}}
@@ -674,7 +1017,7 @@ class TextElementFactory extends ElementFactory {
    * Populate dropdown with hierarchical search results
    */
   static populateHierarchical(instance, data) {
-    const {element, config} = instance;
+    const { element, config } = instance;
     const acConfig = config.autocomplete;
 
     if (document.activeElement !== element && !instance._isActive) return;
@@ -704,7 +1047,7 @@ class TextElementFactory extends ElementFactory {
    * Populates all related fields (province, district, subdistrict, zipcode) at once
    */
   static selectHierarchicalItem(instance, value, text) {
-    const {element, config, hiddenInput} = instance;
+    const { element, config, hiddenInput } = instance;
 
     // Find the hierarchical data from the selected item
     const selectedItem = instance.list.find(li => li.dataset.key === value);
@@ -772,16 +1115,22 @@ class TextElementFactory extends ElementFactory {
       };
 
       // Dispatch change event
-      element.dispatchEvent(new Event('change', {bubbles: true}));
-      hiddenInput && hiddenInput.dispatchEvent(new Event('change', {bubbles: true}));
+      element.dispatchEvent(new Event('change', { bubbles: true }));
+      hiddenInput && hiddenInput.dispatchEvent(new Event('change', { bubbles: true }));
 
     } catch (err) {
       console.error('[TextElementFactory] Error parsing hierarchical data:', err);
     }
   }
 
+  /**
+   * Attach the input handlers, building on ElementFactory.
+   *
+   * @param {Object} instance - element instance
+   * @returns {void}
+   */
   static setupEventListeners(instance) {
-    const {element, config, hiddenInput} = instance;
+    const { element, config, hiddenInput } = instance;
     const acConfig = config.autocomplete;
 
     super.setupEventListeners(instance);
@@ -822,6 +1171,10 @@ class TextElementFactory extends ElementFactory {
         hiddenInput.value = value;
       }
       instance.selectedValue = null;
+      instance.selectedItem = null;
+      // The typed text no longer belongs to a selected item, so the fields it
+      // filled must not keep showing the previous item's data
+      TextElementFactory.clearRelatedFields(instance);
       delete instance._lastAutocompleteSelectionChange;
 
       debounce(value);
@@ -923,6 +1276,15 @@ class TextElementFactory extends ElementFactory {
     });
   }
 
+  /**
+   * Replace the input’s option list.
+   *
+   * Grouped options are flattened first.
+   *
+   * @param {HTMLElement} element - The input to update.
+   * @param {Array|Object} options - The new set of options.
+   * @returns {void}
+   */
   static updateOptions(element, options) {
     const normalizedOptions = Utils.options?.flattenGroups
       ? Utils.options.flattenGroups(Utils.options.normalizeSource(options))
@@ -950,6 +1312,14 @@ class TextElementFactory extends ElementFactory {
     }
   }
 
+  /**
+   * Fill one input with options taken from a keyed data set.
+   *
+   * @param {HTMLElement} element - The input to fill.
+   * @param {Object} optionsData - The full option data set.
+   * @param {string} optionsKey - The key naming which set to use.
+   * @returns {void}
+   */
   static populateFromOptions(element, optionsData, optionsKey) {
     if (!element || !optionsData || !optionsKey) return;
 
@@ -996,6 +1366,15 @@ class TextElementFactory extends ElementFactory {
     }
   }
 
+  /**
+   * Fill every input carrying `data-options-key` inside a container.
+   *
+   * Use it after injecting fresh markup, to populate everything in one pass.
+   *
+   * @param {HTMLElement} container - The container to search for inputs.
+   * @param {Object} optionsData - The full option data set.
+   * @returns {void}
+   */
   static populateFromOptionsInContainer(container, optionsData) {
     if (!container || !optionsData) return;
 
@@ -1223,14 +1602,31 @@ class HierarchicalTextFactory extends ElementFactory {
   // Group management
   // ---------------------------------------------------------------------------
 
+  /**
+   * Find an instance’s group, using the form it sits in as the divider.
+   *
+   * An input outside any form joins the `document.body` group, so separate forms
+   * on one page keep their own independent hierarchies.
+   *
+   * @param {Object} instance - element instance
+   * @returns {Object} - The group’s `{instances, dataCache}`.
+   */
   static getGroup(instance) {
     const form = instance.element.closest('form') || document.body;
     if (!this.groups.has(form)) {
-      this.groups.set(form, {instances: [], dataCache: null});
+      this.groups.set(form, { instances: [], dataCache: null });
     }
     return this.groups.get(form);
   }
 
+  /**
+   * Register an instance into its group and start loading data if none is loaded.
+   *
+   * Registration order is the hierarchy: whoever registers first sits higher.
+   *
+   * @param {Object} instance - element instance
+   * @returns {void}
+   */
   static register(instance) {
     instance.manager = this;
     const group = this.getGroup(instance);
@@ -1249,6 +1645,15 @@ class HierarchicalTextFactory extends ElementFactory {
     }
   }
 
+  /**
+   * Load the hierarchy data set into the cache shared across the class.
+   *
+   * Accepts either a variable name on `window` or the data itself, then works out
+   * whether it is the name form or the code form.
+   *
+   * @param {string|Object} source - A variable name on window, or the data itself.
+   * @returns {void}
+   */
   static loadData(source) {
     if (typeof source === 'string' && window[source]) {
       this.dataCache = window[source];
@@ -1272,7 +1677,7 @@ class HierarchicalTextFactory extends ElementFactory {
       };
 
       if (window.http && typeof window.http.get === 'function') {
-        window.http.get(source, {throwOnError: false})
+        window.http.get(source, { throwOnError: false })
           .then(resp => {
             const data = (resp && resp.success && resp.data) ? resp.data
               : (resp && !resp.success && resp.data) ? resp.data : null;
@@ -1281,15 +1686,23 @@ class HierarchicalTextFactory extends ElementFactory {
           })
           .catch(err => console.error('[HierarchicalTextFactory] Error loading:', err));
       } else {
-        const requestOptions = Now.applyRequestLanguage({method: 'GET'});
+        const requestOptions = Now.applyRequestLanguage({ method: 'GET' });
         fetch(source, requestOptions)
-          .then(r => {if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json();})
+          .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
           .then(onLoaded)
           .catch(err => console.error('[HierarchicalTextFactory] Error loading:', err));
       }
     }
   }
 
+  /**
+   * Spread the loaded cache to every group and clear the pending values.
+   *
+   * A value set before the data arrived waits in `_pendingCodeValue` and is applied
+   * here, so setting a value before loading finishes is never lost.
+   *
+   * @returns {void}
+   */
   static syncDataToGroups() {
     this.groups.forEach(group => {
       group.dataCache = this.dataCache;
@@ -1303,18 +1716,46 @@ class HierarchicalTextFactory extends ElementFactory {
     });
   }
 
+  /**
+   * Every instance in the same group, ordered by hierarchy level.
+   *
+   * @param {Object} instance - element instance
+   * @returns {Array<Object>} - The instances in the group.
+   */
   static getInstancesInGroup(instance) {
     return this.getGroup(instance).instances;
   }
 
+  /**
+   * An instance’s level within its group.
+   *
+   * @param {Object} instance - element instance
+   * @returns {number} - The zero-based level, or -1 when not found.
+   */
   static getLevelInGroup(instance) {
     return this.getInstancesInGroup(instance).findIndex(inst => inst === instance);
   }
 
+  /**
+   * Pick the instance at a given level in the same group.
+   *
+   * @param {Object} instance - The instance identifying the group.
+   * @param {number} level - The level wanted.
+   * @returns {Object|undefined} - The instance at that level.
+   */
   static getInstanceByLevelInGroup(instance, level) {
     return this.getInstancesInGroup(instance)[level];
   }
 
+  /**
+   * Clear the levels below when a level above changes.
+   *
+   * Picking a new province must drop the district and sub-district already chosen,
+   * otherwise the combination would be inconsistent.
+   *
+   * @param {Object} changedInstance - The instance whose value just changed.
+   * @returns {void}
+   */
   static onSelectionChange(changedInstance) {
     const instances = this.getInstancesInGroup(changedInstance);
     const level = instances.findIndex(inst => inst === changedInstance);
@@ -1335,6 +1776,16 @@ class HierarchicalTextFactory extends ElementFactory {
   // Search
   // ---------------------------------------------------------------------------
 
+  /**
+   * Search one level’s options, narrowed by what the levels above have selected.
+   *
+   * The top level (level 0) searches everything; lower levels search only under
+   * the values their parents already picked.
+   *
+   * @param {Object} instance - The instance doing the search.
+   * @param {string} query - The search term.
+   * @returns {void}
+   */
   static search(instance, query) {
     const instances = this.getInstancesInGroup(instance);
     const level = instances.findIndex(inst => inst === instance);
@@ -1374,6 +1825,18 @@ class HierarchicalTextFactory extends ElementFactory {
   // Reverse search (type in child field without selecting parents first)
   // ---------------------------------------------------------------------------
 
+  /**
+   * Search from a lower level upward, filling the levels above automatically.
+   *
+   * The user can type a sub-district straight away without picking a province and
+   * district first; the levels above are filled in from the chosen result.
+   *
+   * @param {Object} instance - The instance doing the search.
+   * @param {string} query - The search term.
+   * @param {number} targetLevel - The level the user typed into.
+   * @param {number} totalLevels - The total number of levels in the group.
+   * @returns {void}
+   */
   static reverseSearch(instance, query, targetLevel, totalLevels) {
     if (!query || !this.dataCache) return;
 
@@ -1437,6 +1900,16 @@ class HierarchicalTextFactory extends ElementFactory {
   // Handle selection from reverse search
   // ---------------------------------------------------------------------------
 
+  /**
+   * Fill every level from the result the user picked in a reverse search.
+   *
+   * Uses the data `reverseSearch` parked in `_pendingReverseData`.
+   *
+   * @param {Object} instance - The instance the user selected in.
+   * @param {string} key - The selected value.
+   * @param {string} value - The text shown.
+   * @returns {void}
+   */
   static handleReverseSelection(instance, key, value) {
     const instances = this.getInstancesInGroup(instance);
     const results = instance._pendingReverseData;
@@ -1447,7 +1920,7 @@ class HierarchicalTextFactory extends ElementFactory {
     let matchedResult = null;
     for (const item of results) {
       const itemKey = item.isLeaf ? item.key : [...item.path, item.key].join('||');
-      if (itemKey === key) {matchedResult = item; break;}
+      if (itemKey === key) { matchedResult = item; break; }
     }
     if (!matchedResult) return;
 
@@ -1489,6 +1962,12 @@ class HierarchicalTextFactory extends ElementFactory {
     instance._pendingReverseTotalLevels = null;
   }
 
+  /**
+   * Check whether this selection came from a reverse search.
+   *
+   * @param {Object} instance - element instance
+   * @returns {boolean} - true when reverse-search data is still pending.
+   */
   static isReverseSearchSelection(instance) {
     return instance._pendingReverseData != null;
   }

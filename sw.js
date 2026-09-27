@@ -14,7 +14,9 @@ let config = {
   precacheUrls: ['/', '/index.html'],
   cachePatterns: ['\\.js$', '\\.css$', '\\.html$', '\\.json$', '\\.png$', '\\.webp$', '\\.jpe?g$', '\\.svg$', '\\.woff2?$', '\\.ttf$'],
   networkFirstPatterns: [],
-  excludeFromCachePatterns: [],
+  // API responses are per-session (CSRF tokens, auth state): replaying one
+  // from cache hands the page a token the server no longer knows -> 419.
+  excludeFromCachePatterns: ['/api/'],
   strategies: {},
   push: {
     enabled: false,

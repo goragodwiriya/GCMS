@@ -18,7 +18,8 @@ namespace Board\Action;
 class Model
 {
     /**
-     * Delete a reply
+     * Delete a reply: removes its attached image (if any) and refreshes
+     * the parent topic's comments/comment_id/commentator_id/comment_date.
      *
      * @param int $reply_id
      * @param int $module_id
@@ -27,11 +28,31 @@ class Model
      */
     public static function deleteReply($reply_id, $module_id)
     {
-        return \Kotchasan\DB::create()->delete('board_r', [['id', $reply_id], ['module_id', $module_id]]);
+        $db = \Kotchasan\DB::create();
+        $reply = $db->first('board_r', [['id', $reply_id], ['module_id', $module_id]]);
+        if (!$reply) {
+            return 0;
+        }
+
+        // Remove the attached image, if any
+        if (!empty($reply->picture)) {
+            $path = ROOT_PATH.DATA_FOLDER.'board/'.$reply->picture;
+            if (is_file($path)) {
+                unlink($path);
+            }
+        }
+
+        $rowDelete = $db->delete('board_r', [['id', $reply_id], ['module_id', $module_id]]);
+
+        if ($rowDelete) {
+            self::refreshTopicCommentSummary($reply->index_id, $module_id);
+        }
+
+        return $rowDelete;
     }
 
     /**
-     * Delete a topic and all its replies
+     * Delete a topic, all its replies, and every attached image (topic + replies).
      *
      * @param int $id
      * @param int $module_id
@@ -41,10 +62,43 @@ class Model
     public static function deleteTopic($id, $module_id)
     {
         $db = \Kotchasan\DB::create();
+
+        $topic = $db->first('board_q', [['id', $id], ['module_id', $module_id]]);
+        if ($topic && !empty($topic->picture)) {
+            $path = ROOT_PATH.DATA_FOLDER.'board/'.$topic->picture;
+            if (is_file($path)) {
+                unlink($path);
+            }
+        }
+
+        $replies = $db->select('board_r', [['index_id', $id], ['module_id', $module_id]], [], ['picture']);
+        foreach ($replies as $reply) {
+            if (!empty($reply->picture)) {
+                $path = ROOT_PATH.DATA_FOLDER.'board/'.$reply->picture;
+                if (is_file($path)) {
+                    unlink($path);
+                }
+            }
+        }
+
         $rowDelete = $db->delete('board_q', [['id', $id], ['module_id', $module_id]]);
         $db->delete('board_r', [['index_id', $id], ['module_id', $module_id]], 0);
 
         return $rowDelete;
+    }
+
+    /**
+     * Recalculate a topic's comments/comment_id/commentator_id/comment_date
+     * from the current board_r rows. Call after adding or removing a reply.
+     *
+     * @param int $topic_id
+     * @param int $module_id
+     *
+     * @return void
+     */
+    public static function refreshTopicCommentSummary($topic_id, $module_id)
+    {
+        \Index\Comments\Model::refreshSummary('board_q', 'board_r', $topic_id, $module_id);
     }
 
     /**

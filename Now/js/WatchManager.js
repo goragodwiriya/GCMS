@@ -1,4 +1,24 @@
+/**
+ * WatchManager
+ *
+ * Runs the `watch` half of Now.js reactivity: given a component instance and its
+ * reactive state, it tracks dotted paths and calls back when the value at a path
+ * changes. Comparison is structural, so replacing state with an equivalent object
+ * does not fire watchers.
+ */
 const WatchManager = {
+  /**
+   * Register watcher callbacks against a component's reactive state.
+   *
+   * Each key in `watchers` is a dotted path into `state`; the callback runs when
+   * the value at that path changes. Missing arguments are reported through
+   * ErrorManager rather than thrown, so one bad component cannot stop a page.
+   *
+   * @param {Object} instance - Component instance the watchers belong to.
+   * @param {Object} state - Reactive state object being observed.
+   * @param {Object} [watchers={}] - Map of dotted path to callback.
+   * @returns {void}
+   */
   setupWatchers(instance, state, watchers = {}) {
     if (!instance || !state || !watchers) {
       const error = new Error('Missing required parameters: component instance, state object, or watchers');
@@ -91,6 +111,16 @@ const WatchManager = {
     return true;
   },
 
+  /**
+   * Read a nested value by dotted path, including array indexes.
+   *
+   * Supports `a.b.c` and `list[0].name`. Any missing link in the chain yields
+   * `undefined` instead of throwing.
+   *
+   * @param {string} path - Dotted path, e.g. `user.roles[0].name`.
+   * @param {Object} obj - Object to read from.
+   * @returns {*} - The value at that path, or `undefined`.
+   */
   getDeepValue(path, obj) {
     return path.split('.').reduce((value, key) => {
       if (key.includes('[') && key.includes(']')) {
@@ -102,6 +132,16 @@ const WatchManager = {
     }, obj);
   },
 
+  /**
+   * Copy a value deeply, tolerating circular references.
+   *
+   * Primitives are returned as-is. Objects already visited are returned from
+   * `seen`, so a structure that points back at itself does not recurse forever.
+   *
+   * @param {*} obj - Value to clone.
+   * @param {WeakMap} [seen=new WeakMap()] - Objects already cloned, used internally.
+   * @returns {*} - The cloned value.
+   */
   deepClone(obj, seen = new WeakMap()) {
     if (obj === null || typeof obj !== 'object') {
       return obj;
@@ -136,6 +176,16 @@ const WatchManager = {
     return clone;
   },
 
+  /**
+   * Compare two values structurally.
+   *
+   * Used to decide whether a watched value actually changed, so watchers do not
+   * fire when a state object was replaced with an equivalent one.
+   *
+   * @param {*} a - First value.
+   * @param {*} b - Second value.
+   * @returns {boolean} - True when the two are structurally equal.
+   */
   deepEqual(a, b) {
     if (a === b) return true;
 
@@ -159,6 +209,12 @@ const WatchManager = {
     );
   },
 
+  /**
+   * Re-read every watched path and run the callbacks whose value changed.
+   *
+   * @param {Object} instance - Component instance whose watchers should run.
+   * @returns {void}
+   */
   triggerWatchers(instance) {
     if (!instance?._watchers) return;
 
@@ -202,6 +258,15 @@ const WatchManager = {
     });
   },
 
+  /**
+   * Remove every watcher registered for a component.
+   *
+   * Call this when the component is destroyed, otherwise its callbacks keep
+   * running against state it no longer owns.
+   *
+   * @param {Object} instance - Component instance being torn down.
+   * @returns {void}
+   */
   cleanupWatchers(instance) {
     if (!instance?._watchers) return;
 
@@ -215,6 +280,13 @@ const WatchManager = {
     instance._watchers.clear();
   },
 
+  /**
+   * Wrap a function so rapid calls collapse into one.
+   *
+   * @param {Function} func - Function to wrap.
+   * @param {number} [wait=100] - Quiet period in milliseconds before it runs.
+   * @returns {Function} - The debounced function.
+   */
   debounce(func, wait = 100) {
     let timeoutId = null;
     const context = this;

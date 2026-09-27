@@ -195,6 +195,10 @@ EventBus.Events = {
   IMAGE_CLICK: 'image:click',
   IMAGE_DBLCLICK: 'image:dblclick',
 
+  // Embed (iframe placeholder) events
+  EMBED_CLICK: 'embed:click',
+  EMBED_DBLCLICK: 'embed:dblclick',
+
   // Mode events
   MODE_CHANGE: 'mode:change',
 

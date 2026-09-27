@@ -1,0 +1,88 @@
+<!-- "My domain orders": the member's orders (api/domain/myorders) and a whois
+     lookup. Rendered by Domain\History\View::render() -->
+<article class="main-page domain-page">
+  <header class="page-header hero">
+    <div class="container">
+      <nav class="breadcrumbs one_line">
+        <ul>{BREADCRUMBS}</ul>
+      </nav>
+      <h1 class="page__title">{TOPIC}</h1>
+      <p class="page__subtitle">{DESCRIPTION}</p>
+    </div>
+  </header>
+  <div class="page-body">
+    <div class="container">
+      <div class="page-content">
+        <section class="section-bg">
+          <div class="section__header">
+            <h2 class="icon-list">{LNG_My Domain Orders}</h2>
+          </div>
+          <div class="section__body" data-component="api" data-endpoint="{WEBURL}api/domain/myorders?module_id={MODULE_ID}" data-method="GET" data-url-params="true">
+            <div class="tablebody" data-if="orders && orders.length > 0">
+              <table class="fullwidth border">
+                <thead>
+                  <tr>
+                    <th>{LNG_Order no.}</th>
+                    <th>{LNG_Date}</th>
+                    <th>{LNG_Domain / expiry}</th>
+                    <th>{LNG_Total}</th>
+                    <th>{LNG_Status}</th>
+                  </tr>
+                </thead>
+                <tbody data-for="order of orders">
+                  <template>
+                    <tr>
+                      <td data-text="order.order_no"></td>
+                      <td data-text="order.order_date" data-format="datetime"></td>
+                      <td data-text="order.items_summary"></td>
+                      <td data-text="order.total" data-format="number"></td>
+                      <td data-text="order.order_status_text"></td>
+                    </tr>
+                  </template>
+                </tbody>
+              </table>
+            </div>
+            <div class="list-empty" data-if="!orders || orders.length === 0">
+              <div class="list-empty-icon icon-world"></div>
+              <h3>{LNG_No Orders}</h3>
+              <a href="{DOMAIN_URL}" class="btn btn-primary icon-cart">{LNG_Domain Registration}</a>
+            </div>
+            <div class="pagination-wrapper" data-if="pagination && pagination.pages > 1">
+              <nav class="pagination" data-for="i of pagination.page_numbers">
+                <template>
+                  <a href="{HISTORY_Q}page={{i}}" data-class="current:i === pagination.page" data-text="i"></a>
+                </template>
+              </nav>
+            </div>
+          </div>
+        </section>
+        <section class="section-bg domain-whois-lookup">
+          <div class="section__header">
+            <h2 class="icon-search">{LNG_Whois lookup}</h2>
+          </div>
+          <div class="section__body">
+            <form data-form="whoisLookup" data-validate="true" action="{WEBURL}api/domain/whois" method="post" data-ajax-submit="true" data-submit-target="#whoisResult" data-show-success-inline="false" data-show-success-in-notification="false">
+              <fieldset>
+                <div>
+                  <label for="whois_domain">{LNG_Domain name}</label>
+                  <span class="form-control icon-world">
+                    <input type="text" id="whois_domain" name="domain" required autocomplete="off" placeholder="example.com">
+                  </span>
+                </div>
+              </fieldset>
+              <fieldset class="submit">
+                <button type="submit" class="btn btn-primary icon-search">{LNG_Look up}</button>
+              </fieldset>
+            </form>
+            <div id="whoisResult" data-for="result of data">
+              <template>
+                <h3 data-text="result.domain"></h3>
+                <pre class="whois-result" data-text="result.whois"></pre>
+              </template>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+  </div>
+</article>

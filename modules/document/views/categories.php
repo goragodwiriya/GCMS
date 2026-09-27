@@ -54,8 +54,8 @@ class View extends \Web\View
         $listitem = Template::create($index->owner, $index->module, 'categoryitem');
 
         // Picture of default module
-        if (isset($index->config->default_icon) && is_file(ROOT_PATH.$index->config->default_icon)) {
-            $default_icon = WEB_URL.$index->config->default_icon;
+        if (isset($index->default_icon) && is_file(ROOT_PATH.$index->default_icon)) {
+            $default_icon = WEB_URL.$index->default_icon;
         } else {
             $default_icon = WEB_URL.'images/no-image.webp';
         }
@@ -72,7 +72,7 @@ class View extends \Web\View
                 '/{TOPIC}/' => Text::htmlspecialchars($item->topic),
                 '/{DETAIL}/' => Text::htmlspecialchars($item->detail),
                 '/{PICTURE}/' => $icon,
-                '/{URL}/' => \Document\Index\Controller::url($index->module, $category_id)
+                '/{URL}/' => \Document\Index\Controller::url($index->module, (int) $category_id)
             ]);
         }
 
@@ -82,7 +82,8 @@ class View extends \Web\View
             '/{TOPIC}/' => Text::htmlspecialchars($index->topic),
             '/{DESCRIPTION}/' => Text::htmlspecialchars($index->description),
             '/{LIST}/' => $listitem->render(),
-            '/{COLS}/' => self::columnsToGridSize($index->config->category_cols),
+            '/{STYLE}/' => empty($index->category_display) ? 'iconview' : $index->category_display,
+            '/{COLS}/' => self::columnsToGridSize($index->category_cols),
             '/{MODULE}/' => $index->module
         ]);
 

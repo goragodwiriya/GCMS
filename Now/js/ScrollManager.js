@@ -1,3 +1,22 @@
+/**
+ * ScrollManager
+ *
+ * Programmatic scrolling plus a set of scroll-driven page features. Animated
+ * scrolls run through `requestAnimationFrame` with configurable easing rather
+ * than native smooth-scroll, so they can be cancelled and queued.
+ *
+ * Optional features are each gated behind a config flag: waypoints (via
+ * IntersectionObserver), infinite scroll, parallax, section highlighting,
+ * scroll-position restoration, anchor navigation, mobile support and
+ * accessibility announcements.
+ *
+ * One thing to know before relying on this module: `config.enabled` defaults to
+ * **false**. The manager is opt-in, and `scrollTo` and friends no-op until it is
+ * turned on.
+ *
+ * `config.scroll.progress.enabled` draws into the element matched by
+ * `config.selectors.progress`; the element itself must already exist in the page.
+ */
 const ScrollManager = {
   config: {
     enabled: false,
@@ -86,16 +105,7 @@ const ScrollManager = {
         speed: 0.5
       },
       progress: {
-        enabled: false,
-        color: 'var(--color-primary)',
-        height: '3px',
-        zIndex: 1000
-      },
-      snap: {
-        enabled: false,
-        type: 'y',
-        stop: true,
-        align: 'start'
+        enabled: false
       },
       section: {
         highlight: true,
@@ -140,6 +150,15 @@ const ScrollManager = {
     scrollQueueLock: false
   },
 
+  /**
+   * Set up the manager and whichever features config enables.
+   *
+   * Runs once. When `config.enabled` is false the manager marks itself
+   * disabled and does no further work.
+   *
+   * @param {Object} [options={}] - Overrides merged into the module config.
+   * @returns {Promise<Object>} - The manager itself, so calls can be chained.
+   */
   async init(options = {}) {
     if (this.state.initialized) return this;
 
@@ -195,6 +214,14 @@ const ScrollManager = {
     }
   },
 
+  /**
+   * Resolve the main content area and prepare the scroll queue.
+   *
+   * A missing content area is warned about rather than fatal, since most
+   * features still work without it.
+   *
+   * @returns {Promise<void>}
+   */
   async initializeCore() {
     this.contentArea = document.querySelector(this.config.selectors.content);
     if (!this.contentArea) {
@@ -212,6 +239,11 @@ const ScrollManager = {
     }
   },
 
+  /**
+   * Intercept clicks on matching anchors and scroll to them smoothly.
+   *
+   * @returns {void}
+   */
   setupSmoothScroll() {
     if (!this.config.smoothScroll.enabled) return;
 
@@ -265,34 +297,13 @@ const ScrollManager = {
     }
   },
 
-  async initializeScrollFeatures() {
-    const {scroll} = this.config;
-
-    if (scroll.infinite.enabled) {
-      this.initInfiniteScroll(scroll.infinite.loadMore);
-    }
-
-    if (scroll.parallax.enabled) {
-      this.initParallax();
-    }
-
-    if (scroll.progress.enabled) {
-      this.initProgressBar();
-    }
-
-    if (scroll.snap.enabled) {
-      this.initScrollSnap();
-    }
-
-    if (scroll.section.highlight) {
-      this.initSectionHighlight();
-    }
-
-    if (scroll.nav.updateHash) {
-      this.initScrollNav();
-    }
-  },
-
+  /**
+   * Create the Intersection, Mutation and Resize observers the features need.
+   *
+   * Each is only created when the browser supports it.
+   *
+   * @returns {void}
+   */
   initializeObservers() {
     if ('IntersectionObserver' in window) {
       this.state.observers.set('intersection', new IntersectionObserver(
@@ -319,6 +330,12 @@ const ScrollManager = {
     this.startObservers();
   },
 
+  /**
+   * Fire waypoint callbacks for elements crossing the viewport boundary.
+   *
+   * @param {Array<IntersectionObserverEntry>} entries - Observer entries.
+   * @returns {void}
+   */
   handleIntersection(entries) {
     entries.forEach(entry => {
       this.state.waypoints.forEach((waypoint, id) => {
@@ -364,6 +381,12 @@ const ScrollManager = {
     });
   },
 
+  /**
+   * Re-scan for waypoints when relevant nodes are added to the page.
+   *
+   * @param {Array<MutationRecord>} mutations - Observer records.
+   * @returns {void}
+   */
   handleMutations(mutations) {
     let shouldUpdateWaypoints = false;
 
@@ -391,10 +414,11 @@ const ScrollManager = {
     }
   },
 
-  handleResize(entries) {
-    this.emit('scroll:resize', {entries});
-  },
-
+  /**
+   * Begin observing the configured container.
+   *
+   * @returns {void}
+   */
   startObservers() {
     const container = document.querySelector(this.config.selectors.container);
 
@@ -429,6 +453,14 @@ const ScrollManager = {
     }
   },
 
+  /**
+   * Make in-page navigation links scroll smoothly instead of jumping.
+   *
+   * Bound once on the navigation container by delegation, so links added later
+   * work without rebinding.
+   *
+   * @returns {void}
+   */
   initScrollNav() {
     const navigation = document.querySelector(this.config.selectors.nav);
     if (!navigation) return;
@@ -452,6 +484,11 @@ const ScrollManager = {
     });
   },
 
+  /**
+   * Wire up the manager's reactions to route changes and other app events.
+   *
+   * @returns {void}
+   */
   setupEventListeners() {
     this.on('route:changed', (context) => {
       this.handleRouteChange(context.data);
@@ -480,6 +517,11 @@ const ScrollManager = {
     });
   },
 
+  /**
+   * Drop every registered scroll-event handler.
+   *
+   * @returns {void}
+   */
   removeAllListeners() {
     const eventManager = Now.getManager('event');
 
@@ -503,6 +545,11 @@ const ScrollManager = {
     }
   },
 
+  /**
+   * Tear the manager down: cancel any animation and drop every listener.
+   *
+   * @returns {void}
+   */
   cleanup() {
     this.cancelScroll();
 
@@ -538,10 +585,28 @@ const ScrollManager = {
     }
   },
 
+  /**
+   * Strip everything but word characters, spaces, hyphens and underscores.
+   *
+   * Applied to selectors coming from URL hashes before they reach
+   * `querySelector`, so a crafted fragment cannot inject selector syntax.
+   *
+   * @param {string} selector - Raw selector text.
+   * @returns {string} - The sanitised selector.
+   */
   cleanSelector(selector) {
     return selector.replace(/[^\w\s\-_]/g, '');
   },
 
+  /**
+   * Scroll to an element, selector or position.
+   *
+   * No-op while the manager is disabled or the target is empty.
+   *
+   * @param {HTMLElement|string|number} target - Element, selector, or Y offset.
+   * @param {Object} [options={}] - `duration`, `easing` and `offset` overrides.
+   * @returns {Promise<void>} - Resolves when the animation finishes.
+   */
   async scrollTo(target, options = {}) {
     if (!this.config.enabled || !target) return;
 
@@ -625,6 +690,11 @@ const ScrollManager = {
     }
   },
 
+  /**
+   * Stop the animation in progress and emit `scroll:cancel`.
+   *
+   * @returns {void}
+   */
   cancelScroll() {
     if (this.state.activeAnimation) {
       cancelAnimationFrame(this.state.activeAnimation);
@@ -634,50 +704,49 @@ const ScrollManager = {
     }
   },
 
+  /**
+   * Scroll to the configured main content area.
+   *
+   * Does nothing when that area was not found during init.
+   *
+   * @param {Object} [options={}] - Same options as `scrollTo`.
+   * @returns {Promise<void>}
+   */
   async scrollToContent(options = {}) {
     if (!this.contentArea) return;
     await this.scrollTo(this.contentArea, options);
   },
 
+  /**
+   * Scroll to the top of the document.
+   *
+   * @param {Object} [options={}] - Same options as `scrollTo`.
+   * @returns {Promise<void>}
+   */
   async scrollToTop(options = {}) {
     await this.scrollTo(document.documentElement, options);
   },
 
+  /**
+   * Scroll to the last element in the body.
+   *
+   * Targets the final child rather than a computed height, so it lands
+   * correctly even as content loads in.
+   *
+   * @param {Object} [options={}] - Same options as `scrollTo`.
+   * @returns {Promise<void>}
+   */
   async scrollToBottom(options = {}) {
     const finalElement = Array.from(document.body.children).pop();
     await this.scrollTo(finalElement, options);
   },
 
-  addWaypoint(id, element, options = {}) {
-    if (!id || typeof id !== 'string') {
-      throw new Error('Invalid waypoint ID');
-    }
-    if (!(element instanceof HTMLElement)) {
-      throw new Error('Invalid waypoint element');
-    }
-    if (this.state.waypoints.has(id)) {
-      throw new Error(`Waypoint ${id} already exists`);
-    }
-
-    const waypoint = {
-      element,
-      options: {
-        offset: options.offset || this.config.waypoints.offset,
-        threshold: options.threshold || this.config.waypoints.threshold,
-        once: options.once || this.config.waypoints.once,
-        callback: options.callback
-      },
-      triggered: false
-    };
-
-    this.state.waypoints.set(id, waypoint);
-
-    if (this.state.observers.has('intersection')) {
-      const observer = this.state.observers.get('intersection');
-      observer.observe(element);
-    }
-  },
-
+  /**
+   * Unregister a waypoint and stop observing its element.
+   *
+   * @param {string} id - Waypoint id.
+   * @returns {void}
+   */
   removeWaypoint(id) {
     const waypoint = this.state.waypoints.get(id);
     if (waypoint) {
@@ -689,6 +758,11 @@ const ScrollManager = {
     }
   },
 
+  /**
+   * Work out whether the page is scrolling up or down, emitting on a change.
+   *
+   * @returns {void}
+   */
   handleScrollDirection() {
     const currentScroll = window.pageYOffset;
     const direction = currentScroll > this.state.lastPosition?.y ? 'down' : 'up';
@@ -700,6 +774,16 @@ const ScrollManager = {
     }
   },
 
+  /**
+   * Queue a scroll to run after the current one.
+   *
+   * The queue is capped at `config.performance.maxQueue`; the oldest entry is
+   * dropped when full, so a burst of requests cannot grow without bound.
+   *
+   * @param {number} targetY - Destination Y offset.
+   * @param {Object} options - Scroll options.
+   * @returns {void}
+   */
   queueScroll(targetY, options) {
     if (this.state.scrollQueue.length >= this.config.performance.maxQueue) {
       this.state.scrollQueue.shift();
@@ -708,6 +792,14 @@ const ScrollManager = {
     this.state.scrollQueue.push({targetY, options});
   },
 
+  /**
+   * Run the queued scrolls one after another.
+   *
+   * Guarded by a lock so two callers cannot drain the queue concurrently and
+   * fight over the scroll position.
+   *
+   * @returns {Promise<void>}
+   */
   async processScrollQueue() {
     if (this.scrollQueueLock) return;
 
@@ -724,6 +816,11 @@ const ScrollManager = {
     }
   },
 
+  /**
+   * The current scroll position, direction and timestamp.
+   *
+   * @returns {Object} - `{x, y, direction, timestamp}`.
+   */
   getScrollPosition() {
     return {
       x: window.pageXOffset,
@@ -733,6 +830,11 @@ const ScrollManager = {
     };
   },
 
+  /**
+   * Record the current position and recompute the scroll direction.
+   *
+   * @returns {void}
+   */
   updateScrollPosition() {
     const position = this.getScrollPosition();
     this.state.lastPosition = position;
@@ -751,6 +853,11 @@ const ScrollManager = {
     }
   },
 
+  /**
+   * Route uncaught window errors through ErrorManager with scroll context.
+   *
+   * @returns {void}
+   */
   setupErrorHandling() {
     window.addEventListener('error', (event) => {
       if (event.error) {
@@ -771,6 +878,11 @@ const ScrollManager = {
     });
   },
 
+  /**
+   * Build the easing function table used by `animateScroll`.
+   *
+   * @returns {void}
+   */
   initializeAnimationSystem() {
     this.easingFunctions = {
       linear: t => t,
@@ -785,6 +897,16 @@ const ScrollManager = {
     };
   },
 
+  /**
+   * Animate the window to a Y offset using the configured easing.
+   *
+   * Driven by `requestAnimationFrame` rather than native smooth-scroll, which
+   * is what makes `cancelScroll` possible mid-flight.
+   *
+   * @param {number} targetY - Destination Y offset.
+   * @param {Object} [options={}] - `duration` and `easing` overrides.
+   * @returns {Promise<void>} - Resolves when the animation finishes.
+   */
   animateScroll(targetY, options = {}) {
     return new Promise((resolve) => {
       const startY = window.pageYOffset;
@@ -871,16 +993,40 @@ const ScrollManager = {
     }
   },
 
+  /**
+   * Register a hook to run after DOM updates that may change scroll geometry.
+   *
+   * @param {Function} callback - Hook to add.
+   * @returns {void}
+   */
   onVirtualDOMUpdate(callback) {
     this.virtualDOMHooks.push(callback);
   },
 
+  /**
+   * Run the registered DOM-update hooks during idle time.
+   *
+   * Scheduled via `requestIdleCallback`, so recalculating geometry does not
+   * compete with the scroll animation for frame budget.
+   *
+   * @returns {void}
+   */
   notifyVirtualDOM() {
     this.virtualDOMHooks.forEach(hook => {
       requestIdleCallback(() => hook());
     });
   },
 
+  /**
+   * Wrap a function so it runs at most once per interval.
+   *
+   * Unlike `debounce` the first call runs immediately, which is what scroll
+   * handlers need to stay responsive.
+   *
+   * @param {Function} func - Function to wrap.
+   * @param {number} limit - Minimum interval in milliseconds.
+   * @returns {Function} - The throttled function.
+   */
   throttle(func, limit) {
     let inThrottle;
     return (...args) => {
@@ -892,6 +1038,13 @@ const ScrollManager = {
     };
   },
 
+  /**
+   * Wrap a function so rapid calls collapse into one.
+   *
+   * @param {Function} func - Function to wrap.
+   * @param {number} wait - Quiet period in milliseconds.
+   * @returns {Function} - The debounced function.
+   */
   debounce(func, wait) {
     let timeout;
     return (...args) => {
@@ -900,6 +1053,14 @@ const ScrollManager = {
     };
   },
 
+  /**
+   * Track scroll position on a throttled handler.
+   *
+   * Skips while an animated scroll is running, so the manager does not react
+   * to its own scrolling.
+   *
+   * @returns {void}
+   */
   setupScrollTracking() {
     const handleScroll = this.throttle(() => {
       if (this.state.isScrolling) return;
@@ -907,7 +1068,7 @@ const ScrollManager = {
       const position = this.getScrollPosition();
       this.updateScrollState(position);
       this.handleScrollDirection();
-      this.emit('scroll:progress', position);
+      this.handleScrollProgress(position);
     }, this.config.performance.throttle);
 
     const handleScrollEnd = this.debounce(() => {
@@ -929,6 +1090,15 @@ const ScrollManager = {
     });
   },
 
+  /**
+   * Store a position in the scroll history.
+   *
+   * The history is capped at 50 entries, so it stays bounded on a long page
+   * session.
+   *
+   * @param {Object} position - Position record from `getScrollPosition`.
+   * @returns {void}
+   */
   updateScrollState(position) {
     this.state.lastPosition = position;
     this.state.history.push(position);
@@ -938,6 +1108,14 @@ const ScrollManager = {
     }
   },
 
+  /**
+   * Register waypoints declared in markup.
+   *
+   * Reads `data-scroll-waypoint` for the id, `data-scroll-offset` for the
+   * trigger offset, and `data-scroll-callback` naming a function on `window`.
+   *
+   * @returns {void}
+   */
   setupWaypoints() {
     const waypoints = document.querySelectorAll(this.config.selectors.waypoints);
     waypoints.forEach(element => {
@@ -961,7 +1139,31 @@ const ScrollManager = {
     }
   },
 
+  /**
+   * Register an element to fire callbacks as it enters and leaves the viewport.
+   *
+   * This is the definition that actually runs — an earlier `addWaypoint` above
+   * is overridden by this one. Note it performs **no validation**: a duplicate
+   * id silently replaces the existing waypoint, and neither the id nor the
+   * element is type-checked.
+   *
+   * @param {string} id - Waypoint id.
+   * @param {HTMLElement} element - Element to observe.
+   * @param {Object} [options={}] - `offset`, `threshold`, `once` and `callback`;
+   *   anything omitted falls back to `config.waypoints`.
+   * @returns {void}
+   */
   addWaypoint(id, element, options = {}) {
+    if (!id || typeof id !== 'string') {
+      throw new Error('Invalid waypoint ID');
+    }
+    if (!(element instanceof HTMLElement)) {
+      throw new Error('Invalid waypoint element');
+    }
+    if (this.state.waypoints.has(id)) {
+      throw new Error(`Waypoint ${id} already exists`);
+    }
+
     const waypoint = {
       element,
       options: {
@@ -982,6 +1184,11 @@ const ScrollManager = {
     }
   },
 
+  /**
+   * Enable the touch-specific scroll handling on the configured container.
+   *
+   * @returns {void}
+   */
   initializeMobileSupport() {
     if (!this.config.mobile.enabled) return;
 
@@ -1034,6 +1241,11 @@ const ScrollManager = {
     }
   },
 
+  /**
+   * Create the live region used to announce scroll changes to screen readers.
+   *
+   * @returns {void}
+   */
   initializeAccessibility() {
     if (!this.config.accessibility.enabled) return;
 
@@ -1095,6 +1307,13 @@ const ScrollManager = {
     });
   },
 
+  /**
+   * Subscribe to one of the manager's own scroll events.
+   *
+   * @param {string} event - Event name, e.g. `scroll:cancel`.
+   * @param {Function} handler - Handler to add.
+   * @returns {void}
+   */
   on(event, handler) {
     if (!this.state.events.has(event)) {
       this.state.events.set(event, new Set());
@@ -1109,6 +1328,13 @@ const ScrollManager = {
     return this;
   },
 
+  /**
+   * Unsubscribe a handler from a scroll event.
+   *
+   * @param {string} event - Event name.
+   * @param {Function} handler - Handler to remove.
+   * @returns {void}
+   */
   off(event, handler) {
     const handlers = this.state.events.get(event);
     if (handlers) {
@@ -1123,6 +1349,16 @@ const ScrollManager = {
     return this;
   },
 
+  /**
+   * Call every handler on one event.
+   *
+   * Each handler runs in its own try/catch, so one throwing handler does not
+   * stop the rest.
+   *
+   * @param {string} eventName - Event name.
+   * @param {Object} data - Payload handed to handlers.
+   * @returns {void}
+   */
   emit(eventName, data) {
     const handlers = this.state.events.get(eventName);
     if (handlers) {
@@ -1144,6 +1380,11 @@ const ScrollManager = {
     });
   },
 
+  /**
+   * Restore the scroll position saved from a previous visit.
+   *
+   * @returns {void}
+   */
   initScrollRestoration() {
     if (!this.config.restoration.enabled) return;
 
@@ -1180,6 +1421,18 @@ const ScrollManager = {
     });
   },
 
+  /**
+   * Start whichever optional scroll features config enables.
+   *
+   * This is the definition that actually runs — an earlier async
+   * `initializeScrollFeatures` above is overridden by this one. It covers
+   * section highlighting, anchor navigation, infinite scroll and parallax.
+   *
+   * `init()` awaits this call even though it is not async; that is harmless,
+   * but it means nothing here can be awaited meaningfully.
+   *
+   * @returns {void}
+   */
   initializeScrollFeatures() {
     const {scroll} = this.config;
 
@@ -1200,6 +1453,11 @@ const ScrollManager = {
     }
   },
 
+  /**
+   * Highlight the navigation entry for whichever section is in view.
+   *
+   * @returns {void}
+   */
   initSectionHighlight() {
     const sections = document.querySelectorAll(this.config.selectors.sections);
 
@@ -1231,6 +1489,11 @@ const ScrollManager = {
     sections.forEach(section => observer.observe(section));
   },
 
+  /**
+   * Offset elements matching the parallax selector as the page scrolls.
+   *
+   * @returns {void}
+   */
   initParallax() {
     const elements = document.querySelectorAll(this.config.selectors.parallax);
 
@@ -1246,6 +1509,15 @@ const ScrollManager = {
     window.addEventListener('scroll', updateParallax, {passive: true});
   },
 
+  /**
+   * Load more content as the user nears the bottom.
+   *
+   * The handler is throttled and skipped while a load is already in flight, so
+   * one scroll gesture cannot trigger several overlapping loads.
+   *
+   * @param {Function} callback - Called to load the next page.
+   * @returns {void}
+   */
   initInfiniteScroll(callback) {
     if (!callback) return;
 
@@ -1269,6 +1541,12 @@ const ScrollManager = {
     window.addEventListener('scroll', handleInfinite, {passive: true});
   },
 
+  /**
+   * Scroll to the hash target after a route change.
+   *
+   * @param {Object} data - Route change payload carrying `path`.
+   * @returns {void}
+   */
   handleRouteChange(data) {
     if (!data || !data.path) return;
 
@@ -1304,15 +1582,25 @@ const ScrollManager = {
     this.state.activeSection = null;
   },
 
+  /**
+   * Emit how far through the document the user has scrolled, as a percentage,
+   * and draw the progress bar when `config.scroll.progress.enabled` is on.
+   *
+   * The event is emitted either way, so a listener does not have to turn the
+   * progress bar on to receive it.
+   *
+   * @param {Object} position - Position record from `getScrollPosition`.
+   * @returns {void}
+   */
   handleScrollProgress(position) {
-    if (!this.config.scroll.progress.enabled) return;
-
     const docHeight = document.documentElement.scrollHeight - window.innerHeight;
-    const progress = (position.y / docHeight) * 100;
+    const progress = docHeight > 0 ? (position.y / docHeight) * 100 : 0;
 
-    const progressBar = document.querySelector(this.config.selectors.progress);
-    if (progressBar) {
-      progressBar.style.width = `${progress}%`;
+    if (this.config.scroll.progress.enabled) {
+      const progressBar = document.querySelector(this.config.selectors.progress);
+      if (progressBar) {
+        progressBar.style.width = `${progress}%`;
+      }
     }
 
     this.emit('scroll:progress', {
@@ -1322,6 +1610,15 @@ const ScrollManager = {
     });
   },
 
+  /**
+   * Recompute scroll position when the observed container resizes.
+   *
+   * This is the definition that actually runs — an earlier `handleResize`
+   * above only emitted an event and is overridden by this one.
+   *
+   * @param {Array<ResizeObserverEntry>} entries - Observer entries.
+   * @returns {void}
+   */
   handleResize(entries) {
     entries.forEach(entry => {
       this.updateScrollPosition();

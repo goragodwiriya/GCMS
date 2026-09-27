@@ -289,11 +289,19 @@ class Text
     }
 
     /**
-     * Sanitize a URL string.
+     * Sanitize a URL string for safe use in a hyperlink context.
+     * Rejects dangerous pseudo-schemes (javascript:, vbscript:, data:) — case
+     * insensitively and even when obfuscated with whitespace, control
+     * characters or HTML entities (e.g. "JAVA\tSCRIPT:", "javascript&#58;") —
+     * then strips characters that could break out of an href attribute or be
+     * abused as a tagged-template call (quotes, parentheses, backticks, angle
+     * brackets). Legitimate schemes (http, https, ftp, mailto, tel), relative
+     * paths and anchors are preserved.
      *
      * @param string $text The input URL string
      *
-     * @return string The sanitized URL string
+     * @return string The sanitized URL string, or empty string if it resolves
+     *                to a dangerous scheme
      */
     public static function url($text)
     {
@@ -302,10 +310,22 @@ class Text
             return '';
         }
 
-        // Remove JavaScript and unwanted characters from the URL
-        $text = preg_replace('/(^javascript:|[\(\)\'\"]+)/', '', trim($text));
+        $text = trim($text);
 
-        // Convert special characters to HTML entities
+        // Normalise for scheme detection: decode HTML entities and remove the
+        // whitespace/control characters that browsers ignore when resolving a
+        // scheme, so obfuscated payloads cannot slip past the check.
+        $probe = html_entity_decode($text, ENT_QUOTES | ENT_HTML5);
+        $probe = preg_replace('/[\x00-\x20]+/', '', $probe);
+        if (preg_match('/^(?:javascript|vbscript|data):/i', $probe)) {
+            return '';
+        }
+
+        // Remove characters that could break out of an href attribute or be
+        // abused as a tagged-template call.
+        $text = preg_replace('/[\(\)\'"`<>]+/', '', $text);
+
+        // Convert remaining special characters to HTML entities
         $sanitizedText = self::htmlspecialchars($text, false);
 
         return $sanitizedText;
@@ -455,6 +475,31 @@ class Text
     }
 
     /**
+     * Exact inverse of textarea(): decode only the entities textarea()
+     * produces, back to their original characters. Used when returning
+     * stored textarea content through a JSON API so a client-side
+     * `field.value = ...` shows the real text instead of entity codes.
+     * (Deliberately narrower than unhtmlspecialchars() — that also decodes
+     * &amp;/&quot;/&#039;, which textarea() never encodes, and decoding
+     * those would mutate content where the user literally typed an entity.)
+     *
+     * @param string|null $text The stored, textarea()-encoded text
+     *
+     * @return string
+     */
+    public static function untextarea($text): string
+    {
+        if ($text === null || $text === '') {
+            return '';
+        }
+        return str_replace(
+            ['&lt;', '&gt;', '&#92;', '&#x007B;', '&#x007D;', '&#36;'],
+            ['<', '>', '\\', '{', '}', '$'],
+            $text
+        );
+    }
+
+    /**
      * Extract digits only from text.
      *
      * @param string|null $text The input text
@@ -599,12 +644,16 @@ class Text
     }
 
     /**
-     * Get text with specified HTML formatting tags allowed.
+     * Get text with only the specified HTML formatting tags allowed.
+     * Every other tag is removed, any attributes on the allowed tags are
+     * stripped (so no event handlers such as onclick/onerror can survive),
+     * and all remaining text is HTML-escaped. The result is safe to embed
+     * directly into HTML output.
      *
      * @param string $text The input text
      * @param array $allowedTags Array of allowed tag names (default: ['em', 'b', 'strong', 'i'])
      *
-     * @return string The processed text with allowed tags preserved
+     * @return string The processed text with only the bare allowed tags preserved
      */
     public static function htmlText($text, array $allowedTags = ['em', 'b', 'strong', 'i']): string
     {
@@ -615,22 +664,26 @@ class Text
         // Build strip_tags format: <em><b><strong><i>
         $stripTagsFormat = implode('', array_map(fn($tag) => "<{$tag}>", $allowedTags));
 
-        // First strip all tags except allowed ones
+        // First strip all tags except the allowed ones. strip_tags keeps the
+        // attributes of allowed tags, so they are removed in the next step.
         $allowed = strip_tags($text, $stripTagsFormat);
 
         // Build regex pattern for allowed tags
         $tagPattern = implode('|', array_map('preg_quote', $allowedTags));
 
-        // Escape HTML special characters but preserve the allowed tags
-        // by temporarily replacing them with placeholders
+        // Replace each allowed tag with a unique placeholder, discarding any
+        // attributes. A random per-call prefix prevents user input from forging
+        // a placeholder that would be turned back into a tag after escaping.
         $placeholders = [];
         $i = 0;
+        $token = bin2hex(random_bytes(8));
 
-        // Match allowed tags (opening and closing)
+        // Match allowed tags (opening and closing), including any attributes
         $allowed = preg_replace_callback(
-            '/<(\/?)('.$tagPattern.')>/i',
-            function ($matches) use (&$placeholders, &$i) {
-                $placeholder = "ALLOWEDTAG{$i}PLACEHOLDER";
+            '/<(\/?)('.$tagPattern.')(\s[^>]*)?>/i',
+            function ($matches) use (&$placeholders, &$i, $token) {
+                $placeholder = "\x01{$token}_{$i}\x01";
+                // Keep only the bare tag; drop all attributes
                 $placeholders[$placeholder] = '<'.$matches[1].strtolower($matches[2]).'>';
                 $i++;
                 return $placeholder;
@@ -638,7 +691,11 @@ class Text
             $allowed
         );
 
-        // Restore allowed tags
+        // Escape HTML special characters in the remaining (non-tag) text so
+        // that stray <, >, &, ", ' cannot break out into markup.
+        $allowed = self::htmlspecialchars($allowed);
+
+        // Restore the sanitized allowed tags
         return str_replace(array_keys($placeholders), array_values($placeholders), $allowed);
     }
 }

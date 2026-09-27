@@ -110,6 +110,14 @@ const EventSystemManager = {
     'dragover'
   ]),
 
+  /**
+   * Installs the global delegated listeners, DOM observer, memory monitor and
+   * built-in actions.
+   *
+   * Safe to call repeatedly; addHandler() calls it lazily on first use.
+   *
+   * @returns {Object} The manager instance
+   */
   init() {
     if (this.state.initialized) return this;
 
@@ -139,6 +147,14 @@ const EventSystemManager = {
     return this;
   },
 
+  /**
+   * Attaches one capture-phase listener per supported event on the delegation
+   * root, and one per window event on window.
+   *
+   * Every listener is passive unless the event needs preventDefault().
+   *
+   * @returns {void}
+   */
   setupGlobalHandlers() {
     this.supportedEvents.forEach(type => {
       this.config.delegation.rootElement.addEventListener(type, e => this.handleEvent(e), {
@@ -155,6 +171,25 @@ const EventSystemManager = {
     });
   },
 
+  /**
+   * Registers an event handler in the delegated event system.
+   *
+   * Window events are rebound to window automatically. When a selector is
+   * given the handler is delegated and only runs for matching descendants.
+   *
+   * @param {Element|Window|Document} element - Element to bind to
+   * @param {string} type - Event type, must be in supportedEvents
+   * @param {Function} handler - Handler receiving the wrapped event
+   * @param {Object} [options={}] - Registration options
+   * @param {boolean} [options.capture] - Run in the capture phase
+   * @param {boolean} [options.once] - Not implemented by the dispatcher
+   * @param {boolean} [options.passive] - Declare the handler passive
+   * @param {number} [options.priority] - Higher runs first within a phase
+   * @param {string} [options.componentId] - Owner id for removeComponentHandlers()
+   * @param {string} [options.selector] - Delegate to descendants matching it
+   * @returns {number} Handler id for removeHandler()
+   * @throws {Error} When the event type, element or handler is invalid
+   */
   addHandler(element, type, handler, options = {}) {
     // Lazy init: ensure global listeners are installed before registering any handler
     if (!this.state.initialized) {
@@ -227,6 +262,12 @@ const EventSystemManager = {
     return id;
   },
 
+  /**
+   * Removes a single handler and its index entries.
+   *
+   * @param {number} id - Handler id returned by addHandler()
+   * @returns {boolean} True when a handler was removed
+   */
   removeHandler(id) {
     const entry = this.state.handlers.get(id);
     if (!entry) return false;
@@ -249,6 +290,15 @@ const EventSystemManager = {
     return this.state.handlers.delete(id);
   },
 
+  /**
+   * Entry point for every delegated DOM event on the root element.
+   *
+   * Filters high-frequency events, enriches keyboard events, and defers UI
+   * events such as scroll and resize to the animation frame queue.
+   *
+   * @param {Event} event - Native DOM event
+   * @returns {void}
+   */
   handleEvent(event) {
     if (!this.shouldProcessEvent(event)) return;
 
@@ -272,6 +322,13 @@ const EventSystemManager = {
     }
   },
 
+  /**
+   * Builds an enriched view of a keyboard event with the modifier combinations
+   * handlers usually test for, such as isShiftEnter and isArrowKey.
+   *
+   * @param {KeyboardEvent} event - Native keyboard event
+   * @returns {Object} Enriched event exposing preventDefault and stopPropagation
+   */
   handleKeyboardEvent(event) {
     const enhancedEvent = {
       originalEvent: event,
@@ -305,6 +362,13 @@ const EventSystemManager = {
     return enhancedEvent;
   },
 
+  /**
+   * Dispatches an event fired on window to the handlers registered for it,
+   * highest priority first.
+   *
+   * @param {Event} event - Native window event
+   * @returns {void}
+   */
   handleWindowEvent(event) {
     if (!this.shouldProcessEvent(event)) {
       return;
@@ -353,6 +417,13 @@ const EventSystemManager = {
     }
   },
 
+  /**
+   * Stores a UI event for the next animation frame, keeping only the latest
+   * one of each type.
+   *
+   * @param {Event} event - Native event such as scroll or resize
+   * @returns {void}
+   */
   queueUIEvent(event) {
     const type = event.type;
     this.state.uiEventQueue.set(type, event);
@@ -365,6 +436,12 @@ const EventSystemManager = {
     }
   },
 
+  /**
+   * Dispatches the UI events collected during the current animation frame and
+   * clears the queue.
+   *
+   * @returns {void}
+   */
   processUIEventQueue() {
     this.state.rafScheduled = false;
 
@@ -375,6 +452,13 @@ const EventSystemManager = {
     this.state.uiEventQueue.clear();
   },
 
+  /**
+   * Runs an event through the synthetic propagation model: capture phase from
+   * the outermost node inward, then bubble phase back out.
+   *
+   * @param {Event} event - Native DOM event
+   * @returns {void}
+   */
   processEvent(event) {
     const path = this.getEventPath(event);
     const type = event.type;
@@ -410,6 +494,14 @@ const EventSystemManager = {
     }
   },
 
+  /**
+   * Executes the handlers registered on the current node for one phase,
+   * highest priority first, and drops index entries left by removed handlers.
+   *
+   * @param {Object} context - Propagation context built by processEvent()
+   * @param {boolean} capture - True for the capture phase
+   * @returns {void}
+   */
   processElementHandlers(context, capture) {
     const elementHandlers = this.state.elementHandlers.get(context.currentTarget);
     if (!elementHandlers) return;
@@ -459,6 +551,14 @@ const EventSystemManager = {
     }
   },
 
+  /**
+   * Decides whether a handler applies to the event, resolving the delegate
+   * target when the handler was registered with a selector.
+   *
+   * @param {Object} entry - Handler entry
+   * @param {Object} event - Propagation context; receives delegateTarget
+   * @returns {boolean} True when the handler should run
+   */
   shouldHandleEvent(entry, event) {
     if (entry.options.selector) {
       const delegateTarget = this.findDelegateTarget(event.target, entry.options.selector);
@@ -468,6 +568,14 @@ const EventSystemManager = {
     return true;
   },
 
+  /**
+   * Finds the closest ancestor of the target matching the selector, limited to
+   * the delegation root. Results are memoized per target.
+   *
+   * @param {Element} target - Element the event originated from
+   * @param {string} selector - CSS selector of the delegate
+   * @returns {Element|null} Matching element, or null
+   */
   findDelegateTarget(target, selector) {
     const cacheKey = target;
     const cache = this.state.selectorMatchCache;
@@ -499,6 +607,16 @@ const EventSystemManager = {
     }
   },
 
+  /**
+   * Calls a handler with a wrapped event, bound to window, document, the
+   * delegate target or the registered element as appropriate.
+   *
+   * Errors are reported to ErrorManager instead of breaking propagation.
+   *
+   * @param {Object} entry - Handler entry
+   * @param {Object} context - Propagation context
+   * @returns {*} Value returned by the handler
+   */
   executeHandler(entry, context) {
     try {
       const wrappedEvent = {
@@ -560,6 +678,15 @@ const EventSystemManager = {
     }
   },
 
+  /**
+   * Returns the propagation path of an event.
+   *
+   * Uses composedPath() when available, otherwise walks up from the target and
+   * caches the result.
+   *
+   * @param {Event} event - Native DOM event
+   * @returns {Array<EventTarget>} Path from the target up to window
+   */
   getEventPath(event) {
     if (event && typeof event.composedPath === 'function') {
       return event.composedPath();
@@ -587,6 +714,11 @@ const EventSystemManager = {
     return path;
   },
 
+  /**
+   * Starts the periodic cleanup timer, replacing any timer already running.
+   *
+   * @returns {void}
+   */
   setupCleanup() {
     if (this.state.cleanupTimer) {
       clearInterval(this.state.cleanupTimer);
@@ -597,6 +729,12 @@ const EventSystemManager = {
     }, this.config.cleanupInterval);
   },
 
+  /**
+   * Watches the document for removed nodes and releases the handlers of
+   * elements that left the DOM for good.
+   *
+   * @returns {void}
+   */
   observeDOM() {
     const observer = new MutationObserver(mutations => {
       mutations.forEach(mutation => {
@@ -618,6 +756,12 @@ const EventSystemManager = {
     });
   },
 
+  /**
+   * Removes every handler registered on an element.
+   *
+   * @param {Element} element - Element to release
+   * @returns {void}
+   */
   removeElementHandlers(element) {
     const handlers = this.state.elementHandlers.get(element);
     if (handlers) {
@@ -630,6 +774,13 @@ const EventSystemManager = {
     }
   },
 
+  /**
+   * Removes every handler registered with the given componentId, used when a
+   * component is destroyed.
+   *
+   * @param {string} componentId - Owner id passed to addHandler()
+   * @returns {void}
+   */
   removeComponentHandlers(componentId) {
     const handlersToRemove = [];
     this.state.handlers.forEach((entry, id) => {
@@ -640,6 +791,13 @@ const EventSystemManager = {
     handlersToRemove.forEach(id => this.removeHandler(id));
   },
 
+  /**
+   * Periodic maintenance: drops handlers whose element left the DOM, resets
+   * the WeakMap caches and the filtering timers, and triggers a collection
+   * pass when memory use is above the limit.
+   *
+   * @returns {void}
+   */
   cleanup() {
     const now = Date.now();
 
@@ -671,12 +829,23 @@ const EventSystemManager = {
     }
   },
 
+  /**
+   * Starts the timer that samples memory usage at the configured interval.
+   *
+   * @returns {void}
+   */
   setupMemoryMonitoring() {
     this.state.gcTimer = setInterval(() => {
       this.checkMemoryUsage();
     }, this.config.memoryManagement.checkInterval);
   },
 
+  /**
+   * Samples memory usage, records it, and triggers a collection pass or logs
+   * warnings when the thresholds are exceeded.
+   *
+   * @returns {void}
+   */
   checkMemoryUsage() {
     const stats = this.gatherMemoryStats();
     this.updateMemoryStats(stats);
@@ -690,6 +859,13 @@ const EventSystemManager = {
     }
   },
 
+  /**
+   * Counts registered handlers, cached selectors, the estimated WeakMap size
+   * and the handler count of each element.
+   *
+   * @returns {Object} Snapshot with handlerCount, cacheSize, weakMapSize,
+   *   timestamp and an elementHandlers map
+   */
   gatherMemoryStats() {
     const stats = {
       handlerCount: this.state.handlers.size,
@@ -712,6 +888,14 @@ const EventSystemManager = {
     return stats;
   },
 
+  /**
+   * Estimates how many entries the WeakMap caches hold.
+   *
+   * WeakMaps cannot be counted, so a sample of the document is probed and the
+   * hit rate is extrapolated over all elements.
+   *
+   * @returns {number} Estimated number of cached entries
+   */
   estimateWeakMapSize() {
     const sampleSize = Math.min(100, Math.max(20, Math.floor(document.querySelectorAll('*').length * 0.1)));
 
@@ -743,6 +927,12 @@ const EventSystemManager = {
     return estimatedSize;
   },
 
+  /**
+   * Copies a sample into the running memory statistics and updates the peak.
+   *
+   * @param {Object} stats - Sample from gatherMemoryStats()
+   * @returns {void}
+   */
   updateMemoryStats(stats) {
     const memoryStats = this.state.memoryStats;
     memoryStats.handlerCount = stats.handlerCount;
@@ -754,6 +944,12 @@ const EventSystemManager = {
     );
   },
 
+  /**
+   * Tests a memory sample against the configured thresholds.
+   *
+   * @param {Object} stats - Sample from gatherMemoryStats()
+   * @returns {boolean} True when a collection pass should run
+   */
   shouldTriggerGC(stats) {
     const threshold = this.config.memoryManagement.gcThreshold;
     const maxHandlers = this.config.memoryManagement.maxHandlersPerElement;
@@ -765,6 +961,11 @@ const EventSystemManager = {
     );
   },
 
+  /**
+   * Releases stale handlers and unused caches.
+   *
+   * @returns {void}
+   */
   performGC() {
     const now = Date.now();
     const stats = {
@@ -789,6 +990,14 @@ const EventSystemManager = {
     }
   },
 
+  /**
+   * Decides whether a handler can be released: too old, detached from the
+   * document, or bound to an invisible element.
+   *
+   * @param {Object} entry - Handler entry
+   * @param {number} now - Current timestamp in milliseconds
+   * @returns {boolean} True when the handler is stale
+   */
   isHandlerStale(entry, now) {
     if (!entry.timestamp) return false;
 
@@ -802,6 +1011,12 @@ const EventSystemManager = {
     );
   },
 
+  /**
+   * Drops expired selector cache entries, and resets the WeakMap caches
+   * entirely when they grew past the configured size.
+   *
+   * @returns {void}
+   */
   clearUnusedCaches() {
     for (const [selector, timestamp] of this.state.selectorCache) {
       if (Date.now() - timestamp > this.config.cleanupInterval) {
@@ -816,6 +1031,13 @@ const EventSystemManager = {
     }
   },
 
+  /**
+   * Warns about elements carrying more handlers than the configured maximum,
+   * which usually means handlers are being registered without being removed.
+   *
+   * @param {Object} stats - Sample from gatherMemoryStats()
+   * @returns {void}
+   */
   logMemoryWarnings(stats) {
     const warnings = [];
     const maxHandlers = this.config.memoryManagement.maxHandlersPerElement;
@@ -832,6 +1054,12 @@ const EventSystemManager = {
     }
   },
 
+  /**
+   * Stops the timers, drops every handler and cache, and marks the manager
+   * uninitialized so init() can run again.
+   *
+   * @returns {void}
+   */
   destroy() {
     if (this.state.cleanupTimer) {
       clearInterval(this.state.cleanupTimer);
@@ -859,6 +1087,15 @@ const EventSystemManager = {
     };
   },
 
+  /**
+   * Rate-limits events when filtering is enabled.
+   *
+   * Events listed as high frequency are handled by the animation frame queue
+   * instead and pass through untouched.
+   *
+   * @param {Event} event - Native DOM event
+   * @returns {boolean} True when the event should be dispatched
+   */
   shouldProcessEvent(event) {
     if (!this.config.filtering.enabled) return true;
 
@@ -880,6 +1117,13 @@ const EventSystemManager = {
     return true;
   },
 
+  /**
+   * Reports whether an event arrived sooner after the previous one of the same
+   * type than the throttle rate allows.
+   *
+   * @param {Event} event - Native DOM event
+   * @returns {boolean} True when the event is firing too fast
+   */
   isRapidFire(event) {
     const now = performance.now();
     const type = event.type;
@@ -895,6 +1139,13 @@ const EventSystemManager = {
     return false;
   },
 
+  /**
+   * Calls the handler at most once per throttle interval for this event type.
+   *
+   * @param {Event} event - Native DOM event
+   * @param {Function} handler - Handler to rate-limit
+   * @returns {void}
+   */
   throttle(event, handler) {
     const type = event.type;
     const now = Date.now();
@@ -907,6 +1158,14 @@ const EventSystemManager = {
     }
   },
 
+  /**
+   * Delays the handler until the event type has been quiet for the configured
+   * debounce wait, restarting the timer on every call.
+   *
+   * @param {Event} event - Native DOM event
+   * @param {Function} handler - Handler to defer
+   * @returns {void}
+   */
   debounce(event, handler) {
     const type = event.type;
     clearTimeout(this.state.filtering.debounceTimers.get(type));
@@ -1005,7 +1264,7 @@ const EventSystemManager = {
       // Parse arguments
       const args = argsStr ? this.parseActionArgs(argsStr, element) : [];
 
-      if (actionName === 'requestApi' && eventType === 'change' && this.shouldSkipRequestApiChange(event, element)) {
+      if (eventType === 'change' && this.isRequestAction(actionName, element) && this.shouldSkipRequestApiChange(event, element)) {
         continue;
       }
 
@@ -1021,12 +1280,53 @@ const EventSystemManager = {
     }
   },
 
+  /**
+   * Does this binding call an API, whatever the action is named?
+   *
+   * The programmatic-change guard used to look only for the literal action name
+   * `requestApi`. Anything wrapping it — the common case, an app-defined action that
+   * calls `requestApi` and then refreshes a table — got no protection at all, and had
+   * no way to ask for it short of reaching into internals.
+   *
+   * The result was a loop that is easy to build and hard to read: a checkbox bound to
+   * `change`, the request refreshes the component, the refresh re-binds the checkbox,
+   * that assignment fires a synthetic `change`, and round it goes.
+   *
+   * `data-api-url` is the honest signal, because it is what makes a binding issue a
+   * request. Bindings without it are untouched, so no existing change handler starts
+   * behaving differently.
+   *
+   * @param {string} actionName
+   * @param {HTMLElement} element
+   * @returns {boolean}
+   */
+  isRequestAction(actionName, element) {
+    return actionName === 'requestApi' || Boolean(element?.dataset?.apiUrl);
+  },
+
+  /**
+   * Reads data-request-api-on-programmatic-change, the opt-in that lets a
+   * binding fire on synthetic change events as well as real ones.
+   *
+   * @param {HTMLElement} element - Element carrying the binding
+   * @returns {boolean} True when programmatic changes are allowed
+   */
   shouldAllowProgrammaticRequestApiChange(element) {
     const value = String(element?.dataset?.requestApiOnProgrammaticChange || '').trim().toLowerCase();
 
     return ['true', '1', 'yes', 'on'].includes(value);
   },
 
+  /**
+   * Decides whether a change event on an API binding must be ignored.
+   *
+   * Untrusted events are dropped unless the element opted in, which is what
+   * breaks the refresh loop described on isRequestAction().
+   *
+   * @param {Event} event - Change event
+   * @param {HTMLElement} element - Element carrying the binding
+   * @returns {boolean} True when the request must not be sent
+   */
   shouldSkipRequestApiChange(event, element) {
     if (!element) {
       return false;
@@ -1039,6 +1339,17 @@ const EventSystemManager = {
     return this.shouldSkipAutocompleteNativeChange(event, element);
   },
 
+  /**
+   * Suppresses the native change event a field emits right after an
+   * autocomplete selection already sent its own request.
+   *
+   * Only applies within 500 ms of the selection and only when neither the
+   * submitted nor the displayed value changed since.
+   *
+   * @param {Event} event - Change event
+   * @param {HTMLElement} element - Element carrying the binding
+   * @returns {boolean} True when the event duplicates the selection
+   */
   shouldSkipAutocompleteNativeChange(event, element) {
     if (!event?.isTrusted || !element) {
       return false;
@@ -1645,6 +1956,12 @@ const EventSystemManager = {
     }
   },
 
+  /**
+   * Registers the actions available to data-action out of the box, such as
+   * copyToClipboard, toggleClass and requestApi.
+   *
+   * @returns {void}
+   */
   registerBuiltInActions() {
     // Copy to clipboard
     this.registerAction('copyToClipboard', async (event, element) => {
@@ -1668,19 +1985,105 @@ const EventSystemManager = {
       await Utils.dom.copyToClipboard(text);
     });
 
-    // Toggle class
-    this.registerAction('toggleClass', (event, element, targetOrClass, className) => {
-      let target = element;
-      let cls = targetOrClass;
+    /*
+      toggleClass — pi
 
-      if (className) {
-        target = typeof targetOrClass === 'string' ?
-          document.querySelector(targetOrClass) : targetOrClass;
-        cls = className;
+        data-action="click:toggleClass('#panel','is-open')" ← through parentheses
+        data-action="click:toggleClass" ← via attribute
+        data-toggle-target="#panel" data-toggle-class="is-open"
+
+      **The attribute has just been added**— previously accepted only through parentheses. button that draws
+      So the attribute can actually call an action, but it doesn't have both a target and a class name. Then the condition
+      The end of the function causes nothing to happen at all — **Press and it's completely quiet, no errors visible**
+      (I actually encountered this in an app that uses this framework: the "Add time-based task" button wouldn't click on the entire page.)
+
+      The framework's own convention is to read `data-*` anyway (`requestApi` read `data-api-url`,
+      `data-api-method`, `data-confirm`) Having toggleClass do this makes it
+      Be consistent, not add a new style.
+    */
+    this.registerAction('toggleClass', (event, element, targetOrClass, className) => {
+      let selector = targetOrClass;
+      let cls = className;
+
+      // Parentheses are not passed — read from the pressed element's attributes.
+      if (!selector && !cls) {
+        selector = element.dataset.toggleTarget || '';
+        cls = element.dataset.toggleClass || '';
       }
+
+      // Short form: toggleClass('is-open') = Toggle class on element itself.
+      if (selector && !cls) {
+        cls = selector;
+        selector = '';
+      }
+
+      const target = selector
+        ? (typeof selector === 'string' ? document.querySelector(selector) : selector)
+        : element;
 
       if (target && cls) {
         target.classList.toggle(cls);
+      }
+    });
+
+    // Collect a table's current params minus pagination/sort — so a full,
+    // unpaginated server request can be built for export/print.
+    const tableAllParams = (tableId) => {
+      const params = {};
+      if (tableId && window.TableManager && TableManager.state && TableManager.state.tables) {
+        const table = TableManager.state.tables.get(tableId);
+        if (table && table.config && table.config.params) {
+          Object.assign(params, table.config.params);
+          ['page', 'pageSize', 'total', 'totalPages', 'totalRecords', 'sort', 'order', 'search', 'loading', 'error'].forEach(k => delete params[k]);
+        }
+      }
+      return params;
+    };
+
+    // Print — open a server-rendered, unpaginated page (data-print-url +
+    // data-print-table) in a new window; or fall back to printing a target
+    // element in the current page (data-print-target).
+    this.registerAction('print', (event, element) => {
+      const printUrl = element.dataset.printUrl;
+      if (printUrl) {
+        const qs = new URLSearchParams(tableAllParams(element.dataset.printTable)).toString();
+        window.open(printUrl + (printUrl.indexOf('?') === -1 ? '?' : '&') + qs, '_blank');
+        return;
+      }
+      const targetSel = element.dataset.printTarget;
+      const target = targetSel ? document.querySelector(targetSel) : null;
+      if (target) {
+        target.classList.add('print-target');
+        document.body.classList.add('printing-target');
+        const cleanup = () => {
+          target.classList.remove('print-target');
+          document.body.classList.remove('printing-target');
+          window.removeEventListener('afterprint', cleanup);
+        };
+        window.addEventListener('afterprint', cleanup);
+      }
+      window.print();
+    });
+
+    // Export a table to CSV. When the table (or button) has an export URL,
+    // navigate to it with the table's params minus pagination (all rows) so the
+    // browser downloads directly; otherwise fall back to client-side export.
+    this.registerAction('exportCsv', (event, element) => {
+      const tableId = element.dataset.table || element.dataset.exportTable;
+      let exportUrl = element.dataset.exportUrl || '';
+      if (!exportUrl && tableId && window.TableManager && TableManager.state && TableManager.state.tables) {
+        const table = TableManager.state.tables.get(tableId);
+        exportUrl = table && table.element ? (table.element.dataset.exportUrl || table.element.dataset.export || '') : '';
+      }
+      if (exportUrl) {
+        const params = tableAllParams(tableId);
+        params.type = element.dataset.exportFormat || 'csv';
+        const qs = new URLSearchParams(params).toString();
+        window.open(exportUrl + (exportUrl.indexOf('?') === -1 ? '?' : '&') + qs, '_blank');
+        return;
+      }
+      if (tableId && window.TableManager && typeof TableManager.exportData === 'function') {
+        TableManager.exportData(tableId, element.dataset.exportFormat || 'csv');
       }
     });
 

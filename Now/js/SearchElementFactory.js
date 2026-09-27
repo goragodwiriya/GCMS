@@ -24,6 +24,16 @@ class SearchElementFactory extends TextElementFactory {
     }
   };
 
+  /**
+   * Turn a text field into a search field.
+   *
+   * Extends the text element setup, then adds the search-specific pieces: the
+   * results container, the clear button, and (when the field lives inside a
+   * `data-form`) registration with FormManager.
+   *
+   * @param {Object} instance - Element instance carrying `element` and `config`.
+   * @returns {void}
+   */
   static setupElement(instance) {
     // Basic settings from Textelementfactory
     super.setupElement(instance);
@@ -62,6 +72,15 @@ class SearchElementFactory extends TextElementFactory {
   }
 
   // Provide cleanup for instances created by this factory
+  /**
+   * Remove the clear button and results container added by this factory.
+   *
+   * Wrapped in try/catch so a DOM that has already been partially torn down
+   * does not throw while cleaning up the rest.
+   *
+   * @param {Object} instance - Element instance being torn down.
+   * @returns {void}
+   */
   static cleanup(instance) {
     if (!instance) return;
     try {
@@ -91,6 +110,15 @@ class SearchElementFactory extends TextElementFactory {
     if (typeof super.cleanup === 'function') super.cleanup(instance);
   }
 
+  /**
+   * Tell FormManager about a search field inside a `data-form`.
+   *
+   * Does nothing when FormManager is not loaded, or the field is not inside a
+   * declarative form, so a standalone search input works without it.
+   *
+   * @param {Object} instance - Element instance to register.
+   * @returns {void}
+   */
   static registerWithFormManager(instance) {
     const formManager = Now.getManager('form');
     if (!formManager) return;
@@ -108,6 +136,16 @@ class SearchElementFactory extends TextElementFactory {
     }
   }
 
+  /**
+   * Run a search for the current value and render the results.
+   *
+   * Shows or hides the clear button based on whether there is a value, and
+   * toggles the loading state around the request.
+   *
+   * @param {Object} instance - Element instance searching.
+   * @param {string} value - Current input value.
+   * @returns {Promise<void>}
+   */
   static async handleSearch(instance, value) {
     // Increase error management
     const {element, config} = instance;
@@ -163,6 +201,12 @@ class SearchElementFactory extends TextElementFactory {
   }
 
   // Create a Clear button and tie an event.
+  /**
+   * Add the button that clears the field and hides results.
+   *
+   * @param {Object} instance - Element instance to attach the button to.
+   * @returns {void}
+   */
   static setupClearButton(instance) {
     const {element, config} = instance;
     try {
@@ -172,8 +216,17 @@ class SearchElementFactory extends TextElementFactory {
       btn.setAttribute('aria-label', Now.translate('Clear'));
       btn.style.display = 'none';
 
-      const target = element.wrapper || element.parentNode || document.body;
-      if (target) target.appendChild(btn);
+      // Must attach to the element's own wrapper (or an already-connected
+      // parent) — never fall back to document.body: this factory usually
+      // runs via ElementFactory.create() while the element is still
+      // detached, so a body fallback would silently leak an orphaned button
+      // on every call instead of surfacing the missing `wrapper` config.
+      const target = element.wrapper || element.parentNode;
+      if (!target) {
+        console.warn('SearchElementFactory: no wrapper/parentNode to attach clear button to (pass `wrapper` in the element config)');
+        return;
+      }
+      target.appendChild(btn);
 
       btn.addEventListener('click', (e) => {
         e.preventDefault();
@@ -192,6 +245,15 @@ class SearchElementFactory extends TextElementFactory {
   }
 
   // Create Container for showing search results.
+  /**
+   * Create the dropdown that search results render into.
+   *
+   * Starts hidden; failures are swallowed so a broken results container does
+   * not stop the rest of the field from working.
+   *
+   * @param {Object} instance - Element instance to attach the container to.
+   * @returns {void}
+   */
   static setupResultsContainer(instance) {
     const {element, config} = instance;
     try {
@@ -201,8 +263,13 @@ class SearchElementFactory extends TextElementFactory {
       container.setAttribute('role', 'listbox');
       container.setAttribute('aria-hidden', 'true');
 
-      const target = element.wrapper || element.parentNode || document.body;
-      if (target) target.appendChild(container);
+      // Same rule as setupClearButton: never fall back to document.body.
+      const target = element.wrapper || element.parentNode;
+      if (!target) {
+        console.warn('SearchElementFactory: no wrapper/parentNode to attach results container to (pass `wrapper` in the element config)');
+        return;
+      }
+      target.appendChild(container);
 
       element.resultsContainer = container;
       element.setAttribute('aria-haspopup', 'listbox');
@@ -213,6 +280,14 @@ class SearchElementFactory extends TextElementFactory {
   }
 
   // Show results
+  /**
+   * Render search results into the dropdown.
+   *
+   * @param {Object} instance - Element instance to render for.
+   * @param {Array} [items=[]] - Result records.
+   * @param {string} [query=''] - The query the results are for.
+   * @returns {void}
+   */
   static showResults(instance, items = [], query = '') {
     const {element, config} = instance;
     const container = element.resultsContainer;
@@ -260,6 +335,13 @@ class SearchElementFactory extends TextElementFactory {
     element.setAttribute('aria-expanded', 'true');
   }
 
+  /**
+   * Toggle the loading class on the field's wrapper.
+   *
+   * @param {Object} instance - Element instance to update.
+   * @param {boolean} isLoading - Whether a search is in flight.
+   * @returns {void}
+   */
   static setLoadingState(instance, isLoading) {
     const {element, config} = instance;
     const wrapper = element.wrapper || element.parentNode;

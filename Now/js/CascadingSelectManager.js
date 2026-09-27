@@ -1,3 +1,11 @@
+/**
+ * CascadingSelectManager
+ *
+ * Links `<select>` elements so choosing a value in one narrows the options in the
+ * next — province → district → sub-district and the like. Groups are declared in
+ * HTML with `data-cascade-group`, and each level fetches its options from the
+ * endpoint given by `data-cascade-action` or `data-cascade-url`.
+ */
 const CascadingSelectManager = {
   config: {
     loadingClass: 'loading',
@@ -16,6 +24,15 @@ const CascadingSelectManager = {
     initialized: false
   },
 
+  /**
+   * Set up every `[data-cascade]` select on the page.
+   *
+   * Runs once; a second call returns immediately so re-initialising a page does
+   * not build duplicate chains.
+   *
+   * @param {Object} [options={}] - Overrides merged into the module config.
+   * @returns {Object} - The manager itself, so calls can be chained.
+   */
   init(options = {}) {
     if (this.state.initialized) return this;
 
@@ -31,9 +48,13 @@ const CascadingSelectManager = {
   },
 
   /**
-   * Initialize cascading selects within a form container
-   * Called by FormManager after form initialization
-   * @param {HTMLElement} container - Form element or container
+   * Wire up every cascading group found inside a container.
+   *
+   * Selects are grouped by their `data-cascade-group` value, so several
+   * independent chains can live on the same page.
+   *
+   * @param {HTMLElement} container - Element to scan. Ignored when empty.
+   * @returns {void}
    */
   initInContainer(container) {
     if (!container) return;
@@ -110,6 +131,16 @@ const CascadingSelectManager = {
     }
   },
 
+  /**
+   * Build one cascading chain from a set of selects.
+   *
+   * Accepts an array of elements or ids, a single element, or a CSS selector
+   * string. Order matters: each select feeds the one after it.
+   *
+   * @param {Array|HTMLElement|string} selects - The selects forming the chain.
+   * @param {Object} [options={}] - Overrides for the module config.
+   * @returns {Object} - The instance controlling this chain.
+   */
   create(selects, options = {}) {
     // Allow array of selects, single select element, or string selector
     let selectElements = [];
@@ -218,6 +249,14 @@ const CascadingSelectManager = {
     return instance;
   },
 
+  /**
+   * Read the options a single select declares through its `data-cascade-*` attributes.
+   *
+   * `data-cascade-action` wins over `data-cascade-url` when both are present.
+   *
+   * @param {HTMLSelectElement} select - Select to read.
+   * @returns {Object} - Options for this level of the chain.
+   */
   extractDataOptions(select) {
     const options = {};
     const dataset = select.dataset;
@@ -261,6 +300,15 @@ const CascadingSelectManager = {
     return options;
   },
 
+  /**
+   * Remember the options a select started with.
+   *
+   * Kept on the element so `reset` can put the original list back after the
+   * chain has replaced it.
+   *
+   * @param {HTMLSelectElement} select - Select to snapshot.
+   * @returns {void}
+   */
   storeOriginalOptions(select) {
     select._originalOptions = Array.from(select.options).map(option => {
       return {
@@ -272,6 +320,16 @@ const CascadingSelectManager = {
     });
   },
 
+  /**
+   * Bind the change handler that loads the next level.
+   *
+   * Any handler bound earlier is removed first, so re-initialising a chain does
+   * not stack duplicate listeners on the same select.
+   *
+   * @param {HTMLSelectElement} select - Select to bind.
+   * @param {Object} instance - Chain instance the select belongs to.
+   * @returns {void}
+   */
   setupSelectEvents(select, instance) {
     // Clean up any existing event handlers
     if (select._changeHandler) {
@@ -311,6 +369,16 @@ const CascadingSelectManager = {
     select.addEventListener('change', changeHandler);
   },
 
+  /**
+   * Empty a select, keeping or refreshing its default option.
+   *
+   * When `config.defaultOption` is on, the first option is preserved and its
+   * text updated; otherwise every option is removed.
+   *
+   * @param {HTMLSelectElement} select - Select to clear.
+   * @param {Object} config - Chain config, read for `defaultOption` and its text.
+   * @returns {void}
+   */
   clearOptions(select, config) {
     // Remove all options except the default option if enabled
     while (select.options.length > (config.defaultOption ? 1 : 0)) {
@@ -337,6 +405,15 @@ const CascadingSelectManager = {
     select.value = '';
   },
 
+  /**
+   * Load the options for the select that follows this one in the chain.
+   *
+   * The position comes from `data-cascade-index`. When this is the last select
+   * there is nothing downstream to fill, so the call is a no-op.
+   *
+   * @param {HTMLSelectElement} select - The select whose value just changed.
+   * @returns {Promise<void>}
+   */
   async loadOptions(select) {
     const index = parseInt(select.dataset.cascadeIndex);
     const instance = select.cascadeInstance;
@@ -480,6 +557,18 @@ const CascadingSelectManager = {
     }
   },
 
+  /**
+   * Turn a fetch response into option records and apply them.
+   *
+   * Throws on a non-2xx status, and reads the body according to its
+   * `Content-Type` so both JSON and plain responses are handled.
+   *
+   * @param {Response} response - Response from the cascade endpoint.
+   * @param {HTMLSelectElement} select - Select being filled.
+   * @param {Object} instance - Chain instance, read for config.
+   * @returns {Promise<void>}
+   * @throws {Error} - When the response status is not ok.
+   */
   async processResponse(response, select, instance) {
     if (!response.ok) {
       throw new Error(`HTTP error ${response.status}`);
@@ -560,6 +649,14 @@ const CascadingSelectManager = {
     return options;
   },
 
+  /**
+   * Replace a select's options with a freshly loaded list.
+   *
+   * @param {HTMLSelectElement} select - Select to fill.
+   * @param {Array} options - Option records, each with a value and a label.
+   * @param {Object} instance - Chain instance, read for config.
+   * @returns {void}
+   */
   updateSelectOptions(select, options, instance) {
     const {config} = instance;
 
@@ -649,14 +746,33 @@ const CascadingSelectManager = {
     }
   },
 
+  /**
+   * Announce a chain event through EventManager.
+   *
+   * @param {string} eventName - Event name to emit.
+   * @param {Object} data - Payload handed to listeners.
+   * @returns {void}
+   */
   emitEvent(eventName, data) {
     EventManager.emit(eventName, data);
   },
 
+  /**
+   * Look up a chain instance by its id.
+   *
+   * @param {string} id - Instance id.
+   * @returns {Object|null} - The instance, or null when unknown.
+   */
   getInstance(id) {
     return this.state.instances.get(id) || null;
   },
 
+  /**
+   * Find the chain a select belongs to.
+   *
+   * @param {HTMLElement|string} element - The select, or its element id.
+   * @returns {Object|null} - The instance, or null when the element is not in a chain.
+   */
   getInstanceForElement(element) {
     if (typeof element === 'string') {
       element = document.getElementById(element);
@@ -667,6 +783,12 @@ const CascadingSelectManager = {
     return element.cascadeInstance || null;
   },
 
+  /**
+   * Put a chain back to the options it started with.
+   *
+   * @param {Object|string} instance - The instance, or its id.
+   * @returns {void}
+   */
   reset(instance) {
     if (typeof instance === 'string') {
       instance = this.getInstance(instance);
@@ -710,6 +832,12 @@ const CascadingSelectManager = {
     });
   },
 
+  /**
+   * Tear a chain down and unbind its handlers.
+   *
+   * @param {Object|string} instance - The instance, or its id.
+   * @returns {void}
+   */
   destroy(instance) {
     if (typeof instance === 'string') {
       instance = this.getInstance(instance);

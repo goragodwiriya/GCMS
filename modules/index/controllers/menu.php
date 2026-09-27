@@ -10,8 +10,6 @@
 
 namespace Index\Menu;
 
-use Kotchasan\Language;
-
 /**
  * Class for loading menu items
  *
@@ -67,9 +65,9 @@ class Controller
      */
     private function initializeMenuPositions()
     {
-        foreach (Language::get('MENU_PARENTS', ['MAINMENU' => 'Main Menu']) as $key => $text) {
-            $this->menusByPosition[$key] = [];
-        }
+        $this->menusByPosition['MAINMENU'] = [];
+        $this->menusByPosition['SIDEMENU'] = [];
+        $this->menusByPosition['BOTTOMMENU'] = [];
     }
 
     /**
@@ -77,7 +75,7 @@ class Controller
      *
      * @param object $item Menu data loaded from database.
      * @param array $topLevelMenus Top level menu order
-     * @param int$index The order of the menus in the list.
+     * @param int $index The order of the menus in the list.
      */
     private function arrangeMenuByLevel($item, &$topLevelMenus, $index)
     {

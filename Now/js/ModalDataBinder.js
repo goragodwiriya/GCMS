@@ -187,7 +187,9 @@ const ModalDataBinder = {
       }
 
       const response = await client.post(apiUrl, params);
-      const responseData = response?.data?.data || response?.data || response;
+      const responseData = window.ResponseHandler
+        ? ResponseHandler.payloadOf(response)
+        : (response?.data?.data || response?.data || response);
 
       // Remove loading state
       trigger.classList.remove('loading');

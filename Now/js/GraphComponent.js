@@ -21,7 +21,7 @@ const GraphComponent = {
     debug: false,
 
     // Appearance options
-    colors: ['#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8', '#F9ED69', '#F08A5D', '#B83B5E', '#6A2C70', '#00B8A9'],
+    colors: ['#FF6B6B', '#6BCB77', '#4D96FF', '#A66CFF', '#FF8E72', '#00C2A8', '#FF6BCB', '#6C5CE7', '#FFB562', '#345B7D'],
     backgroundColor: '#ffffff',
     showGrid: true,
     gridColor: '#E0E0E0',
@@ -888,11 +888,31 @@ const GraphComponent = {
     return value;
   },
 
+  /**
+   * Coerce a cache lifetime into a usable number of milliseconds.
+   *
+   * Anything that is not a finite, non-negative integer falls back to `fallback`,
+   * so a malformed `data-cache-time` cannot disable caching by accident.
+   *
+   * @param {*} value - Raw value, typically from a data attribute.
+   * @param {number} [fallback=60000] - Used when `value` is unusable.
+   * @returns {number} - Lifetime in milliseconds.
+   */
   normalizeCacheTime(value, fallback = 60000) {
     const parsed = parseInt(value, 10);
     return Number.isFinite(parsed) && parsed >= 0 ? parsed : fallback;
   },
 
+  /**
+   * Decide whether this request may be served from cache.
+   *
+   * Only when the instance opted in with `cache: true`, and never when the
+   * caller passes `force: true`.
+   *
+   * @param {Object} instance - Component instance making the request.
+   * @param {Object} [requestOptions={}] - Per-call options; `force` bypasses cache.
+   * @returns {boolean} - True when the cache may be read.
+   */
   shouldUseCache(instance, requestOptions = {}) {
     if (requestOptions.force === true) {
       return false;
@@ -900,10 +920,25 @@ const GraphComponent = {
     return instance?.options?.cache === true;
   },
 
+  /**
+   * Build the cache key for a request.
+   *
+   * The URL is the whole key, so query parameters are already part of it and two
+   * different datasets never share an entry.
+   *
+   * @param {string} url - Request URL.
+   * @returns {string} - Cache key.
+   */
   createCacheKey(url) {
     return String(url || '');
   },
 
+  /**
+   * Read cached chart data, dropping it if it has expired.
+   *
+   * @param {string} cacheKey - Key from `createCacheKey`.
+   * @returns {*|null} - The cached data, or null when absent or stale.
+   */
   getCachedData(cacheKey) {
     const cached = this.state.cache.get(cacheKey);
     if (!cached) return null;
@@ -914,6 +949,14 @@ const GraphComponent = {
     return cached.data;
   },
 
+  /**
+   * Store chart data with an expiry time.
+   *
+   * @param {string} cacheKey - Key from `createCacheKey`.
+   * @param {*} data - Dataset to keep.
+   * @param {*} cacheTime - Lifetime in ms; falls back to the component default.
+   * @returns {void}
+   */
   setCachedData(cacheKey, data, cacheTime) {
     this.state.cache.set(cacheKey, {
       data,
@@ -1095,11 +1138,29 @@ if (window.ComponentManager) {
   ComponentManager.define('graph', {
     template: null,
 
+    /**
+     * ComponentManager hook — whether this element is a graph component.
+     *
+     * Recognised by the `graph-component` class or `data-component="graph"`.
+     *
+     * @param {HTMLElement} element - Candidate element.
+     * @returns {boolean} - True when this component should claim the element.
+     */
     validElement(element) {
       return element.classList.contains('graph-component') ||
         element.dataset.component === 'graph';
     },
 
+    /**
+     * ComponentManager hook — create the chart and attach it to the element.
+     *
+     * Options come from `data-props` when present; the instance is kept on
+     * `element._graphComponent` so teardown can find it.
+     *
+     * @param {HTMLElement} element - Element being mounted.
+     * @param {Object} state - Component state supplied by ComponentManager.
+     * @returns {HTMLElement} - The same element.
+     */
     setupElement(element, state) {
       const options = {};
 
@@ -1121,6 +1182,11 @@ if (window.ComponentManager) {
       return element;
     },
 
+    /**
+     * ComponentManager hook — destroy the attached chart on teardown.
+     *
+     * @returns {void}
+     */
     beforeDestroy() {
       if (this.element && this.element._graphComponent) {
         GraphComponent.destroy(this.element._graphComponent);

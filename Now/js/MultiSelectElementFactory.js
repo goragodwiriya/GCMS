@@ -56,6 +56,15 @@ class MultiSelectElementFactory extends ElementFactory {
     }
   };
 
+  /**
+   * Replace a `<select multiple>` with the custom trigger and dropdown.
+   *
+   * Anything that is not a multiple select is refused and reported to the
+   * console, since the rest of this factory reads `selectedOptions`.
+   *
+   * @param {Object} instance - Element instance carrying `element` and `config`.
+   * @returns {void}
+   */
   static setupElement(instance) {
     const {element, config} = instance;
 
@@ -168,6 +177,15 @@ class MultiSelectElementFactory extends ElementFactory {
     return instance;
   }
 
+  /**
+   * Bind arrow-key navigation inside the open dropdown.
+   *
+   * Guarded by an internal flag so reopening the dropdown does not stack
+   * duplicate key handlers.
+   *
+   * @param {Object} instance - Element instance to bind.
+   * @returns {void}
+   */
   static setupDropdownKeyboardNavigation(instance) {
     if (instance._dropdownKeyboardSetup) return;
     instance._dropdownKeyboardSetup = true;
@@ -260,6 +278,12 @@ class MultiSelectElementFactory extends ElementFactory {
     };
   }
 
+  /**
+   * Bind the trigger click that opens and closes the dropdown.
+   *
+   * @param {Object} instance - Element instance to bind.
+   * @returns {void}
+   */
   static setupEventHandlers(instance) {
     const {trigger} = instance;
 
@@ -345,6 +369,15 @@ class MultiSelectElementFactory extends ElementFactory {
     return super.setupEventListeners?.(instance) || {};
   }
 
+  /**
+   * Rebuild the dropdown rows from the select's options.
+   *
+   * The dropdown is emptied first, so this is safe to call whenever the option
+   * set changes.
+   *
+   * @param {Object} instance - Element instance to render for.
+   * @returns {void}
+   */
   static createOptionsList(instance) {
     const {element, dropdown, config} = instance;
 
@@ -425,6 +458,13 @@ class MultiSelectElementFactory extends ElementFactory {
     dropdown.setAttribute('tabindex', '0');
   }
 
+  /**
+   * Move the keyboard highlight to the current row.
+   *
+   * @param {Object} instance - Element instance being navigated.
+   * @param {Array<HTMLElement>} items - The dropdown rows.
+   * @returns {void}
+   */
   static updateHighlight(instance, items) {
     // Remove previous highlight
     items.forEach(item => item.classList.remove('active'));
@@ -442,6 +482,15 @@ class MultiSelectElementFactory extends ElementFactory {
     }
   }
 
+  /**
+   * The currently selected values.
+   *
+   * Read from the underlying select rather than the custom UI, so it stays
+   * correct even when the value was changed programmatically.
+   *
+   * @param {HTMLSelectElement} element - The underlying select.
+   * @returns {Array<string>} - Selected values.
+   */
   static getSelectedValues(element) {
     // Get values from original select element
     if (!element || element.tagName !== 'SELECT') return [];
@@ -449,6 +498,17 @@ class MultiSelectElementFactory extends ElementFactory {
     return Array.from(element.selectedOptions).map(opt => opt.value);
   }
 
+  /**
+   * Select one option by value.
+   *
+   * Comparison is loose so a numeric value from an API still matches the string
+   * value carried by the option element.
+   *
+   * @param {HTMLSelectElement} element - The underlying select.
+   * @param {*} value - Value to select.
+   * @param {string} text - Label, used when the option must be created.
+   * @returns {void}
+   */
   static addValue(element, value, text) {
     if (!element || element.tagName !== 'SELECT') return;
 
@@ -461,6 +521,15 @@ class MultiSelectElementFactory extends ElementFactory {
     }
   }
 
+  /**
+   * Deselect one option by value.
+   *
+   * Comparison is loose, matching `addValue`.
+   *
+   * @param {HTMLSelectElement} element - The underlying select.
+   * @param {*} value - Value to deselect.
+   * @returns {void}
+   */
   static removeValue(element, value) {
     if (!element || element.tagName !== 'SELECT') return;
 
@@ -473,6 +542,16 @@ class MultiSelectElementFactory extends ElementFactory {
     }
   }
 
+  /**
+   * Replace the selection with a given list of values.
+   *
+   * Values are compared as strings, so a list of numbers still matches options
+   * whose values are strings.
+   *
+   * @param {HTMLSelectElement} element - The underlying select.
+   * @param {Array} values - Values to select; non-arrays are treated as empty.
+   * @returns {void}
+   */
   static setSelectedValues(element, values) {
     if (!Array.isArray(values)) values = [];
     if (!element || element.tagName !== 'SELECT') return;
@@ -497,6 +576,15 @@ class MultiSelectElementFactory extends ElementFactory {
     }
   }
 
+  /**
+   * Refresh the text shown on the closed trigger.
+   *
+   * Up to two selections are named; beyond that the trigger falls back to a
+   * count so a long selection does not stretch the control.
+   *
+   * @param {Object} instance - Element instance to update.
+   * @returns {void}
+   */
   static updateDisplay(instance) {
     const {element, selectedDisplay, placeholder, config} = instance;
     if (!element || element.tagName !== 'SELECT') return;
@@ -532,6 +620,16 @@ class MultiSelectElementFactory extends ElementFactory {
     }
   }
 
+  /**
+   * Fire a change event on the underlying select.
+   *
+   * The custom UI edits the select directly, so listeners bound to the original
+   * element would otherwise never hear about a selection made through the
+   * dropdown.
+   *
+   * @param {Object} instance - Element instance that changed.
+   * @returns {void}
+   */
   static triggerChange(instance) {
     const {element} = instance;
 
@@ -547,6 +645,12 @@ class MultiSelectElementFactory extends ElementFactory {
     }
   }
 
+  /**
+   * Re-translate the visible labels after a locale change.
+   *
+   * @param {Object} instance - Element instance to refresh.
+   * @returns {void}
+   */
   static retranslate(instance) {
     if (!instance || !instance.element || instance.element.tagName !== 'SELECT') return;
 
@@ -568,6 +672,12 @@ class MultiSelectElementFactory extends ElementFactory {
     this.updateDisplay(instance);
   }
 
+  /**
+   * Deselect everything.
+   *
+   * @param {Object} instance - Element instance to clear.
+   * @returns {void}
+   */
   static clearSelection(instance) {
     const {element} = instance;
 
@@ -580,6 +690,16 @@ class MultiSelectElementFactory extends ElementFactory {
     this.triggerChange(instance);
   }
 
+  /**
+   * Replace the select's options.
+   *
+   * Grouped sources are flattened first, so a grouped option list still yields a
+   * flat set of rows in the dropdown.
+   *
+   * @param {HTMLSelectElement} selectElement - The underlying select.
+   * @param {Array|Object} options - New options, grouped or flat.
+   * @returns {void}
+   */
   static updateOptions(selectElement, options) {
     if (!selectElement || selectElement.tagName !== 'SELECT') return;
 
@@ -624,6 +744,15 @@ class MultiSelectElementFactory extends ElementFactory {
     });
   }
 
+  /**
+   * Validate the selection for a required field.
+   *
+   * Required is taken from the element's `required` attribute or
+   * `data-required="true"`.
+   *
+   * @param {*} value - Current value.
+   * @returns {boolean|string} - True when valid, or the message to show.
+   */
   static customValidateValue(value) {
     const element = this.element;
     const isRequired = element.required || element.dataset.required === 'true';
@@ -644,6 +773,12 @@ class MultiSelectElementFactory extends ElementFactory {
     };
   }
 
+  /**
+   * Tear the control down and run the teardown closure stored on the instance.
+   *
+   * @param {Object} instance - Element instance being torn down.
+   * @returns {void}
+   */
   static cleanup(instance) {
     if (!instance) return;
 
@@ -682,6 +817,15 @@ class MultiSelectElementFactory extends ElementFactory {
     super.cleanup?.(instance);
   }
 
+  /**
+   * Build a `<select multiple>` from a field definition.
+   *
+   * An id is generated when the definition does not supply one, so the trigger
+   * and dropdown have something stable to point at.
+   *
+   * @param {Object} def - Field definition, may carry `id` and options.
+   * @returns {HTMLSelectElement} - The created select.
+   */
   static create(def) {
     // Create select element from definition
     const select = document.createElement('select');

@@ -1,5 +1,4 @@
 <?php
-
 namespace Kotchasan;
 
 /**
@@ -157,12 +156,12 @@ class DOMNode
                 $txt .= $this->nodeText();
             } else {
                 switch ($node->nodeName) {
-                    case 'BR':
-                        $txt .= "\n";
-                        break;
-                    case '':
-                        $txt .= $node->nodeValue;
-                        break;
+                case 'BR':
+                    $txt .= "\n";
+                    break;
+                case '':
+                    $txt .= $node->nodeValue;
+                    break;
                 }
             }
         }

@@ -53,8 +53,15 @@ class View extends \Web\View
             $options[] = '<option value="'.$cat.'"'.($cat == $index->category_id ? ' selected' : '').'>'.$item->topic.'</option>';
         }
 
+        $uploadEnabled = !empty($index->img_upload_type);
+        $picture = empty($index->picture) ? [] : [[
+            'url' => WEB_URL.DATA_FOLDER.'board/'.$index->picture,
+            'name' => $index->picture
+        ]];
+
         $template = Template::create($index->owner, $index->module, 'write');
         $template->add([
+            '/{NEW_TOPIC}/' => $index->id > 0 ? '{LNG_Edit Topic}' : '{LNG_New Topic}',
             '/{CATEGORIES}/' => implode("\n", $options),
             '/{HAS_CATEGORY}/' => empty($options) ? 'hidden' : 'has-category',
             '/{TOPIC}/' => Text::htmlspecialchars($index->topic),
@@ -62,7 +69,12 @@ class View extends \Web\View
             '/{SUBJECT}/' => Text::htmlspecialchars($index->subject),
             '/{DETAIL}/' => $index->detail,
             '/{MODULE_ID}/' => (int) $index->module_id,
-            '/{ID}/' => (int) $index->id
+            '/{MODULE}/' => Text::htmlspecialchars($index->module),
+            '/{ID}/' => (int) $index->id,
+            '/{HAS_UPLOAD}/' => $uploadEnabled ? 'has-upload' : 'hidden',
+            '/{IMG_TYPES}/' => implode(', ', $index->img_upload_type),
+            '/{IMG_LAW}/' => \Kotchasan\Language::get('IMG_LAW', '', $index->img_law),
+            '/{PICTURE_JSON}/' => Text::htmlspecialchars(json_encode($picture))
         ]);
 
         $index->detail = $template->render();

@@ -43,6 +43,17 @@ const MenuManager = {
     announcer: null
   },
 
+  /**
+   * Initializes the manager: mounts the menus already in the document, starts
+   * the DOM observer, the toggle delegation, the API data and i18n listeners,
+   * and hooks route changes to refresh the active item and close open menus.
+   *
+   * Calling it again once initialized is a no-op.
+   *
+   * @param {Object} [options={}] - Configuration merged over the defaults
+   * @returns {Promise<Object>} The manager instance
+   * @throws {Error} When initialization fails
+   */
   async init(options = {}) {
     try {
       if (this.state.initialized) return this;
@@ -73,7 +84,6 @@ const MenuManager = {
           });
 
           this.updateActiveMenu();
-          this.setupAutoExpand();
 
           // Close all submenus and mobile menus on route change
           this.state.menus.forEach(menu => {
@@ -157,6 +167,15 @@ const MenuManager = {
    * Menus with data-component="menu" and data-source="path.to.menus" will auto-render
    */
   setupApiDataListener() {
+    // Guard against double-attachment: this runs eagerly at script-load time
+    // (see bottom of file) AND from init(), because ApiComponent auto-fetches
+    // (autoload: true) the moment the bundle parses -- before Now.init() ever
+    // reaches MenuManager.init(). A fast/cached response can dispatch
+    // api:loaded before init() would have attached this listener, and the
+    // event is a one-shot CustomEvent with no replay, so it would be lost.
+    if (this._apiDataListenerAttached) return;
+    this._apiDataListenerAttached = true;
+
     // Listen for api:loaded events from ApiComponent
     document.addEventListener('api:loaded', (e) => {
       // Use e.detail.element as fallback when event is dispatched directly on document
@@ -227,15 +246,34 @@ const MenuManager = {
     return button.getAttribute('aria-expanded') === 'true';
   },
 
+  /**
+   * Creates a menu instance for every [data-component="menu"] element in the
+   * document, then refreshes the active item.
+   *
+   * Submenus are opened by click (vertical menus: sidemenu, and topmenu on
+   * mobile) or by the hover handlers setupHoverHandlers() binds on the <li>
+   * of a desktop topmenu. Nothing binds hover on the toggle button itself:
+   * the button's mouseleave fires as soon as the pointer moves down into the
+   * submenu it just opened, which closed the submenu before its items could
+   * be clicked and made a click on the button toggle an already-hover-opened
+   * submenu shut.
+   *
+   * @returns {void}
+   */
   initializeExistingMenus() {
     // Only initialize elements explicitly marked as menu components
     document.querySelectorAll('[data-component="menu"]').forEach(element => {
       this.createMenu(element);
     });
     this.updateActiveMenu();
-    this.setupAutoExpand();
   },
 
+  /**
+   * Watches the document for menu components being added or removed, mounting
+   * the new ones and destroying the instances whose elements left the DOM.
+   *
+   * @returns {void}
+   */
   setupMutationObserver() {
     // Observer only watches for menu components, not toggle buttons
     this.observer = new MutationObserver((mutations) => {
@@ -335,6 +373,16 @@ const MenuManager = {
     });
   },
 
+  /**
+   * Marks the menu links matching the current location as active and expands
+   * their ancestors, emitting menu:activeChanged when the selection moved.
+   *
+   * The path comes from the argument, then the menuPath of the current route,
+   * then the address bar; the router base path is stripped from it.
+   *
+   * @param {string} [path] - Path to match against; detected when omitted
+   * @returns {Element[]} Links that are now active
+   */
   updateActiveMenu(path) {
     // If path not specified, check for menuPath in current route config, then fall back to pathname
     const currentRoute = window.RouterManager?.state?.current;
@@ -426,6 +474,15 @@ const MenuManager = {
       utils.setActiveState(link, false);
     });
 
+    // Server-rendered menus emit absolute URLs (`http://site/download`) while
+    // currentPath is a pathname, so compare same-origin links by their path.
+    // Links to another origin keep their raw href and never match.
+    // A fragment-only href keeps its raw form: resolving it would yield the
+    // current pathname and mark every in-page anchor active.
+    const pathOf = (link, href) => !href.startsWith('#') && link.origin === window.location.origin
+      ? link.pathname + link.search
+      : href;
+
     // Find a links that match the current path.
     const activeLinks = [];
     document.querySelectorAll('.sidemenu a[href], .topmenu a[href]').forEach(link => {
@@ -445,7 +502,7 @@ const MenuManager = {
       }
 
       // Check the path
-      if (utils.comparePaths(href, currentPath)) {
+      if (utils.comparePaths(pathOf(link, href), currentPath)) {
         if (utils.setActiveState(link)) {
           activeLinks.push(link);
         }
@@ -461,7 +518,7 @@ const MenuManager = {
         const href = link.getAttribute('href');
         if (!href) return;
 
-        const cleanHref = utils.cleanUrl(href);
+        const cleanHref = utils.cleanUrl(pathOf(link, href));
         const cleanCurrentPath = utils.cleanUrl(currentPath);
 
         if (cleanCurrentPath.startsWith(cleanHref) && cleanHref.length > bestMatchLength) {
@@ -489,35 +546,17 @@ const MenuManager = {
     return activeLinks;
   },
 
-  setupAutoExpand() {
-    if (window.innerWidth >= this.config.breakpoint) {
-      document.querySelectorAll('.sidemenu [aria-haspopup="true"], .topmenu [aria-haspopup="true"]').forEach(button => {
-        // The button is inside li, submenu is sibling of button (also inside li)
-        const parentLi = button.closest('li');
-        if (!parentLi) return;
-
-        const submenu = parentLi.querySelector(':scope > ul');
-        if (!submenu) return;
-
-        button.addEventListener('mouseenter', () => {
-          if (!button.hasAttribute('aria-expanded') || button.getAttribute('aria-expanded') === 'false') {
-            button.setAttribute('aria-expanded', 'true');
-            this.checkAndAdjustPosition(submenu);
-          }
-        });
-
-        button.addEventListener('mouseleave', () => {
-          setTimeout(() => {
-            // Check if the parent li contains an active link
-            if (!parentLi.querySelector('.active')) {
-              button.setAttribute('aria-expanded', 'false');
-            }
-          }, this.config.animationDuration);
-        });
-      });
-    }
-  },
-
+  /**
+   * Builds a menu instance for an element: assigns its id, resolves its parts,
+   * applies the ARIA structure, binds the handlers and sets the responsive
+   * state.
+   *
+   * Elements already mounted, and data-source elements whose items have not
+   * arrived yet, are skipped.
+   *
+   * @param {HTMLElement} element - Element carrying data-component="menu"
+   * @returns {Promise<Object|null>} The instance, or null when skipped or failed
+   */
   async createMenu(element) {
     try {
       if (element.dataset.menuId) return null;
@@ -556,23 +595,14 @@ const MenuManager = {
     }
   },
 
-  // In MenuManager
-  handleClick(event) {
-    const menuItem = event.target.closest('.menu-item');
-    if (!menuItem) return;
-
-    // If it's a link with href, let RouterManager handle it
-    if (menuItem.tagName === 'A' && menuItem.hasAttribute('href')) {
-      return;
-    }
-
-    event.preventDefault();
-    event.stopPropagation();
-
-    // Handle menu click as normal
-    this.toggleMenu(menu);
-  },
-
+  /**
+   * Creates the instance record of a menu, reading its side and whether it is
+   * a sidebar from the classes of the element.
+   *
+   * @param {HTMLElement} element - Menu element
+   * @param {string} menuId - Generated id stored in data-menu-id
+   * @returns {Object} Instance record, before its parts are resolved
+   */
   initializeMenuInstance(element, menuId) {
     return {
       id: menuId,
@@ -586,6 +616,16 @@ const MenuManager = {
     };
   },
 
+  /**
+   * Resolves the parts of a menu: its list container, its toggle buttons and
+   * its backdrop, creating the toggle for a responsive topmenu when the page
+   * supplies none.
+   *
+   * Leaves elements.container null when the element holds no list.
+   *
+   * @param {Object} menu - Menu instance
+   * @returns {void}
+   */
   setupMenuElements(menu) {
     const container = menu.element.querySelector('ul');
     const menuParent = menu.element.parentNode;
@@ -661,6 +701,15 @@ const MenuManager = {
     }
   },
 
+  /**
+   * Applies the ARIA menu structure to a list and its nested lists, linking
+   * each toggle button to the submenu it controls and collecting the buttons
+   * into elements.submenus.
+   *
+   * @param {Object} menu - Menu instance
+   * @param {HTMLElement} ul - List to process
+   * @returns {void}
+   */
   setupAriaForNestedMenu(menu, ul) {
     const menuItems = ul.querySelectorAll(':scope > li');
     menuItems.forEach((menuItem) => {
@@ -696,6 +745,13 @@ const MenuManager = {
     });
   },
 
+  /**
+   * Shifts a submenu back inside the viewport when it would overflow to the
+   * right or below.
+   *
+   * @param {HTMLElement} submenu - Submenu element to reposition
+   * @returns {void}
+   */
   checkAndAdjustPosition(submenu) {
     const rect = submenu.getBoundingClientRect();
     const viewportWidth = window.innerWidth;
@@ -717,6 +773,14 @@ const MenuManager = {
     }
   },
 
+  /**
+   * Binds the handlers of a menu instance: backdrop, keyboard navigation,
+   * resize and focus handling. Toggle buttons are handled by delegation in
+   * setupToggleListeners().
+   *
+   * @param {Object} menu - Menu instance
+   * @returns {void}
+   */
   setupMenuHandlers(menu) {
     // Use event delegation: attach a small set of handlers on the menu root
     try {
@@ -773,7 +837,7 @@ const MenuManager = {
           if ((menu.position === 'right' && deltaX > 0) ||
             (menu.position === 'left' && deltaX < 0)) {
             requestAnimationFrame(() => {
-              menu.elements.container.style.transform = `translateX(${deltaX}px)`;
+              menu.element.style.transform = `translateX(${deltaX}px)`;
             });
           }
         },
@@ -800,7 +864,7 @@ const MenuManager = {
 
         cancel: () => {
           if (menu.touchData) {
-            menu.elements.element.style.transform = '';
+            menu.element.style.transform = '';
             menu.touchData = null;
           }
         }
@@ -859,6 +923,12 @@ const MenuManager = {
     }
   },
 
+  /**
+   * Opens the menu when it is closed, closes it when it is open.
+   *
+   * @param {Object} menu - Menu instance
+   * @returns {void}
+   */
   toggleMenu(menu) {
     const isOpen = this.isMenuOpen(menu);
     if (isOpen) {
@@ -868,6 +938,14 @@ const MenuManager = {
     }
   },
 
+  /**
+   * Opens a menu: collapses its submenus first when it is a sidemenu, makes its
+   * items focusable, updates the toggle ARIA state, announces the item count,
+   * and emits menu:opened.
+   *
+   * @param {Object} menu - Menu instance
+   * @returns {Promise<void>}
+   */
   async openMenu(menu) {
     if (this.isMenuOpen(menu)) {
       return;
@@ -910,6 +988,16 @@ const MenuManager = {
     EventManager.emit('menu:opened', {menu});
   },
 
+  /**
+   * Closes a menu: collapses its submenus, takes its items out of the tab
+   * order, returns focus to the toggle, and emits menu:closed.
+   *
+   * In mobile-menu mode the submenu state is left alone, since the menu is only
+   * hidden rather than reset.
+   *
+   * @param {Object} menu - Menu instance
+   * @returns {Promise<void>}
+   */
   async closeMenu(menu) {
     if (!this.isMenuOpen(menu)) {
       return;
@@ -961,6 +1049,13 @@ const MenuManager = {
     Now.emit('menu:closed', {menu});
   },
 
+  /**
+   * Opens the submenu when it is closed, closes it when it is open.
+   *
+   * @param {Object} menu - Menu instance
+   * @param {HTMLElement} submenu - Toggle button of the submenu
+   * @returns {void}
+   */
   toggleSubmenu(menu, submenu) {
     if (this.isSubmenuOpen(submenu)) {
       this.closeSubmenu(menu, submenu);
@@ -969,6 +1064,19 @@ const MenuManager = {
     }
   },
 
+  /**
+   * Opens a submenu, closing its siblings at the same level first.
+   *
+   * A collapsed sidemenu is expanded temporarily and marked so closeSubmenu()
+   * can collapse it back. The submenu is repositioned to stay in the viewport,
+   * and focus moves into it when the request came from the keyboard.
+   *
+   * @param {Object} menu - Menu instance
+   * @param {HTMLElement} button - Toggle button whose content is the submenu
+   * @param {Object} [options={}] - Open options
+   * @param {boolean} [options.useKeyboard] - Move focus to the first item
+   * @returns {Promise<void>}
+   */
   async openSubmenu(menu, button, options = {}) {
     if (!button.content) return;
 
@@ -1030,6 +1138,17 @@ const MenuManager = {
     });
   },
 
+  /**
+   * Closes a submenu and everything nested inside it.
+   *
+   * Focus is moved back to the button before aria-hidden is set, so the browser
+   * never reports focus inside a hidden subtree, and a sidemenu that was only
+   * expanded to show this submenu is collapsed again.
+   *
+   * @param {Object} menu - Menu instance
+   * @param {HTMLElement} button - Toggle button whose content is the submenu
+   * @returns {Promise<void>}
+   */
   async closeSubmenu(menu, button) {
     if (!button.content) return;
 
@@ -1101,6 +1220,12 @@ const MenuManager = {
     });
   },
 
+  /**
+   * Closes every expanded submenu of a menu.
+   *
+   * @param {Object} menu - Menu instance
+   * @returns {void}
+   */
   closeAllSubmenus(menu) {
     menu.elements?.submenus.forEach(submenu => {
       if (submenu.getAttribute('aria-expanded') === 'true') {
@@ -1109,89 +1234,33 @@ const MenuManager = {
     });
   },
 
+  /**
+   * Reports whether a menu instance is registered under the id.
+   *
+   * @param {string} menuId - Menu id from data-menu-id
+   * @returns {boolean} True when the instance exists
+   */
   hasMenu(menuId) {
     return this.state.menus.has(menuId);
   },
 
+  /**
+   * Returns a menu instance by id.
+   *
+   * @param {string} menuId - Menu id from data-menu-id
+   * @returns {Object|null} Instance, or null when absent
+   */
   getMenu(menuId) {
     return this.state.menus.get(menuId) || null;
   },
 
-  setupTouchHandlers(menu) {
-    let touchIdentifier;
-
-    const handlers = {
-      start: (e) => {
-        if (touchIdentifier === undefined) {
-          touchIdentifier = e.changedTouches[0].identifier;
-          menu.touchData = {
-            startX: e.touches[0].clientX,
-            startY: e.touches[0].clientY,
-            startTime: Date.now(),
-            isScrolling: null
-          };
-        }
-      },
-
-      move: (e) => {
-        if (!menu.touchData) return;
-
-        const touch = Array.from(e.changedTouches)
-          .find(t => t.identifier === touchIdentifier);
-
-        if (!touch) return;
-
-        const deltaX = touch.clientX - menu.touchData.startX;
-        const deltaY = touch.clientY - menu.touchData.startY;
-
-        if (menu.touchData.isScrolling === null) {
-          menu.touchData.isScrolling = Math.abs(deltaY) > Math.abs(deltaX);
-        }
-
-        if (menu.touchData.isScrolling) return;
-
-        if (this.config.performance.useRequestAnimationFrame) {
-          requestAnimationFrame(() => {
-            this.handleTouchMove(menu, deltaX);
-          });
-        } else {
-          this.handleTouchMove(menu, deltaX);
-        }
-      },
-
-      end: (e) => {
-        const touch = Array.from(e.changedTouches)
-          .find(t => t.identifier === touchIdentifier);
-
-        if (!touch || !menu.touchData) return;
-
-        const deltaX = touch.clientX - menu.touchData.startX;
-        const deltaTime = Date.now() - menu.touchData.startTime;
-        const velocity = Math.abs(deltaX) / deltaTime;
-
-        this.handleTouchEnd(menu, deltaX, velocity);
-
-        touchIdentifier = undefined;
-        menu.touchData = null;
-      },
-
-      cancel: () => {
-        if (menu.touchData) {
-          menu.element.style.transform = '';
-          touchIdentifier = undefined;
-          menu.touchData = null;
-        }
-      }
-    };
-
-    Object.entries(handlers).forEach(([event, handler]) => {
-      menu.element.addEventListener(`touch${event}`, handler, {
-        passive: true
-      });
-      menu.handlers[`touch${event}`] = handler;
-    });
-  },
-
+  /**
+   * Adds the accessibility scaffolding of a menu: its live region, the
+   * navigation role and label, and the screen-reader keyboard hint.
+   *
+   * @param {Object} menu - Menu instance
+   * @returns {void}
+   */
   setupAccessibility(menu) {
     const liveRegion = document.createElement('div');
     liveRegion.setAttribute('aria-live', 'polite');
@@ -1209,6 +1278,14 @@ const MenuManager = {
     menu.element.insertBefore(keyboardHint, menu.element.firstChild);
   },
 
+  /**
+   * Binds hover opening and closing for the submenus of a desktop topmenu, each
+   * delayed by the configured hover interval so a pointer passing over an item
+   * does not open it.
+   *
+   * @param {Object} menu - Menu instance
+   * @returns {void}
+   */
   setupHoverHandlers(menu) {
     menu.hoverTimeouts = new Map();
 
@@ -1256,9 +1333,24 @@ const MenuManager = {
     });
   },
 
+  /**
+   * Applies the viewport breakpoint to a menu: sets the list orientation,
+   * repositions its submenus, closes a desktop topmenu that was open on mobile,
+   * and binds or removes the hover handlers.
+   *
+   * @param {Object} menu - Menu instance
+   * @param {boolean} [initial=false] - Treat this as the first pass, so the
+   *   handlers are applied even though nothing changed
+   * @returns {void}
+   */
   checkResponsiveState(menu, initial = false) {
     const wasMobile = menu.isMobile;
-    const isMobile = window.innerWidth < this.config.breakpoint;
+    // `<=`, to match `@media (max-width: 768px)` in Now/css/menu.css. With `<`
+    // a viewport of exactly 768px got the fixed mobile drawer from CSS while
+    // JS still called it desktop, so body never gained .mobile-menu and
+    // `body:not(.mobile-menu) .topmenu-toggle {display: none}` hid the only
+    // control that could open it — the main menu was unreachable.
+    const isMobile = window.innerWidth <= this.config.breakpoint;
     menu.elements.container.setAttribute('aria-orientation', isMobile || menu.isSidebar ? 'vertical' : 'horizontal');
 
     menu.elements.submenus.forEach(submenu => {
@@ -1292,6 +1384,16 @@ const MenuManager = {
     }
   },
 
+  /**
+   * Reports whether the pointer moved to somewhere still inside the submenu or
+   * one of its ancestors, rather than out of the menu.
+   *
+   * Nothing currently calls this.
+   *
+   * @param {HTMLElement} submenu - Submenu being left
+   * @param {MouseEvent} e - mouseleave event
+   * @returns {boolean} True when the pointer is still within the menu
+   */
   isHoveringSubmenu(submenu, e) {
     const currentItem = submenu.closest('li');
     const relatedTarget = e.relatedTarget;
@@ -1318,6 +1420,12 @@ const MenuManager = {
     return false;
   },
 
+  /**
+   * Walks up from an item to the top-level item that contains it.
+   *
+   * @param {Element} current - Item to start from
+   * @returns {Element|null} Top-level menu item, or null
+   */
   findTopLevelMenuItem(current) {
     let parent = current.closest('li');
     while (parent) {
@@ -1330,10 +1438,25 @@ const MenuManager = {
     return null;
   },
 
+  /**
+   * Returns the top-level links and toggle buttons of a menu.
+   *
+   * @param {Object} menu - Menu instance
+   * @returns {NodeList} Top-level menu items
+   */
   getTopLevelMenuItems(menu) {
     return menu.elements.container.querySelectorAll(':scope > li > a, :scope > li:not(.menu-close) > button');
   },
 
+  /**
+   * Implements keyboard navigation inside a menu: arrows move between items and
+   * in and out of submenus according to the orientation, Escape closes the
+   * current level, Home and End jump to the ends, and Tab leaves the menu.
+   *
+   * @param {Object} menu - Menu instance
+   * @param {KeyboardEvent} e - Key event
+   * @returns {void}
+   */
   handleKeyboardNavigation(menu, e) {
     if (!menu.element.contains(e.target)) return;
 
@@ -1478,31 +1601,72 @@ const MenuManager = {
     }
   },
 
+  /**
+   * Returns the first enabled item of a menu.
+   *
+   * @param {Object} menu - Menu instance
+   * @returns {Element|null} First focusable item
+   */
   getFirstFocusableItem(menu) {
     return menu.elements.container.querySelector('[role="menuitem"]:not([disabled])');
   },
 
+  /**
+   * Returns the last enabled item of a menu.
+   *
+   * @param {Object} menu - Menu instance
+   * @returns {Element|undefined} Last focusable item
+   */
   getLastFocusableItem(menu) {
     const items = menu.elements.container.querySelectorAll('[role="menuitem"]:not([disabled])');
     return items[items.length - 1];
   },
 
+  /**
+   * Finds the submenu a toggle button controls.
+   *
+   * @param {Object} menu - Menu instance
+   * @param {Element} toggle - Toggle button
+   * @returns {Element|undefined} Matching submenu entry
+   */
   findSubmenuByToggle(menu, toggle) {
     return menu.elements.submenus.find(
       submenu => submenu.toggle === toggle
     );
   },
 
+  /**
+   * Returns the item after the current one, wrapping to the first.
+   *
+   * @param {NodeList|Element[]} items - Items to move through
+   * @param {Element} current - Item holding focus
+   * @returns {Element} Item to focus next
+   */
   getNextFocusableItem(items, current) {
     const currentIndex = Array.from(items).indexOf(current);
     return items[currentIndex + 1] || items[0];
   },
 
+  /**
+   * Returns the item before the current one, wrapping to the last.
+   *
+   * @param {NodeList|Element[]} items - Items to move through
+   * @param {Element} current - Item holding focus
+   * @returns {Element} Item to focus next
+   */
   getPreviousFocusableItem(items, current) {
     const currentIndex = Array.from(items).indexOf(current);
     return items[currentIndex - 1] || items[items.length - 1];
   },
 
+  /**
+   * Announces a message to screen readers through a shared live region,
+   * creating it on first use and translating the message.
+   *
+   * @param {string} message - Message key or text
+   * @param {Object} [params={}] - Values for the translation placeholders
+   * @returns {void}
+   */
   announce(message, params = {}) {
     if (!this.announcer) {
       this.announcer = document.createElement('div');
@@ -1518,6 +1682,18 @@ const MenuManager = {
     this.announcer.textContent = I18nManager.translate(message, params);
   },
 
+  /**
+   * Reports a menu error and attempts recovery.
+   *
+   * A failure inside recovery is marked so it is reported without recursing,
+   * and falls back to forceCleanup().
+   *
+   * @param {string} message - Description of what failed
+   * @param {Error} error - Error that was caught
+   * @param {string} type - Method name, used to build the context
+   * @param {boolean} [canRecover=true] - Attempt recovery
+   * @returns {void}
+   */
   handleError(message, error, type, canRecover = true) {
     if (error.isRecoveryError) {
       ErrorManager.handle(error, {
@@ -1552,6 +1728,12 @@ const MenuManager = {
     }
   },
 
+  /**
+   * Returns every menu to a known state: closes it, collapses its submenus,
+   * clears its transform and re-applies its responsive state.
+   *
+   * @returns {void}
+   */
   recoverFromError() {
     this.state.menus.forEach(menu => {
       if (this.isMenuOpen(menu)) {
@@ -1559,11 +1741,17 @@ const MenuManager = {
       }
       this.closeAllSubmenus(menu);
       this.resetMenuState(menu);
+      this.checkResponsiveState(menu);
     });
-
-    this.checkResponsiveState();
   },
 
+  /**
+   * Last-resort reset when recovery itself failed: clears the touch state and
+   * transform of every menu, collapses their toggles and removes their open
+   * body class.
+   *
+   * @returns {void}
+   */
   forceCleanup() {
     try {
       this.state.menus.forEach(menu => {
@@ -1573,13 +1761,13 @@ const MenuManager = {
         if (menu.elements?.toggle) {
           menu.elements.toggle.setAttribute('aria-expanded', 'false');
         }
-      });
 
-      if (menu.element && menu.element.classList.contains('sidemenu')) {
-        document.body.classList.remove('sidemenu-close');
-      } else {
-        document.body.classList.remove('topmenu-open');
-      }
+        if (menu.element.classList.contains('sidemenu')) {
+          document.body.classList.remove('sidemenu-close');
+        } else {
+          document.body.classList.remove('topmenu-open');
+        }
+      });
 
     } catch (error) {
       ErrorManager.handle(error, {
@@ -1588,6 +1776,13 @@ const MenuManager = {
     }
   },
 
+  /**
+   * Clears the touch state and transform of one menu and removes its open body
+   * class.
+   *
+   * @param {Object} menu - Menu instance
+   * @returns {void}
+   */
   resetMenuState(menu) {
     menu.touchData = null;
     menu.element.style.transform = '';
@@ -1598,6 +1793,12 @@ const MenuManager = {
     }
   },
 
+  /**
+   * Destroys one menu instance and forgets it.
+   *
+   * @param {string} menuId - Menu id from data-menu-id
+   * @returns {void}
+   */
   destroyMenu(menuId) {
     const menu = this.state.menus.get(menuId);
     if (!menu) return;
@@ -1611,6 +1812,13 @@ const MenuManager = {
     this.state.menus.delete(menuId);
   },
 
+  /**
+   * Releases everything a menu instance holds: its listeners, hover timers, the
+   * backdrop and any toggle this manager created, then nulls its references.
+   *
+   * @param {Object} menu - Menu instance
+   * @returns {void}
+   */
   cleanup(menu) {
     if (!menu) return;
 
@@ -1676,6 +1884,13 @@ const MenuManager = {
     menu.touchData = null;
   },
 
+  /**
+   * Removes the hover listeners and pending hover timers of a menu, used when
+   * it switches to mobile.
+   *
+   * @param {Object} menu - Menu instance
+   * @returns {void}
+   */
   removeHoverHandlers(menu) {
     if (!menu?.elements?.submenus) return;
 
@@ -1697,6 +1912,15 @@ const MenuManager = {
     }
   },
 
+  /**
+   * Destroys every menu, disconnects the DOM observer, removes the live region
+   * and emits menumanager:destroyed.
+   *
+   * The per-menu elements are released by destroyMenu(), which runs cleanup()
+   * for each of them.
+   *
+   * @returns {void}
+   */
   destroy() {
     this.state.menus.forEach((menu) => {
       this.destroyMenu(menu.id);
@@ -1714,32 +1938,19 @@ const MenuManager = {
       this.announcer = null;
     }
 
-    if (menu.elements) {
-      if (menu.elements.backdrop) {
-        menu.elements.backdrop.remove();
-      }
-      if (menu.elements.close) {
-        menu.elements.close.remove();
-      }
-      if (menu.elements.toggle?.classList.contains('runtime')) {
-        menu.elements.toggle.remove();
-      }
-    }
-
     this.state.initialized = false;
 
     Now.emit('menumanager:destroyed');
   },
 
-  handleTouchMove(menu, deltaX) {
-    if (!this.config.performance.touchOptimization) {
-      menu.element.style.transform = `translateX(${deltaX}px)`;
-      return;
-    }
-
-    menu.element.style.transform = `translate3d(${deltaX}px, 0, 0)`;
-  },
-
+  /**
+   * Finds the menu instance mounted on an element.
+   *
+   * Nothing currently calls this.
+   *
+   * @param {HTMLElement} element - Menu element
+   * @returns {Object|null} Instance, or null
+   */
   findMenuByElement(element) {
     for (const menu of this.state.menus.values()) {
       if (menu.element === element) {
@@ -1749,6 +1960,14 @@ const MenuManager = {
     return null;
   },
 
+  /**
+   * Closes the submenus that sit at the same level as the given one, so only
+   * one branch stays open.
+   *
+   * @param {Object} menu - Menu instance
+   * @param {HTMLElement} currentSubmenu - Submenu to keep open
+   * @returns {void}
+   */
   closeOtherSubmenus(menu, currentSubmenu) {
     const currentItem = currentSubmenu.closest('li');
     const parentUl = currentItem?.closest('ul');
@@ -1765,6 +1984,14 @@ const MenuManager = {
     }
   },
 
+  /**
+   * Reports whether a submenu and its content are both still in the DOM.
+   *
+   * Nothing currently calls this.
+   *
+   * @param {HTMLElement} submenu - Toggle button of the submenu
+   * @returns {boolean} True when the submenu can be operated on
+   */
   isSubmenuReady(submenu) {
     return submenu &&
       submenu.isConnected &&
@@ -1971,3 +2198,9 @@ if (window.Now?.registerManager) {
 }
 
 window.MenuManager = MenuManager;
+
+// Attach the api:loaded listener now, not only from init(). ApiComponent
+// auto-fetches as soon as its own script block runs (autoload: true), which
+// can be before Now.init() ever calls MenuManager.init() -- see the comment
+// in setupApiDataListener() for why a late listener silently misses the event.
+MenuManager.setupApiDataListener();

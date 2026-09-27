@@ -73,6 +73,15 @@ const RouterManager = {
     disabled: false
   },
 
+  /**
+   * Registers a global navigation guard that runs before every route change.
+   *
+   * Returning false from the guard cancels the navigation; returning a string
+   * or an object with a path redirects to it.
+   *
+   * @param {Function} guard - Guard called with (to, from)
+   * @returns {Function} Unregister function that removes the guard
+   */
   beforeEach(guard) {
     if (typeof guard !== 'function') {
       throw new Error('Guard must be a function');
@@ -86,6 +95,14 @@ const RouterManager = {
     };
   },
 
+  /**
+   * Registers a global hook that runs after every successful route change.
+   *
+   * Errors thrown by the hook are logged and never block navigation.
+   *
+   * @param {Function} guard - Hook called with (to, from)
+   * @returns {Function} Unregister function that removes the hook
+   */
   afterEach(guard) {
     if (typeof guard !== 'function') {
       throw new Error('Guard must be a function');
@@ -99,6 +116,16 @@ const RouterManager = {
     };
   },
 
+  /**
+   * Runs every registered beforeEach guard in registration order.
+   *
+   * Stops at the first guard that returns false or a redirect target.
+   *
+   * @param {Object} to - Route being navigated to
+   * @param {Object} from - Route being navigated away from
+   * @returns {Promise<boolean|string|Object>} True to continue, false to cancel,
+   *   or a redirect target returned by a guard
+   */
   async runBeforeEachGuards(to, from) {
     for (const guard of this.globalGuards.beforeEach) {
       try {
@@ -117,6 +144,13 @@ const RouterManager = {
     return true;
   },
 
+  /**
+   * Runs every registered afterEach hook in registration order.
+   *
+   * @param {Object} to - Route that was navigated to
+   * @param {Object} from - Route that was navigated away from
+   * @returns {Promise<void>}
+   */
   async runAfterEachGuards(to, from) {
     for (const guard of this.globalGuards.afterEach) {
       try {
@@ -127,6 +161,20 @@ const RouterManager = {
     }
   },
 
+  /**
+   * Initializes the router: resolves the base path, merges configuration,
+   * registers routes, wires DOM listeners and handles the initial route.
+   *
+   * Calling it again is a no-op unless options.force is set.
+   *
+   * @param {Object} [options={}] - Configuration merged over DEFAULT_CONFIG
+   * @param {boolean} [options.force] - Re-initialize even if already initialized
+   * @param {boolean} [options.enabled] - Routing stays disabled when false
+   * @param {string} [options.base] - Base path; auto-detected when omitted
+   * @param {boolean} [options.autoDetectBase] - Set false to skip base detection
+   * @param {Object} [options.routes] - Route definitions passed to register()
+   * @returns {Promise<Object>} The router instance
+   */
   async init(options = {}) {
     try {
       if (this.state.initialized && options.force) {
@@ -347,6 +395,14 @@ const RouterManager = {
 
   /**
    * Enhanced Navigate with Auth Guards
+   *
+   * A navigation to the current path is skipped when the query it would write
+   * (the query in `path` merged with `params`) equals the current one.
+   *
+   * @param {string} path - Target path, may carry ?query and #hash
+   * @param {Object} [params={}] - Query parameters merged over the query in `path`
+   * @param {Object} [options={}] - replace, force, preserveQuery, scroll
+   * @returns {Promise<boolean>}
    */
   async navigate(path, params = {}, options = {}) {
     try {
@@ -356,6 +412,27 @@ const RouterManager = {
       let cleanPath = path;
       let queryString = '';
       let hashFragment = '';
+
+      // Accept URLs that already carry the router base.
+      //
+      // Route keys are stored without the base ('/user'), while every link in the
+      // markup is written with it ('/app/user') because that is what the address
+      // bar shows. Without this, an href-shaped path handed to navigate() looks up
+      // a route named '/app/user', finds nothing, and renders the 404 page.
+      // pushState adds the base back on the way out, so stripping it here is the
+      // symmetric operation rather than a special case.
+      const routerBase = this.config.base && this.config.base !== '/'
+        ? this.config.base.replace(/\/$/, '')
+        : '';
+
+      if (routerBase && typeof cleanPath === 'string' && cleanPath.startsWith(routerBase)) {
+        const rest = cleanPath.slice(routerBase.length);
+
+        // Only when the base ends at a boundary — base '/app' must not eat '/application'
+        if (rest === '' || rest.startsWith('/') || rest.startsWith('?') || rest.startsWith('#')) {
+          cleanPath = rest === '' ? '/' : rest;
+        }
+      }
 
       // Separate the hash first (if there is #)
       if (path.includes('#')) {
@@ -395,11 +472,19 @@ const RouterManager = {
       if (!options.force && !options.isInitialLoad &&
         this.state.current && this.state.current.path === normalizedPath) {
         // Check if query params changed - if changed, allow re-navigation
+        //
+        // **The query compared is the one this navigation would write, not only the
+        // one spelled inside `path`.** `params` end up in the address bar exactly like
+        // `?key=value` does (see finalQueryString below), yet only the path's own
+        // query used to be compared — so `navigate('/verify', {id: 'A'})` while on
+        // `/verify` compared '' with '' and returned without doing anything, while
+        // `navigate('/verify?id=A')` worked. Both spellings are the same URL and now
+        // behave the same way.
         const currentQuerySorted = new URLSearchParams(
           [...new URLSearchParams(window.location.search.slice(1)).entries()].sort()
         ).toString();
         const newQuerySorted = new URLSearchParams(
-          [...new URLSearchParams(queryString).entries()].sort()
+          [...new URLSearchParams(mergedParams).entries()].sort()
         ).toString();
 
         if (currentQuerySorted !== newQuerySorted) {
@@ -776,6 +861,13 @@ const RouterManager = {
     return false;
   },
 
+  /**
+   * Compiles a route path into a RegExp, turning :params into capture groups.
+   *
+   * @param {string} path - Route path such as '/user/:id'
+   * @param {boolean} [ignoreTrailingSlash=true] - Also match an optional trailing slash
+   * @returns {RegExp} Pattern anchored to the whole path
+   */
   createRoutePattern(path, ignoreTrailingSlash = true) {
     let pattern = path
       .replace(/:[^\s/]+/g, '([^/]+)')
@@ -790,6 +882,12 @@ const RouterManager = {
     return new RegExp(pattern);
   },
 
+  /**
+   * Finds the first registered route whose pattern matches the path.
+   *
+   * @param {string} path - Path to match, normalized unless trailingSlash mode is 'preserve'
+   * @returns {Object|null} {route, params} of the matching route, or null
+   */
   matchRoute(path) {
     const normalizedPath = this.config.trailingSlash.mode === 'preserve'
       ? path
@@ -811,6 +909,19 @@ const RouterManager = {
     return null;
   },
 
+  /**
+   * Registers a route and, recursively, any child routes it declares.
+   *
+   * A string config is treated as the template name. Child paths that do not
+   * start with '/' are appended to the parent path.
+   *
+   * @param {string} path - Route path, may contain :params
+   * @param {Object|string} config - Route configuration or template name
+   * @param {string} [config.template] - Template name or inline HTML
+   * @param {string} [config.title] - Document title for the route
+   * @param {Object} [config.children] - Nested routes keyed by path
+   * @throws {Error} When path is empty
+   */
   register(path, config) {
     if (!path) {
       throw new Error('Route path is required');
@@ -843,6 +954,12 @@ const RouterManager = {
     }
   },
 
+  /**
+   * Collects the names of the :params declared in a route path.
+   *
+   * @param {string} path - Route path such as '/user/:id/post/:slug'
+   * @returns {string[]} Parameter names in the order they appear
+   */
   extractParamNames(path) {
     const paramNames = [];
     const segments = path.split('/');
@@ -856,6 +973,14 @@ const RouterManager = {
     return paramNames;
   },
 
+  /**
+   * Normalizes the trailing slash of a URL according to trailingSlash.mode.
+   *
+   * The root path and paths listed in trailingSlash.ignorePaths are left alone.
+   *
+   * @param {string} url - Path to normalize
+   * @returns {string} Normalized path
+   */
   handleTrailingSlash(url) {
     if (url === '/') return url;
 
@@ -1017,6 +1142,15 @@ const RouterManager = {
     return '/';
   },
 
+  /**
+   * Reads the current route path from the address bar.
+   *
+   * In hash mode the fragment is used, falling back to the pathname when the
+   * URL has no hash yet. The configured base path is stripped in both modes.
+   *
+   * @param {boolean} [includeQuery=false] - Append the query string
+   * @returns {string} Path beginning with '/'
+   */
   getPath(includeQuery = false) {
     let path;
 
@@ -1065,11 +1199,24 @@ const RouterManager = {
     return path;
   },
 
+  /**
+   * Returns the raw query string of the current URL.
+   *
+   * @returns {string} Query string including '?', or an empty string
+   */
   getQuery() {
     return window.location.search || '';
   },
 
 
+  /**
+   * Decides whether the route present on page load should be processed.
+   *
+   * In hash mode a direct URL without a hash triggers a redirect to the hash
+   * form and this returns false so the redirect can happen.
+   *
+   * @returns {boolean} True when init() should navigate to the current path
+   */
   shouldHandleInitialRoute() {
     const config = this.config.initialLoad;
 
@@ -1122,6 +1269,12 @@ const RouterManager = {
     return true;
   },
 
+  /**
+   * Snapshots the server-rendered content of the main element so it can be
+   * restored when initialLoad.preserveContent is enabled.
+   *
+   * @returns {void}
+   */
   storeInitialContent() {
     const mainContent = document.querySelector(this.config.initialLoad.contentSelector);
     if (mainContent) {
@@ -1132,6 +1285,12 @@ const RouterManager = {
     }
   },
 
+  /**
+   * Wires the DOM listeners the router needs: link clicks, popstate,
+   * hashchange in hash mode, and the initial navigation on window load.
+   *
+   * @returns {void}
+   */
   setupEventListeners() {
     document.addEventListener('click', (event) => this.handleClick(event));
 
@@ -1181,9 +1340,24 @@ const RouterManager = {
     } return true;
   },
 
+  /**
+   * Intercepts clicks on links and turns same-origin ones into route changes.
+   *
+   * Clicks already handled, links inside editable regions, downloads, links
+   * with a target, external links and mailto/tel/hash hrefs are left to the
+   * browser. data-route takes priority over href.
+   *
+   * @param {MouseEvent} event - Click event from the document listener
+   * @returns {void}
+   */
   handleClick(event) {
     const link = event.target.closest('a');
     if (!link) return;
+
+    // Do not hijack clicks that were already handled, or links inside an
+    // editable region (e.g. RichTextEditor content area). Routing an in-editor
+    // link would navigate away from the editing page. Let the editor own them.
+    if (event.defaultPrevented || link.isContentEditable) return;
 
     // Skip if external link, download, or has target
     if (link.hasAttribute('download') ||
@@ -1332,6 +1506,15 @@ const RouterManager = {
     }
   },
 
+  /**
+   * Handles browser back and forward navigation.
+   *
+   * The URL already holds the correct state, so the route is processed without
+   * touching the history stack.
+   *
+   * @param {PopStateEvent} event - Event carrying the stored route params
+   * @returns {void}
+   */
   handlePopState(event) {
     const path = this.getPath(); // Get path without query
     const params = event.state?.params || {};
@@ -1353,6 +1536,18 @@ const RouterManager = {
     this.processRoute(path, params, queryParams, hash);
   },
 
+  /**
+   * Runs the full route pipeline without modifying the URL: guards, template
+   * loading, rendering, and the route:changed event.
+   *
+   * Used by history driven navigation where the address bar is already correct.
+   *
+   * @param {string} path - Path to process
+   * @param {Object} [params={}] - Route parameters
+   * @param {Object} [queryParams={}] - Parsed query parameters
+   * @param {string} [hash=''] - Hash fragment without '#'
+   * @returns {Promise<boolean>} True when the route was rendered
+   */
   async processRoute(path, params = {}, queryParams = {}, hash = '') {
     // Internal method to process route without URL manipulation
     // Used by handlePopState to avoid double URL updates
@@ -1362,6 +1557,10 @@ const RouterManager = {
     if (!match) {
       return await this.handleNotFound(normalizedPath, params);
     }
+
+    // Route params come from the path itself; history.state may have been
+    // overwritten (TableManager/FormManager replaceState), so never rely on it alone.
+    params = {...params, ...match.params};
 
     try {
       this.params.set(match.route.path, params);
@@ -1437,6 +1636,12 @@ const RouterManager = {
     }
   },
 
+  /**
+   * Handles hashchange events in hash mode by processing the new path.
+   *
+   * @param {HashChangeEvent} event - Event carrying the stored route params
+   * @returns {void}
+   */
   handleHashChange(event) {
     const path = this.getPath();
     const params = event.state?.params || {};
@@ -1444,6 +1649,19 @@ const RouterManager = {
     this.processRoute(path, params);
   },
 
+  /**
+   * Builds the URL to put in the address bar for a route.
+   *
+   * Substitutes :params, drops the unmatched ones, then applies the base path
+   * and the formatting of the active mode. In hash mode the query string goes
+   * inside the fragment and hashFragment is ignored.
+   *
+   * @param {string} path - Route path, may contain :params
+   * @param {Object} params - Values for the route parameters
+   * @param {string} queryString - Query string without '?'
+   * @param {string} hashFragment - Hash fragment without '#'
+   * @returns {string} URL ready for history.pushState
+   */
   resolvePath(path, params, queryString, hashFragment) {
     let resolvedPath = path;
 
@@ -1490,6 +1708,15 @@ const RouterManager = {
     return resolvedPath;
   },
 
+  /**
+   * Substitutes :params inside a template name.
+   *
+   * Placeholders with no matching parameter are left untouched.
+   *
+   * @param {string} template - Template name, may contain :params
+   * @param {Object} params - Values for the route parameters
+   * @returns {string} Resolved template name, or an empty string
+   */
   resolveTemplate(template, params) {
     if (!template) return '';
 
@@ -1501,6 +1728,16 @@ const RouterManager = {
 
   // Keep template path as logical name - do not apply base path here
   // Base path will be applied later in TemplateManager.loadFromServer()
+  /**
+   * Normalizes a template reference before it is handed to TemplateManager.
+   *
+   * Inline HTML, absolute URLs and root-absolute paths pass through unchanged;
+   * relative names stay logical so TemplateManager.loadFromServer() can apply
+   * the base and templates path itself.
+   *
+   * @param {string} template - Template name, inline HTML or URL
+   * @returns {string} Template reference to fetch
+   */
   applyBaseToTemplate(template) {
     if (!template) return template;
 
@@ -1517,6 +1754,16 @@ const RouterManager = {
     return t;
   },
 
+  /**
+   * Loads the markup for a route template.
+   *
+   * Inline HTML is returned as-is; anything else is fetched through
+   * TemplateManager.
+   *
+   * @param {string} template - Template name or inline HTML
+   * @returns {Promise<string>} Template markup, or an empty string
+   * @throws {Error} When the template cannot be loaded
+   */
   async loadTemplate(template) {
     try {
       if (!template) return '';
@@ -1530,11 +1777,30 @@ const RouterManager = {
     }
   },
 
+  /**
+   * Replaces the main content area with new markup.
+   *
+   * Destroys the components, elements and forms of the outgoing page first,
+   * then initializes the incoming one, re-applies the current locale and emits
+   * content:rendered.
+   *
+   * @param {string} content - Markup to render
+   * @returns {Promise<void>}
+   * @throws {Error} When the main content area is missing or rendering fails
+   */
   async render(content) {
     try {
       const main = document.querySelector(Now.config.mainSelector);
       if (!main) {
         throw new Error(`Main content area not found: ${Now.config.mainSelector} in ${document.location.href}`);
+      }
+
+      // A modal belongs to the page that opened it. SPA navigation replaces that
+      // page underneath it, so an open modal would keep floating over unrelated
+      // content with no way back to what it was about — close it with the page.
+      // Links inside a modal can therefore just be links.
+      if (window.modal && typeof window.modal.hide === 'function') {
+        window.modal.hide();
       }
 
       const componentManager = Now.getManager('component');
@@ -1622,16 +1888,35 @@ const RouterManager = {
     }
   },
 
+  /**
+   * Marks the router as loading and adds the loading class to the body.
+   *
+   * @returns {void}
+   */
   showLoading() {
     this.state.loading = true;
     document.body.classList.add('loading');
   },
 
+  /**
+   * Clears the loading state and removes the loading class from the body.
+   *
+   * @returns {void}
+   */
   hideLoading() {
     this.state.loading = false;
     document.body.classList.remove('loading');
   },
 
+  /**
+   * Reads the plain text of an element, ignoring icons and badges.
+   *
+   * The result is translated when the i18n manager is enabled.
+   *
+   * @param {Element} container - Element to search within
+   * @param {string} tag - CSS selector of the node to read
+   * @returns {string|null} Text content, or null when not found
+   */
   extractText(container, tag) {
     try {
       const node = container.querySelector(tag);
@@ -1656,6 +1941,16 @@ const RouterManager = {
     }
   },
 
+  /**
+   * Handles a path that matches no route, following notFound.behavior:
+   * a custom handler, a redirect, a rendered template, or a notification.
+   *
+   * Falls back to the built-in 404 page when none of them produced a result.
+   *
+   * @param {string} path - Path that could not be matched
+   * @param {Object} [params={}] - Parameters carried by the navigation
+   * @returns {Promise<boolean>} True when a 404 page was rendered
+   */
   async handleNotFound(path, params = {}) {
     this.state.current = null;
     this.hideLoading();
@@ -1724,6 +2019,12 @@ const RouterManager = {
     return this.renderDefault404Page(path);
   },
 
+  /**
+   * Renders the built-in 404 page into the main content area.
+   *
+   * @param {string} path - Path to display, escaped before insertion
+   * @returns {boolean} Always false, so callers report the route as unresolved
+   */
   renderDefault404Page(path) {
     const mainElement = document.querySelector(Now.config.mainSelector);
     if (!mainElement) return false;
@@ -1759,12 +2060,25 @@ const RouterManager = {
     return false;
   },
 
+  /**
+   * Escapes text for safe insertion into HTML.
+   *
+   * @param {string} text - Untrusted text
+   * @returns {string} Escaped markup
+   */
   escapeHtml(text) {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
   },
 
+  /**
+   * Logs a router error and forwards it to ErrorManager when available.
+   *
+   * @param {string} message - Description of what failed
+   * @param {Error} error - Error that was caught
+   * @returns {*} Result of ErrorManager.handle, or the original error
+   */
   handleError(message, error) {
     console.error(`[RouterManager] ${message}:`, error);
 
@@ -1779,24 +2093,52 @@ const RouterManager = {
     return error;
   },
 
+  /**
+   * Returns the route parameters of the current path.
+   *
+   * @returns {Object} Parameter map, empty when the path has none
+   */
   getParams() {
     const path = this.getPath();
     return this.params.get(path) || {};
   },
 
+  /**
+   * Reads a single route parameter of the current path.
+   *
+   * @param {string} name - Parameter name
+   * @returns {string|null} Parameter value, or null when absent
+   */
   getParam(name) {
     const params = this.getParams();
     return params[name] || null;
   },
 
+  /**
+   * Reports whether a route is registered under the exact path.
+   *
+   * @param {string} path - Route path as it was registered
+   * @returns {boolean} True when the route exists
+   */
   hasRoute(path) {
     return this.routes.has(path);
   },
 
+  /**
+   * Returns the configuration of a registered route.
+   *
+   * @param {string} path - Route path as it was registered
+   * @returns {Object|null} Route configuration, or null when absent
+   */
   getRoute(path) {
     return this.routes.get(path) || null;
   },
 
+  /**
+   * Lists every registered route with its configuration.
+   *
+   * @returns {Object[]} Route configurations, each including its path
+   */
   getRoutes() {
     return Array.from(this.routes.entries()).map(([path, config]) => ({
       path,

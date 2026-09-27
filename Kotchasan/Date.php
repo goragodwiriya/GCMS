@@ -57,7 +57,7 @@ class Date
     }
 
     /**
-     * คืนค่าอายุเป็นข้อความ ปี เดือน วัน
+     * Return the age as a formatted string (years, months, days)
      *
      * @param string $date
      *

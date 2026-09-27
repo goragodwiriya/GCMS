@@ -19,6 +19,47 @@ class ApiController extends \Kotchasan\KBase
     private static $requestId;
 
     /**
+     * Can this action be dispatched as an endpoint?
+     *
+     * method_exists() alone is too loose and turns three ordinary URLs into
+     * uncaught fatals instead of a 404:
+     *
+     *  - a controller with no index() of its own inherits this router's, so
+     *    dispatching it re-enters index() with the same route forever;
+     *  - protected helpers are reachable because the call is made from inside
+     *    an ancestor class, and they receive a Request where they expect
+     *    something else (TypeError);
+     *  - the static validators declared here are called with one argument
+     *    where they need two (ArgumentCountError).
+     *
+     * An endpoint is therefore a public, non-static method that some class
+     * other than this router declares. Every real endpoint declares its action
+     * on the module controller or on an intermediate base such as Gcms\Table,
+     * so nothing that used to resolve stops resolving.
+     *
+     * @param string $controllerClass
+     * @param string $action
+     *
+     * @return bool
+     */
+    private static function isRoutableAction($controllerClass, $action)
+    {
+        if (!method_exists($controllerClass, $action)) {
+            return false;
+        }
+
+        try {
+            $method = new \ReflectionMethod($controllerClass, $action);
+        } catch (\ReflectionException $e) {
+            return false;
+        }
+
+        return $method->isPublic()
+            && !$method->isStatic()
+            && $method->getDeclaringClass()->getName() !== self::class;
+    }
+
+    /**
      * API Controller index action - Router for API endpoints.
      *
      * @param Request $request The HTTP request object.
@@ -54,9 +95,13 @@ class ApiController extends \Kotchasan\KBase
         } elseif (in_array('0.0.0.0', self::$cfg->api_ips) || in_array($request->getClientIp(), self::$cfg->api_ips)) {
             try {
                 // Get values from the router - support both patterns:
+                // Digits are part of legitimate class and method names —
+                // stripping them silently resolves to a different class than
+                // the URL asked for (sheet1 -> Sheet) and reports a confusing
+                // 404 for a controller that does exist.
                 $module = $request->get('module')->filter('a-z0-9');
-                $method = $request->get('method')->filter('a-zA-Z');
-                $action = $request->get('action', 'index')->filter('a-zA-Z');
+                $method = $request->get('method')->filter('a-zA-Z0-9');
+                $action = $request->get('action', 'index')->filter('a-zA-Z0-9');
 
                 // Validate required route parts
                 if (empty($module) || empty($method)) {
@@ -69,7 +114,7 @@ class ApiController extends \Kotchasan\KBase
                     // Try Controller pattern first (v1/auth/login -> V1\Auth\Controller::login)
                     $controllerClass = ucfirst($module).'\\'.ucfirst($method).'\\Controller';
 
-                    if (class_exists($controllerClass) && method_exists($controllerClass, $action)) {
+                    if (class_exists($controllerClass) && self::isRoutableAction($controllerClass, $action)) {
                         // Instantiate controller and call method
                         $controller = new $controllerClass();
                         $result = $controller->$action($request);
@@ -266,6 +311,15 @@ class ApiController extends \Kotchasan\KBase
     {
         $lang = strtolower($request->request('lang')->filter('a-zA-Z_-'));
         if ($lang === '') {
+            // The language the visitor is on (the page they call from set the
+            // my_lang cookie). Going by the browser's Accept-Language instead
+            // switched a Thai site to English for an English-UI browser — and
+            // Language::setName() below writes it back into my_lang, so every
+            // page after an API call rendered in English.
+            $cookies = $request->getCookieParams();
+            $lang = strtolower(preg_replace('/[^a-zA-Z_-]/', '', (string) ($cookies['my_lang'] ?? '')));
+        }
+        if ($lang === '') {
             $acceptableLanguages = $request->getAcceptableLanguages();
             if (!empty($acceptableLanguages)) {
                 $lang = strtolower($acceptableLanguages[0]);
@@ -287,7 +341,7 @@ class ApiController extends \Kotchasan\KBase
     /**
      * Return success response
      *
-     * @param mixed $data
+     * @param array|null $data
      * @param string $message
      * @param int $code
      *
@@ -317,7 +371,9 @@ class ApiController extends \Kotchasan\KBase
     {
         $sessionStartedHere = false;
         if (session_status() == PHP_SESSION_NONE) {
-            session_start();
+            // Same cookie flags as Request::initSession() — a bare session_start()
+            // here minted PHPSESSID without HttpOnly/SameSite on API-first requests.
+            Request::startSecureSession();
             $sessionStartedHere = true;
         }
 
@@ -526,6 +582,18 @@ class ApiController extends \Kotchasan\KBase
     /**
      * Convert exceptions into standardized API error responses.
      *
+     * ข้อยกเว้นที่รู้จัก (ApiException · InvalidArgumentException · DomainException ·
+     * RuntimeException) ถูกโยนขึ้นมาเพื่อสื่อสารกับผู้เรียก จึงส่งข้อความออกไปตรง ๆ เสมอ
+     *
+     * ที่เหลือคือสิ่งที่ไม่ได้ตั้งใจให้เกิด — บั๊กของโค้ด (\Error ของ PHP 8) หรือ
+     * ข้อผิดพลาดของฐานข้อมูล ซึ่งข้อความมักมีชื่อตาราง ชื่อคอลัมน์ พาธของไฟล์ หรือ
+     * ตัว SQL ติดมาด้วย ตอนใช้งานจริง (DEBUG = 0) จึงตอบเป็นข้อความกลางแล้วเก็บ
+     * ของจริงไว้ใน log เท่านั้น
+     *
+     * ระหว่างพัฒนา (DEBUG > 0) ส่งข้อความจริงพร้อมชนิดของข้อผิดพลาดออกไปเลย
+     * จะได้อ่านสาเหตุจากตัวตอบของ API ได้ทันทีโดยไม่ต้องเปิด log ควบคู่ไปด้วย
+     * (DEBUG = 2 errorResponse() จะแนบไฟล์ บรรทัด และ trace ให้อีกชั้นหนึ่ง)
+     *
      * @param \Throwable $e
      * @param string $defaultMessage
      *
@@ -553,7 +621,30 @@ class ApiController extends \Kotchasan\KBase
             return $this->errorResponse($e->getMessage(), 500, $e);
         }
 
-        return $this->errorResponse($defaultMessage, 500, $e);
+        return $this->errorResponse(self::debugMessage($e, $defaultMessage), 500, $e);
+    }
+
+    /**
+     * ข้อความของข้อผิดพลาดที่ไม่ได้ตั้งใจโยน สำหรับส่งกลับไปให้ผู้เรียก
+     * DEBUG = 0 คืน $defaultMessage · DEBUG > 0 คืนชนิดและข้อความจริง
+     *
+     * @param \Throwable $e
+     * @param string $defaultMessage
+     *
+     * @return string
+     */
+    protected static function debugMessage(\Throwable $e, $defaultMessage = 'Failed to process request')
+    {
+        if (!defined('DEBUG') || DEBUG < 1) {
+            return $defaultMessage;
+        }
+
+        $message = trim($e->getMessage());
+
+        // \Error บางตัวไม่มีข้อความ (เช่น บางกรณีของ AssertionError) เหลือแค่ชนิด
+        return $message === ''
+            ? get_class($e)
+            : get_class($e).': '.$message;
     }
 
     /**
@@ -689,46 +780,41 @@ class ApiController extends \Kotchasan\KBase
     {
         $accessToken = $this->getAccessToken($request);
 
-        if (empty($accessToken)) {
+        if (empty($accessToken) || !class_exists('\\Index\\Auth\\Model')) {
             return null;
         }
 
-        // 1. Try opaque/refresh tokens stored on the user row
+        // The auth model is the only place that knows whether this token may still
+        // be used: signature and exp (Jwt), the revoked jti list, and an open
+        // session (sid) on that account.
+        //
+        // ⚠️ Never accept a token just because its signature matches jwt_secret.
+        // Logging out drops the session, not the signature — so a token of a
+        // closed session, and a refresh token sent in place of an access token,
+        // would both still pass. That makes "log out" a no-op for every endpoint
+        // authenticated here until the token expires on its own.
         $user = \Index\Auth\Model::getUserByToken($accessToken);
-        if ($user) {
-            // Check token expiry if token_expires column exists
-            if (isset($user->token_expires) && !empty($user->token_expires)) {
-                $expiresAt = strtotime($user->token_expires);
-                if ($expiresAt !== false && time() > $expiresAt) {
-                    // Token has expired
-                    return null;
-                }
-            }
-            return $user;
+        if (!$user) {
+            return null;
         }
 
-        // 2. Attempt to decode JWT access tokens when configured
-        if (!empty(self::$cfg->jwt_secret)) {
-            try {
-                // Jwt::decode() already checks exp claim and returns null if expired
-                $payload = \Kotchasan\Jwt::decode($accessToken, self::$cfg->jwt_secret);
-
-                if (!empty($payload) && isset($payload['sub'])) {
-                    $jwtUserId = (int) $payload['sub'];
-                    if ($jwtUserId > 0) {
-                        $jwtUser = \Index\Auth\Model::getUserById($jwtUserId);
-                        if ($jwtUser) {
-                            return $jwtUser;
-                        }
-                    }
-                }
-            } catch (\Throwable $e) {
-                // JWT decode failed (invalid signature, malformed, etc.)
-                // Treat as unauthorized
-            }
-        }
-
-        return null;
+        // `user`.`token_expires` is deliberately NOT read here. It is a single
+        // per-account column left over from the one-token-per-user era and it no
+        // longer describes the session this request is using:
+        //   - the access token carries its own `exp`, already enforced by
+        //     Jwt::decode() inside verifyToken(), and every open device has its
+        //     own sid in the session register — one column cannot expire them
+        //     one by one;
+        //   - a session minted outside login()/refresh() (loginas/impersonation)
+        //     never writes the column, so it simply stays in the past;
+        //   - Index\Forgot\Model reuses the very same column for the password
+        //     reset code window, so asking for a reset link would expire a live
+        //     API session.
+        // Reading it as a session expiry rejected valid tokens on every endpoint
+        // that authenticates here: Gcms\Table lists answered 401 Unauthorized
+        // while auth/verify and auth/me, which call getUserByToken() directly,
+        // kept working for the very same cookie.
+        return $user;
     }
 
     /**
@@ -981,7 +1067,9 @@ class ApiController extends \Kotchasan\KBase
 
         // Generate new CSRF token and include in response header for frontend to update.
         if (session_status() == PHP_SESSION_NONE) {
-            session_start();
+            // Same cookie flags as Request::initSession() — a bare session_start()
+            // here minted PHPSESSID without HttpOnly/SameSite on API-first requests.
+            Request::startSecureSession();
             $sessionStartedHere = true;
         }
 

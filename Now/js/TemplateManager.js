@@ -88,6 +88,16 @@ const TemplateManager = {
     activeScripts: new Map()
   },
 
+  /**
+   * Initializes the manager: defaults the allowed origins to this one, merges
+   * the configuration, starts performance monitoring and the cleanup timer.
+   *
+   * Calling it again once initialized is a no-op.
+   *
+   * @param {Object} [options={}] - Configuration merged over the defaults
+   * @param {string[]} [options.serverPaths] - Paths templates may be loaded from
+   * @returns {Promise<Object>} The manager instance
+   */
   async init(options = {}) {
     if (this.state.initialized) return this;
 
@@ -132,6 +142,15 @@ const TemplateManager = {
     return this;
   },
 
+  /**
+   * Fetches a template from the server, resolving the name against the
+   * configured templates path and serving it from the cache when it is warm.
+   *
+   * @param {string} path - Template name, path or absolute URL
+   * @returns {Promise<string>} Template markup
+   * @throws {Error} When the manager is not initialized, the path is rejected,
+   *   or the request fails
+   */
   async loadFromServer(path) {
     if (!this.state.initialized) {
       throw new Error('TemplateManager is not initialized')
@@ -216,6 +235,13 @@ const TemplateManager = {
     return processedContent;
   },
 
+  /**
+   * Checks that a template URL points at an allowed origin and ends in .html.
+   *
+   * @param {URL} url - URL about to be fetched
+   * @returns {Promise<boolean>} True when the request may proceed
+   * @throws {Error} When the origin or the file type is rejected
+   */
   async validateRequest(url) {
     if (!this.config.security.allowedOrigins.includes(url.origin)) {
       throw new Error('Invalid origin');
@@ -228,6 +254,14 @@ const TemplateManager = {
     return true;
   },
 
+  /**
+   * Turns fetched markup into a processed subtree: applies the directives and
+   * interpolation of the component registered for that path, then sanitizes it.
+   *
+   * @param {string} content - Raw template markup
+   * @param {string} path - Path it was loaded from, used to find the context
+   * @returns {Promise<string>} Processed markup
+   */
   async processContent(content, path) {
     try {
       const container = document.createElement('div');
@@ -259,6 +293,15 @@ const TemplateManager = {
     }
   },
 
+  /**
+   * Strips anything the security configuration disallows from a subtree: tags,
+   * attributes, URL protocols and inline styles.
+   *
+   * Uses DOMPurify when the page provides it, and its own walk otherwise.
+   *
+   * @param {HTMLElement|string} element - Subtree or markup to clean
+   * @returns {HTMLElement|string} The cleaned subtree or markup
+   */
   sanitizeElement(element) {
     try {
       // Accept both HTMLElement and raw HTML string; normalize to element for traversal
@@ -364,6 +407,13 @@ const TemplateManager = {
     }
   },
 
+  /**
+   * Cleans a URL used in an attribute, rejecting the javascript:, data:,
+   * vbscript:, file: and about: protocols.
+   *
+   * @param {string} value - Attribute value
+   * @returns {string|null} The URL, or null when it was rejected
+   */
   sanitizeUrlAttribute(value) {
     if (typeof value !== 'string') return null;
 
@@ -404,6 +454,15 @@ const TemplateManager = {
     return null;
   },
 
+  /**
+   * Cleans an inline style attribute, keeping only the properties and values
+   * sanitizeStyles() allows.
+   *
+   * Splits each declaration on its first colon so URLs survive intact.
+   *
+   * @param {string} styleText - Value of a style attribute
+   * @returns {string|null} Cleaned style text, or null when nothing survived
+   */
   sanitizeInlineStyle(styleText) {
     if (typeof styleText !== 'string' || !styleText.trim()) return null;
 
@@ -429,6 +488,15 @@ const TemplateManager = {
     return safeEntries.map(([k, v]) => `${k.replace(/([A-Z])/g, '-$1').toLowerCase()}: ${v}`).join('; ');
   },
 
+  /**
+   * Checks that markup parses and contains nothing the configuration forbids.
+   *
+   * Already-parsed elements and fragments are accepted as-is.
+   *
+   * @param {string|HTMLElement|DocumentFragment} content - Markup to validate
+   * @returns {Promise<boolean>} True when the markup is acceptable
+   * @throws {Error} When the input is neither a string nor a node
+   */
   async validateMarkup(content) {
     return new Promise((resolve, reject) => {
       try {
@@ -469,6 +537,13 @@ const TemplateManager = {
     });
   },
 
+  /**
+   * Checks a template path: an absolute URL must pass isValidUrl(), and either
+   * form must end in an allowed extension and stay clear of traversal.
+   *
+   * @param {string} path - Template path or URL
+   * @returns {boolean} True when the path may be loaded
+   */
   isValidPath(path) {
     if (typeof path !== 'string' || !path) return false;
 
@@ -507,6 +582,12 @@ const TemplateManager = {
     return true;
   },
 
+  /**
+   * Checks that a URL parses and uses http or https.
+   *
+   * @param {string} url - URL to check
+   * @returns {boolean} True when the URL is usable
+   */
   isValidUrl(url) {
     try {
       const parsed = new URL(url, window.location.origin);
@@ -516,10 +597,24 @@ const TemplateManager = {
     }
   },
 
+  /**
+   * Strips the leading and trailing slashes of a path.
+   *
+   * @param {string} path - Path to normalize
+   * @returns {string} Normalized path
+   */
   normalizePath(path) {
     return path.replace(/^\/+|\/+$/g, '');
   },
 
+  /**
+   * Observes the performance measures named template-*, forwarding each to
+   * recordPerformance().
+   *
+   * Does nothing where PerformanceObserver is unavailable.
+   *
+   * @returns {void}
+   */
   setupPerformanceMonitoring() {
     if (!window.PerformanceObserver) return;
 
@@ -550,6 +645,13 @@ const TemplateManager = {
     });
   },
 
+  /**
+   * Emits template:performance with a timing sample.
+   *
+   * @param {string} name - Measure name
+   * @param {Object} data - Timing data
+   * @returns {void}
+   */
   recordPerformance(name, data) {
     const event = Now.getManager('event');
     if (event) {
@@ -561,6 +663,13 @@ const TemplateManager = {
     }
   },
 
+  /**
+   * Emits template:error with the template that failed.
+   *
+   * @param {Error} error - Error that was caught
+   * @param {string} path - Template path
+   * @returns {void}
+   */
   recordError(error, path) {
     const event = Now.getManager('event');
     if (event) {
@@ -572,6 +681,11 @@ const TemplateManager = {
     }
   },
 
+  /**
+   * Empties the template cache.
+   *
+   * @returns {void}
+   */
   clearCache() {
     this.state.cache.clear();
   },
@@ -682,6 +796,17 @@ const TemplateManager = {
     this.state.activeScripts.clear();
   },
 
+  /**
+   * Applies the directives and interpolation of a context to an element that is
+   * already in the DOM.
+   *
+   * Data an ApiComponent already loaded onto the element is carried into the
+   * context, so SPA navigation back to a page does not blank it out.
+   *
+   * @param {HTMLElement} element - Subtree to process
+   * @param {Object} context - {state, methods, ...} the directives read from
+   * @returns {void}
+   */
   processTemplate(element, context) {
     if (!element || !context) return;
 
@@ -745,6 +870,16 @@ const TemplateManager = {
     }
   },
 
+  /**
+   * Renders a template string into a container, applies its directives and
+   * interpolation, then scans the result so its elements and forms are
+   * enhanced.
+   *
+   * @param {string} template - Template markup
+   * @param {Object} context - {state, methods, ...} the directives read from
+   * @param {HTMLElement} [container] - Container to render into; created when omitted
+   * @returns {HTMLElement} The container holding the rendered subtree
+   */
   processTemplateString(template, context, container) {
     try {
       if (!container) {
@@ -787,6 +922,14 @@ const TemplateManager = {
     }
   },
 
+  /**
+   * Replaces the {{ }} expressions in the text nodes of a subtree with their
+   * evaluated values.
+   *
+   * @param {HTMLElement} element - Subtree to process
+   * @param {Object} context - {state, methods, ...} to evaluate against
+   * @returns {void}
+   */
   processInterpolation(element, context) {
     const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT, null, false);
     let node = walker.nextNode();
@@ -878,7 +1021,15 @@ const TemplateManager = {
     }
   },
 
-  // Debounced translation update for newly injected nodes
+  /**
+   * Debounces an i18n pass over a container, so a burst of directive updates
+   * retranslates it once instead of every time.
+   *
+   * The pass is skipped when the container has left the DOM.
+   *
+   * @param {HTMLElement} container - Subtree to retranslate
+   * @returns {void}
+   */
   scheduleI18nUpdate(container) {
     if (!container || !window.I18nManager || typeof I18nManager.updateElements !== 'function') return;
 
@@ -935,6 +1086,16 @@ const TemplateManager = {
     });
   },
 
+  /**
+   * Splits a data-text expression into the expression itself and the formatters
+   * piped after it.
+   *
+   * Splits only on pipes at the top level: pipes inside quotes, template
+   * literals, parentheses, brackets or braces belong to the expression.
+   *
+   * @param {string} expression - Expression, possibly with | formatters
+   * @returns {string[]} The expression followed by each formatter
+   */
   _splitTextExpressionAndFormatters(expression) {
     const parts = [];
     let current = '';
@@ -1024,10 +1185,23 @@ const TemplateManager = {
     return parts;
   },
 
+  /**
+   * Reports whether a string contains any operator or grouping character, so a
+   * bare property path can be told apart from an expression.
+   *
+   * @param {string} str - String to test
+   * @returns {boolean} True when the string is more than a path
+   */
   hasOperators(str) {
     return /[\+\-\*\/\(\)\[\]\{\}\!\?\:\<\>\&\|\=\,]/.test(str);
   },
 
+  /**
+   * Builds the markup shown in place of a template that failed to render.
+   *
+   * @param {Error} error - Error to display
+   * @returns {string} Error boundary markup
+   */
   renderError(error) {
     return `
         <div class="error-boundary">
@@ -1037,7 +1211,19 @@ const TemplateManager = {
       `;
   },
 
-  processDataDirectives(element, context) {
+  /**
+   * Apply every `data-*` directive found in a subtree
+   *
+   * @param {HTMLElement} element - Subtree root
+   * @param {Object} context - `{state, data, ...}` the directives read from
+   * @param {Object} [options] - `skipNested: true` leaves the inside of any
+   *   nested `data-component="api"` alone · that component renders its own
+   *   subtree from its own (merged) scope, and painting it here with the outer
+   *   scope answers its conditions from data that does not describe it — a
+   *   `data-if` reading a field the outer response has never heard of resolves
+   *   to undefined and removes the element for good
+   */
+  processDataDirectives(element, context, options = {}) {
     if (!context || !context.state) {
       ErrorManager.handle('Invalid context for data directives processing', {
         context: 'TemplateManager.processDataDirectives',
@@ -1054,7 +1240,24 @@ const TemplateManager = {
       this.cleanupComponentHandlers(context.parentId);
     }
 
-    const walker = document.createTreeWalker(element, NodeFilter.SHOW_ELEMENT, null, false);
+    // The nested component's own element is still processed here — its
+    // `data-if`/`data-attr` belong to the parent that placed it · only what is
+    // INSIDE it is left to it
+    const filter = options.skipNested
+      ? {
+        acceptNode(node) {
+          const owner = node.parentElement?.closest('[data-component="api"]');
+
+          // `element.contains` keeps a component ABOVE the walk root from
+          // rejecting the whole subtree — only a nested one may prune
+          return owner && owner !== element && element.contains(owner)
+            ? NodeFilter.FILTER_REJECT
+            : NodeFilter.FILTER_ACCEPT;
+        }
+      }
+      : null;
+
+    const walker = document.createTreeWalker(element, NodeFilter.SHOW_ELEMENT, filter, false);
     let el = walker.currentNode;
 
     // Collect data-for elements to process after other directives
@@ -1156,6 +1359,16 @@ const TemplateManager = {
     }
   },
 
+  /**
+   * Applies data-text: evaluates the expression, runs it through the formatters
+   * from the expression and from data-format, data-formatter and
+   * data-formatters, and writes the result as the element's text.
+   *
+   * @param {HTMLElement} el - Element carrying data-text
+   * @param {string} expression - Expression, possibly with | formatters
+   * @param {Object} context - {state, methods, ...} to evaluate against
+   * @returns {void}
+   */
   processDataText(el, expression, context) {
     if (!el || !expression || !context) return;
 
@@ -1211,8 +1424,10 @@ const TemplateManager = {
             value = Utils.string.applyFormatters(value, binding.formatters, ctx);
           }
 
-          // Translate {LNG_xxx} patterns if present
-          if (typeof value === 'string' && value.includes('{LNG_') && window.I18nManager?.translate) {
+          // Translate {LNG_xxx} patterns if present — unless the element opts out
+          // with translate="no" (the value is user data that must show verbatim)
+          if (typeof value === 'string' && value.includes('{LNG_') && window.I18nManager?.translate
+            && !(typeof I18nManager.isExcluded === 'function' && I18nManager.isExcluded(el))) {
             value = I18nManager.translate(value);
           }
 
@@ -1251,6 +1466,17 @@ const TemplateManager = {
     }
   },
 
+  /**
+   * Applies data-html: evaluates the expression and writes the result as the
+   * element's markup, sanitized first.
+   *
+   * The binding is kept on the element so a later state change can update it.
+   *
+   * @param {HTMLElement} el - Element carrying data-html
+   * @param {string} value - Expression producing the markup
+   * @param {Object} context - {state, methods, ...} to evaluate against
+   * @returns {void}
+   */
   processDataHtml(el, value, context) {
     if (!el || !value || !context) return;
 
@@ -1320,6 +1546,16 @@ const TemplateManager = {
     }
   },
 
+  /**
+   * Applies data-if: keeps the element in the DOM while the expression is
+   * truthy and replaces it with a placeholder comment when it is not, so it can
+   * be put back in the same place.
+   *
+   * @param {HTMLElement} el - Element carrying data-if
+   * @param {string} expression - Condition to evaluate
+   * @param {Object} context - {state, methods, ...} to evaluate against
+   * @returns {void}
+   */
   processDataIf(el, expression, context) {
     if (!el || !expression || !context) return;
 
@@ -1367,11 +1603,31 @@ const TemplateManager = {
           skipReactiveTypes: preserveIfBinding ? ['If'] : []
         });
 
-        const componentManager = Now.getManager('component');
-        if (componentManager) {
-          const componentId = element.dataset?.componentId;
-          if (componentId) {
-            componentManager.destroyComponent(componentId);
+        /*
+         * `data-component="api"` tracks its own instances under `_apiComponent`
+         * (`ApiComponent.destroy`), never under `component.instances` — a
+         * `data-if` that hides one must abort its in-flight request through
+         * that same path, not a `componentManager.destroyComponent(componentId)`
+         * call that never matched anything (`dataset.componentId` is never set
+         * by anything in this codebase, and `destroyComponent` isn't even a
+         * method `ComponentManager` has — this whole block used to be a no-op
+         * for every component type, api or not). Mirrors the equivalent
+         * `CoreObserver.onRemove` cleanup in `ComponentManager.setupCoreObserver`.
+         */
+        if (element.dataset?.component === 'api' && element._apiComponent && window.ApiComponent) {
+          window.ApiComponent.destroy(element._apiComponent);
+        } else if (element.dataset?.table && window.TableManager) {
+          // `data-table` is a separate component system with its own instance
+          // registry (`TableManager.state.tables`, keyed by `dataset.table`) —
+          // not `[data-component]` at all, so neither branch above ever touches it
+          const registeredTable = window.TableManager.state?.tables?.get(element.dataset.table);
+          if (registeredTable && registeredTable.element === element) {
+            window.TableManager.destroyTable(element.dataset.table);
+          }
+        } else {
+          const componentManager = Now.getManager('component');
+          if (componentManager?.instances?.has(element)) {
+            componentManager.destroy(element);
           }
         }
 
@@ -1531,6 +1787,15 @@ const TemplateManager = {
     }
   },
 
+  /**
+   * Applies data-class: evaluates the expression and toggles the classes it
+   * names, leaving the classes written in the markup alone.
+   *
+   * @param {HTMLElement} el - Element carrying data-class
+   * @param {string} value - Expression producing a string, array or condition map
+   * @param {Object} context - {state, methods, ...} to evaluate against
+   * @returns {void}
+   */
   processDataClass(el, value, context) {
     if (!el || !value || !context) return;
 
@@ -1743,6 +2008,15 @@ const TemplateManager = {
     return null;
   },
 
+  /**
+   * Snapshots the state a directive binding was created with, falling back to a
+   * shallow clone when a deep one fails, such as on a value with cycles the
+   * cloner cannot follow.
+   *
+   * @param {Object} state - State to snapshot
+   * @param {string} [mode='deep'] - 'deep' or 'shallow'
+   * @returns {Object} The snapshot
+   */
   cloneDirectiveState(state, mode = 'deep') {
     if (!state || typeof state !== 'object') {
       return state;
@@ -1759,6 +2033,14 @@ const TemplateManager = {
     }
   },
 
+  /**
+   * Merges the snapshot a binding holds with a newer one, keeping either whole
+   * when one is missing and when either is an array or not an object.
+   *
+   * @param {Object} previousState - Snapshot the binding holds
+   * @param {Object} nextState - Newer snapshot
+   * @returns {Object} Merged state
+   */
   mergeDirectiveState(previousState, nextState) {
     if (nextState === undefined) {
       return previousState;
@@ -1785,6 +2067,15 @@ const TemplateManager = {
     };
   },
 
+  /**
+   * Merges the context a binding was created with into the current one, so a
+   * re-render keeps the methods and computed values the binding was written
+   * against.
+   *
+   * @param {Object} previousContext - Context the binding holds
+   * @param {Object} context - Current context
+   * @returns {Object} Merged context
+   */
   mergeDirectiveContext(previousContext, context) {
     if (!previousContext) {
       return {...context};
@@ -1824,6 +2115,18 @@ const TemplateManager = {
     return merged;
   },
 
+  /**
+   * Brings the snapshots stored on a binding up to date with the current
+   * context, so a directive re-evaluated later sees current data.
+   *
+   * @param {Object} binding - Binding stored on the element
+   * @param {Object} context - Current context
+   * @param {Object} [options={}] - Sync options
+   * @param {string} [options.stateMode='deep'] - Clone mode for the state
+   * @param {boolean} [options.preserveState=true] - Merge rather than replace the state
+   * @param {boolean} [options.preserveContext=true] - Merge rather than replace the context
+   * @returns {Object} The binding
+   */
   syncDirectiveBinding(binding, context, options = {}) {
     if (!binding || !context) {
       return binding;
@@ -1846,10 +2149,29 @@ const TemplateManager = {
     return binding;
   },
 
+  /**
+   * Returns the context a binding should be evaluated in.
+   *
+   * @param {Object} binding - Binding stored on the element
+   * @param {Object} context - Current context
+   * @returns {Object} Merged context
+   */
   getDirectiveContext(binding, context) {
     return this.mergeDirectiveContext(binding?.originalContext, context || {});
   },
 
+  /**
+   * Builds the object a binding's expression is evaluated against: its snapshot
+   * merged with the live state, plus the methods and options when asked for.
+   *
+   * @param {Object} binding - Binding stored on the element
+   * @param {Object} context - Current context
+   * @param {Object} [options={}] - Build options
+   * @param {boolean} [options.mergeLiveState=true] - Merge the current state in
+   * @param {boolean} [options.includeMethods=false] - Expose the context methods
+   * @param {boolean} [options.includeOptions=false] - Expose the context options
+   * @returns {Object} Evaluation scope
+   */
   getDirectiveEvalState(binding, context, options = {}) {
     const {
       mergeLiveState = true,
@@ -1883,6 +2205,14 @@ const TemplateManager = {
     };
   },
 
+  /**
+   * Parses a data-model value into its path and its trailing modifiers, so
+   * 'form.email.trim' binds to form.email with trim on.
+   *
+   * @param {Object} binding - Binding to fill in
+   * @param {string} value - Value of data-model
+   * @returns {Object} The binding, with path and modifiers set
+   */
   applyModelBindingDefinition(binding, value) {
     if (!binding) return binding;
 
@@ -1904,6 +2234,17 @@ const TemplateManager = {
     return binding;
   },
 
+  /**
+   * Applies data-attr: evaluates each binding and writes it as an attribute,
+   * removing the attribute when the value is false, null or undefined.
+   *
+   * URL attributes go through sanitizeUrlAttribute() first.
+   *
+   * @param {HTMLElement} el - Element carrying data-attr
+   * @param {string} value - Bindings as "name: expression" pairs
+   * @param {Object} context - {state, methods, ...} to evaluate against
+   * @returns {void}
+   */
   processDataAttr(el, value, context) {
     if (!el || !value || !context) return;
 
@@ -2006,8 +2347,9 @@ const TemplateManager = {
               attrValue = ExpressionEvaluator.evaluate(normalizedExpression, evalScope, ctx);
             }
 
-            // Translate {LNG_xxx} patterns in string attribute values
-            if (typeof attrValue === 'string' && attrValue.includes('{LNG_') && window.I18nManager?.translate) {
+            // Translate {LNG_xxx} patterns in string attribute values (not inside translate="no")
+            if (typeof attrValue === 'string' && attrValue.includes('{LNG_') && window.I18nManager?.translate
+              && !(typeof I18nManager.isExcluded === 'function' && I18nManager.isExcluded(el))) {
               attrValue = I18nManager.translate(attrValue);
             }
 
@@ -2059,7 +2401,7 @@ const TemplateManager = {
                 } else {
                   el.value = attrValue ?? '';
                 }
-              } else if (isBooleanAttr && attrValue) {
+              } else if (isBooleanAttr && Utils.string.toBoolean(attrValue)) {
                 el.setAttribute(attrName, attrName);
               } else if (!isBooleanAttr && attrValue != null) {
                 el.setAttribute(attrName, attrValue);
@@ -2099,6 +2441,15 @@ const TemplateManager = {
     }
   },
 
+  /**
+   * Applies data-style: evaluates the expression and writes the properties it
+   * yields, limited to the ones sanitizeStyles() allows.
+   *
+   * @param {HTMLElement} el - Element carrying data-style
+   * @param {string} value - Expression producing a style object or string
+   * @param {Object} context - {state, methods, ...} to evaluate against
+   * @returns {void}
+   */
   processDataStyle(el, value, context) {
     if (!el || !value || !context) return;
     try {
@@ -2209,6 +2560,13 @@ const TemplateManager = {
     }
   },
 
+  /**
+   * Keeps only the style properties on the allow list and drops values that
+   * carry an expression or a script URL.
+   *
+   * @param {Object} styles - Property map, camelCased
+   * @returns {Object} The properties that survived
+   */
   sanitizeStyles(styles) {
     const allowedProperties = [
       'display', 'position', 'top', 'right', 'bottom', 'left', 'float', 'clear',
@@ -2366,6 +2724,15 @@ const TemplateManager = {
     return null;
   },
 
+  /**
+   * Applies data-for: renders the element once per item of the collection, each
+   * clone getting the loop variable in its own scope.
+   *
+   * @param {HTMLElement} el - Element carrying data-for
+   * @param {string} value - Expression of the form "item in collection"
+   * @param {Object} context - {state, methods, ...} to evaluate against
+   * @returns {void}
+   */
   processDataFor(el, value, context) {
     if (!el || !value || !context) return;
 
@@ -2509,6 +2876,16 @@ const TemplateManager = {
     }
   },
 
+  /**
+   * Applies data-on: binds the listed events to methods of the context, honouring
+   * the modifiers appended to each event, such as prevent, stop, once, self and
+   * the key filters.
+   *
+   * @param {HTMLElement} el - Element carrying data-on
+   * @param {string} value - Bindings as "event.modifiers: handler" pairs
+   * @param {Object} context - {state, methods, ...} the handlers come from
+   * @returns {void}
+   */
   processDataOn(el, value, context) {
     if (!el || !value || !context) return;
 
@@ -2711,6 +3088,17 @@ const TemplateManager = {
     }
   },
 
+  /**
+   * Applies data-container: loads the template the expression names into the
+   * element and re-loads it when the expression resolves to a different one.
+   *
+   * A render counter guards against a slow load overwriting a newer one.
+   *
+   * @param {HTMLElement} el - Element carrying data-container
+   * @param {string} value - Expression producing a template path
+   * @param {Object} context - {state, methods, ...} to evaluate against
+   * @returns {void}
+   */
   processDataContainer(el, value, context) {
     if (!el || !value || !context) return;
 
@@ -2844,6 +3232,15 @@ const TemplateManager = {
     }
   },
 
+  /**
+   * Applies data-model: binds a form control to a state path in both
+   * directions, honouring the lazy, number and trim modifiers.
+   *
+   * @param {HTMLElement} el - Form control carrying data-model
+   * @param {string} value - State path, plus any modifiers
+   * @param {Object} context - {state, methods, ...} holding the bound value
+   * @returns {void}
+   */
   processDataModel(el, value, context) {
     if (!el || !value || !context) return;
 
@@ -3021,6 +3418,17 @@ const TemplateManager = {
     }
   },
 
+  /**
+   * Applies data-checked: keeps the checked state of a checkbox or radio in
+   * step with the expression.
+   *
+   * Elements of any other type are rejected with a warning.
+   *
+   * @param {HTMLInputElement} el - Checkbox or radio carrying data-checked
+   * @param {string} expression - Condition to evaluate
+   * @param {Object} context - {state, methods, ...} to evaluate against
+   * @returns {void}
+   */
   processDataChecked(el, expression, context) {
     if (!el || !expression || !context) return;
 
@@ -3058,13 +3466,15 @@ const TemplateManager = {
             mergeLiveState: true
           });
 
-          let isChecked = ExpressionEvaluator.evaluate(binding.expression, evalState, ctx);
+          const isChecked = Utils.string.toBoolean(
+            ExpressionEvaluator.evaluate(binding.expression, evalState, ctx)
+          );
 
           if (isChecked === currentChecked) {
             return;
           }
 
-          el.checked = !!isChecked;
+          el.checked = isChecked;
           el._checkedBinding.lastValue = !!isChecked;
 
           // Programmatic assignment does NOT fire a native 'change' event.
@@ -3505,6 +3915,14 @@ const TemplateManager = {
     }
   },
 
+  /**
+   * Clones a value deeply, tracking what it has seen so cycles and shared
+   * references survive as the same object in the copy.
+   *
+   * @param {*} obj - Value to clone
+   * @param {WeakMap} [seen=new WeakMap()] - Objects already cloned
+   * @returns {*} The clone
+   */
   deepClone(obj, seen = new WeakMap()) {
     if (obj === null || typeof obj !== 'object') {
       return obj;
@@ -3524,6 +3942,13 @@ const TemplateManager = {
     return clone;
   },
 
+  /**
+   * Clones a state object recursively without cycle tracking, used as the
+   * fallback when deepClone() cannot handle a value.
+   *
+   * @param {Object} state - State to clone
+   * @returns {Object} The clone
+   */
   cloneState(state) {
     if (!state || typeof state !== 'object') return state;
     const clone = Array.isArray(state) ? [] : {};
@@ -3538,6 +3963,12 @@ const TemplateManager = {
     return clone;
   },
 
+  /**
+   * Runs and forgets the cleanup function a data-script left on an element.
+   *
+   * @param {HTMLElement} element - Element to release
+   * @returns {void}
+   */
   cleanupElementScripts(element) {
     if (!element) return;
 
@@ -3555,6 +3986,12 @@ const TemplateManager = {
     this.state.activeScripts.delete(element);
   },
 
+  /**
+   * Removes the input, focus and blur listeners a data-model binding installed.
+   *
+   * @param {HTMLElement} element - Element to release
+   * @returns {void}
+   */
   cleanupModelListeners(element) {
     if (!element) return;
 
@@ -3576,6 +4013,16 @@ const TemplateManager = {
     }
   },
 
+  /**
+   * Releases the directive bindings of one element: its scripts, model
+   * listeners, reactive subscriptions and the binding objects themselves.
+   *
+   * @param {HTMLElement} element - Element to release
+   * @param {Object} [options={}] - Release options
+   * @param {string[]} [options.skipBindings] - Binding names to leave in place
+   * @param {string[]} [options.skipReactiveTypes] - Reactive types to leave subscribed
+   * @returns {void}
+   */
   cleanupElementBindings(element, options = {}) {
     if (!element) return;
 
@@ -3642,6 +4089,13 @@ const TemplateManager = {
     });
   },
 
+  /**
+   * Releases an element and everything below it: its bindings, its update queue
+   * and the handlers of the component it belongs to.
+   *
+   * @param {HTMLElement} element - Subtree root to release
+   * @returns {void}
+   */
   cleanupElement(element) {
     if (!element) return;
 
@@ -3677,6 +4131,13 @@ const TemplateManager = {
     }
   },
 
+  /**
+   * Releases what a component left here: its event handlers and its cached
+   * template.
+   *
+   * @param {string} componentId - Component id
+   * @returns {void}
+   */
   cleanupComponent(componentId) {
     if (!componentId) return;
 
@@ -3706,6 +4167,12 @@ const TemplateManager = {
     }
   },
 
+  /**
+   * Releases everything the manager holds: the cache, the registered handlers
+   * and the bindings under the main content area.
+   *
+   * @returns {void}
+   */
   cleanup() {
     try {
       this.state.cache.clear();
@@ -3731,6 +4198,13 @@ const TemplateManager = {
     }
   },
 
+  /**
+   * Renders a value as text, JSON-encoding objects and turning null and
+   * undefined into an empty string.
+   *
+   * @param {*} value - Value to render
+   * @returns {string} Text form of the value
+   */
   valueToString(value) {
     if (value === null || value === undefined) {
       return '';
@@ -3745,6 +4219,18 @@ const TemplateManager = {
     return String(value);
   },
 
+  /**
+   * Writes a value at a dotted path in the state, creating the objects along
+   * the way.
+   *
+   * The path is not checked for __proto__ or constructor, so it must come from
+   * the template author rather than from request data.
+   *
+   * @param {string} path - Dotted path, such as 'form.email'
+   * @param {*} value - Value to write
+   * @param {Object} state - Object to write into
+   * @returns {void}
+   */
   setStateValue(path, value, state) {
     const parts = path.split('.');
     const key = parts.pop();
@@ -3752,11 +4238,26 @@ const TemplateManager = {
     target[key] = value;
   },
 
+  /**
+   * Applies the directives and then the interpolation of a context to a
+   * subtree.
+   *
+   * @param {HTMLElement} element - Subtree to process
+   * @param {Object} context - {state, methods, ...} the directives read from
+   * @returns {void}
+   */
   processTemplateContent(element, context) {
     this.processDataDirectives(element, context);
     this.processInterpolation(element, context);
   },
 
+  /**
+   * Renders the template of a context into a container.
+   *
+   * @param {Object} context - Context carrying the template and its data
+   * @param {HTMLElement} container - Element to render into
+   * @returns {void}
+   */
   render(context, container) {
     if (!context || typeof context !== 'object') {
       ErrorManager.handle('Invalid context provided to render.', {
@@ -3795,6 +4296,11 @@ const TemplateManager = {
     }
   },
 
+  /**
+   * Drops the cache entries that have passed their expiry.
+   *
+   * @returns {void}
+   */
   cleanupCache() {
     const now = Date.now();
     for (const [key, entry] of this.state.cache) {
@@ -3805,6 +4311,17 @@ const TemplateManager = {
     }
   },
 
+  /**
+   * Registers a handler for a template event binding and returns the id the
+   * element stores in data-handler-id.
+   *
+   * The expression names a method of the context and may carry literal
+   * arguments, which are passed ahead of the event.
+   *
+   * @param {string} handlerExpr - Expression such as "save('draft')"
+   * @param {Object} context - Context the method comes from
+   * @returns {string} Handler id
+   */
   registerEventHandler(handlerExpr, context) {
     const handlerId = `evt_${Utils.generateUUID()}`;
     const [methodName, argsString] = handlerExpr.split('(');
@@ -3826,6 +4343,12 @@ const TemplateManager = {
     return handlerId;
   },
 
+  /**
+   * Drops the registered handlers whose component no longer has a live
+   * instance.
+   *
+   * @returns {void}
+   */
   cleanupHandlers() {
     const componentManager = Now.getManager('component');
     if (!componentManager) return;
@@ -3842,6 +4365,12 @@ const TemplateManager = {
     }
   },
 
+  /**
+   * Removes the event listeners and handler records belonging to one component.
+   *
+   * @param {string} componentId - Component id
+   * @returns {void}
+   */
   cleanupComponentHandlers(componentId) {
     if (!componentId) return;
 
@@ -3858,6 +4387,12 @@ const TemplateManager = {
     });
   },
 
+  /**
+   * Starts the periodic cleanup timer and stops it when the page is unloaded or
+   * hidden.
+   *
+   * @returns {void}
+   */
   startCleanupInterval() {
     this.stopCleanupInterval();
 
@@ -3876,6 +4411,11 @@ const TemplateManager = {
     });
   },
 
+  /**
+   * Stops the periodic cleanup timer.
+   *
+   * @returns {void}
+   */
   stopCleanupInterval() {
     if (this.state.cleanupInterval) {
       clearInterval(this.state.cleanupInterval);
@@ -3883,6 +4423,13 @@ const TemplateManager = {
     }
   },
 
+  /**
+   * Releases what a destroyed component left here: its handlers and its cached
+   * template.
+   *
+   * @param {Object} component - Component instance being destroyed
+   * @returns {void}
+   */
   onComponentDestroy(component) {
     if (component.id) {
       this.cleanupComponentHandlers(component.id);
@@ -3895,6 +4442,12 @@ const TemplateManager = {
     }
   },
 
+  /**
+   * Runs one maintenance pass: drops cache entries older than the maximum age,
+   * in batches so a large cache does not block the frame.
+   *
+   * @returns {void}
+   */
   performCleanup() {
     const now = Date.now();
     const maxBatch = this.config.cleanup.batchSize;

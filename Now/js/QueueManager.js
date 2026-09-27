@@ -137,6 +137,14 @@ const QueueManager = {
     }
   },
 
+  /**
+   * Turn queue processing on, initialising the manager first if needed.
+   *
+   * Also starts the persistence sync timer when `config.persistence.enabled`
+   * is set, so queued work survives a reload.
+   *
+   * @returns {Promise<void>}
+   */
   async enable() {
     if (!this.state.initialized) {
       await this.init();
@@ -158,6 +166,14 @@ const QueueManager = {
     return this;
   },
 
+  /**
+   * Stop queue processing and release its timers and workers.
+   *
+   * Clears the persistence timer and shuts down the workers, so nothing keeps
+   * running in the background after the queue is switched off.
+   *
+   * @returns {void}
+   */
   disable() {
     this.state.enabled = false;
     this.config.enabled = false;

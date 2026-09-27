@@ -61,6 +61,9 @@ class HttpClient {
 
     this.throwOnError = options.throwOnError !== false;
     this.csrfToken = null;
+    // Set once someone calls setCsrfToken(): the caller has taken over the
+    // token, so SecurityManager's copy must not overwrite it.
+    this.csrfTokenIsExplicit = false;
 
     this.security = options.security || {
       csrf: {
@@ -127,7 +130,10 @@ class HttpClient {
 
     this.addRequestInterceptor(async (config) => {
       try {
-        if (this.security.validation.enabled && config.body) {
+        // X-Skip-Sanitize (set by FormManager for forms with
+        // data-sanitize-input="false") opts a request out of the lossy
+        // client-side body sanitization; the server sanitizes on its side.
+        if (this.security.validation.enabled && config.body && config.headers?.['X-Skip-Sanitize'] !== 'true') {
           config.body = SecurityManager.sanitizeRequestData(config.body);
         }
         return config;
@@ -138,6 +144,12 @@ class HttpClient {
     });
   }
 
+  /**
+   * Register an interceptor that runs before a request is sent.
+   *
+   * @param {Function} fn - Receives the config and returns the modified config.
+   * @returns {Function} - A function that removes this interceptor.
+   */
   addRequestInterceptor(fn) {
     this.interceptors.request.push(fn);
     return () => {
@@ -146,6 +158,13 @@ class HttpClient {
     };
   }
 
+  /**
+   * Register an interceptor that runs once a response arrives.
+   *
+   * @param {Function} onFulfilled - Called when the request succeeds.
+   * @param {Function} onRejected - Called when the request fails.
+   * @returns {Function} - A function that removes this interceptor pair.
+   */
   addResponseInterceptor(onFulfilled, onRejected) {
     this.interceptors.response.push({onFulfilled, onRejected});
     return () => {
@@ -155,6 +174,14 @@ class HttpClient {
     };
   }
 
+  /**
+   * Run every request interceptor in registration order.
+   *
+   * Each result is passed to the next one, so config changes accumulate.
+   *
+   * @param {Object} config - The initial request config.
+   * @returns {Promise<Object>} - The config after every interceptor has run.
+   */
   async runRequestInterceptors(config) {
     let resultConfig = {...config};
     for (const interceptor of this.interceptors.request) {
@@ -183,6 +210,12 @@ class HttpClient {
           result = await interceptor.onRejected(result);
         }
       } catch (error) {
+        // An interceptor that throws is propagating the error onward, not failing:
+        // `onRejected: error => { throw error; }` is the standard idiom, and
+        // SecurityManager, ApiService and AuthManager all use it. Replacing the
+        // result here would throw away the status and body the server actually
+        // sent, so keep them and only note what the interceptor raised.
+        const original = (result && typeof result === 'object') ? result : response;
 
         result = {
           success: false,
@@ -190,8 +223,13 @@ class HttpClient {
           statusText: 'Interceptor Error',
           data: null,
           headers: {},
-          error: error
+          ...original,
+          error: original?.error ?? error
         };
+
+        if (error !== original && error !== response) {
+          result.interceptorError = error;
+        }
         break;
       }
     }
@@ -199,6 +237,16 @@ class HttpClient {
     return result;
   }
 
+  /**
+   * Send a single request. Every method in this class routes through here.
+   *
+   * An AbortController is paired with the configured timeout, so a request that
+   * hangs past the limit is aborted instead of waiting forever.
+   *
+   * @param {string} url - The target URL.
+   * @param {Object} [options={}] - Fetch options, plus method and body.
+   * @returns {Promise<Object>} - The processed response.
+   */
   async request(url, options = {}) {
     const controller = new AbortController();
     let timeoutId;
@@ -269,6 +317,13 @@ class HttpClient {
     }
   }
 
+  /**
+   * Append a query string to a URL.
+   *
+   * @param {string} url - The base URL.
+   * @param {Object} params - Parameters to append.
+   * @returns {string} - The URL with the query string appended.
+   */
   appendQueryParams(url, params) {
     if (!params) {
       return url;
@@ -314,6 +369,15 @@ class HttpClient {
     return `${url}${url.includes('?') ? '&' : '?'}${queryString}`;
   }
 
+  /**
+   * Prepare the body for sending and set Content-Type to match its type.
+   *
+   * Content-Type is dropped for FormData, URLSearchParams, Blob and ArrayBuffer
+   * so the browser can fill in the correct boundary itself.
+   *
+   * @param {Object} config - The request config.
+   * @returns {*} - The body ready to send, or null when there is none.
+   */
   processRequestBody(config) {
     const {body, headers} = config;
     if (!body) return null;
@@ -336,6 +400,15 @@ class HttpClient {
     return body;
   }
 
+  /**
+   * Normalize the options before sending.
+   *
+   * A JSON Content-Type is dropped when the request has no body, to avoid caches
+   * and CDNs that reject a GET carrying a Content-Type.
+   *
+   * @param {Object} options - The initial options.
+   * @returns {Object} - The normalized options.
+   */
   normalizeRequestOptions(options) {
     const result = {...options};
 
@@ -353,9 +426,49 @@ class HttpClient {
     return result;
   }
 
+  /**
+   * Check for a CSRF token before sending a state-changing request.
+   *
+   * Only POST, PUT, PATCH and DELETE are checked, and only while CSRF is
+   * enabled and `security.csrf.required` is on, so a GET goes through without
+   * a token.
+   *
+   * The token is looked up again here rather than trusting the single read the
+   * constructor does: SecurityManager fetches the token over the network and
+   * writes the meta tag long after this client is built, so at construction
+   * time the page usually carries nothing yet.
+   *
+   * @param {Object} config - The request config.
+   * @returns {Object} - The config, with the token attached when there is one.
+   * @throws {HttpError} - Status 400 when a required token is missing.
+   */
   ensureCsrf(config) {
     const method = (config.method || 'GET').toUpperCase();
-    if (!this.csrfToken && this.security.csrf.required && ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
+    const stateChanging = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method);
+
+    // A request that opted out (FormManager sets this for data-csrf="false")
+    // must go through untouched, token or no token.
+    if (config.headers?.['X-Skip-CSRF'] === 'true') {
+      return config;
+    }
+
+    // SecurityManager owns the token while it is running; its state stays in
+    // sync with the refresh timer and the response headers, so prefer it and
+    // fall back to the meta tag or the cookie.
+    const managedToken = this.csrfTokenIsExplicit ? null : window.SecurityManager?.state?.csrfToken;
+    if (managedToken) {
+      this.csrfToken = managedToken;
+    } else if (!this.csrfToken) {
+      this.csrfToken = getCsrfToken(this.csrfCookieName, this.csrfTokenSelector);
+    }
+
+    // `required` only bites while CSRF protection is actually on. The default
+    // config pairs required: true with enabled: false, which would otherwise
+    // block every POST in an application that never turned CSRF on.
+    const csrfEnabled = this.security.csrf.enabled === true ||
+      window.SecurityManager?.config?.csrf?.enabled === true;
+
+    if (!this.csrfToken && csrfEnabled && this.security.csrf.required && stateChanging) {
       throw new HttpError('Missing CSRF token', 400);
     }
 
@@ -363,7 +476,7 @@ class HttpClient {
       config.headers = config.headers || {};
       config.headers[this.csrfHeaderName] = this.csrfToken;
 
-      if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
+      if (stateChanging) {
         const body = config.body;
         if (typeof body === 'object' && body !== null && !(body instanceof FormData) && !body._token) {
           body[this.security.csrf.tokenName || '_token'] = this.csrfToken;
@@ -378,6 +491,15 @@ class HttpClient {
     return config;
   }
 
+  /**
+   * Turn the raw response into a usable shape and pick up a fresh CSRF token.
+   *
+   * A token returned in the headers immediately replaces the stored one, so the
+   * next request uses the latest one without the caller doing anything.
+   *
+   * @param {Response} response - The response from fetch.
+   * @returns {Promise<Object>} - The result parsed according to its content-type.
+   */
   async handleResponse(response) {
     const newCsrfToken = response.headers.get(this.csrfHeaderName);
     if (newCsrfToken) {
@@ -416,6 +538,12 @@ class HttpClient {
     return result;
   }
 
+  /**
+   * Convert the response Headers into a plain object.
+   *
+   * @param {Response} response - The response from fetch.
+   * @returns {Object} - The headers as key-value pairs.
+   */
   getHeadersObject(response) {
     const headers = {};
     response.headers.forEach((value, key) => {
@@ -424,6 +552,12 @@ class HttpClient {
     return headers;
   }
 
+  /**
+   * Build an HttpError from a response with an unsuccessful status.
+   *
+   * @param {Object} response - The failed response.
+   * @returns {HttpError} - The error, ready to throw.
+   */
   createHttpError(response) {
     return new HttpError(
       response.statusText || 'HTTP Error',
@@ -432,6 +566,15 @@ class HttpClient {
     );
   }
 
+  /**
+   * Convert an error raised while sending the request into an HttpError.
+   *
+   * `AbortError` is read as a timeout and gets status 408; anything else keeps the
+   * status carried on the error, or 500 when it has none.
+   *
+   * @param {Error} error - The caught error.
+   * @returns {HttpError} - The converted error.
+   */
   createErrorResponse(error) {
     const isTimeout = error.name === 'AbortError';
     const status = isTimeout ? 408 : error.status || 500;
@@ -440,11 +583,39 @@ class HttpClient {
     return new HttpError(message, status, error.response);
   }
 
+  /**
+   * Pick the most useful message for a failed response.
+   *
+   * The API's own `message` says what went wrong; `statusText` only repeats the
+   * status line, so it is the last resort.
+   *
+   * @param {Object} response - The processed response.
+   * @returns {string} - The message to report.
+   */
+  getErrorMessage(response) {
+    const data = response?.data;
+
+    if (data && typeof data === 'object') {
+      if (typeof data.message === 'string' && data.message.trim() !== '') {
+        return data.message;
+      }
+      if (typeof data.error === 'string' && data.error.trim() !== '') {
+        return data.error;
+      }
+    }
+
+    if (typeof data === 'string' && data.trim() !== '' && data.length <= 200) {
+      return data;
+    }
+
+    return response?.statusText || 'HTTP Error';
+  }
+
   async get(url, options = {}) {
     const response = await this.request(url, {...options, method: 'GET'});
 
     if (options.throwOnError !== false && this.throwOnError && !response.success) {
-      throw new HttpError(response.statusText || 'HTTP Error', response.status, response);
+      throw new HttpError(this.getErrorMessage(response), response.status, response);
     }
 
     return response;
@@ -454,7 +625,7 @@ class HttpClient {
     const response = await this.request(url, {...options, method: 'POST', body: data});
 
     if (options.throwOnError !== false && this.throwOnError && !response.success) {
-      throw new HttpError(response.statusText || 'HTTP Error', response.status, response);
+      throw new HttpError(this.getErrorMessage(response), response.status, response);
     }
 
     return response;
@@ -464,7 +635,7 @@ class HttpClient {
     const response = await this.request(url, {...options, method: 'PUT', body: data});
 
     if (options.throwOnError !== false && this.throwOnError && !response.success) {
-      throw new HttpError(response.statusText || 'HTTP Error', response.status, response);
+      throw new HttpError(this.getErrorMessage(response), response.status, response);
     }
 
     return response;
@@ -474,7 +645,7 @@ class HttpClient {
     const response = await this.request(url, {...options, method: 'DELETE'});
 
     if (options.throwOnError !== false && this.throwOnError && !response.success) {
-      throw new HttpError(response.statusText || 'HTTP Error', response.status, response);
+      throw new HttpError(this.getErrorMessage(response), response.status, response);
     }
 
     return response;
@@ -484,10 +655,24 @@ class HttpClient {
     return this.request(url, {...options, method: 'PATCH', body: data});
   }
 
+  /**
+   * Send a HEAD request.
+   *
+   * @param {string} url - The target URL.
+   * @param {Object} [options={}] - Extra options.
+   * @returns {Promise<Object>} - response
+   */
   head(url, options = {}) {
     return this.request(url, {...options, method: 'HEAD'});
   }
 
+  /**
+   * Send an OPTIONS request.
+   *
+   * @param {string} url - The target URL.
+   * @param {Object} [options={}] - Extra options.
+   * @returns {Promise<Object>} - response
+   */
   options(url, options = {}) {
     return this.request(url, {...options, method: 'OPTIONS'});
   }
@@ -514,18 +699,51 @@ class HttpClient {
     });
   }
 
+  /**
+   * A GET that never throws, whatever the status.
+   *
+   * Unlike `get()` it ignores `throwOnError` entirely, so the caller must read
+   * `response.success` itself. Useful where a 404 is a normal result, not an error.
+   *
+   * @param {string} url - The target URL.
+   * @param {Object} [options={}] - Extra options.
+   * @returns {Promise<Object>} - The raw response; never throws on a failed status.
+   */
   async getSafe(url, options = {}) {
     return this.request(url, {...options, method: 'GET'});
   }
 
+  /**
+   * A POST that never throws, whatever the status.
+   *
+   * @param {string} url - The target URL.
+   * @param {*} data - The data to send.
+   * @param {Object} [options={}] - Extra options.
+   * @returns {Promise<Object>} - The raw response; never throws on a failed status.
+   */
   async postSafe(url, data, options = {}) {
     return this.request(url, {...options, method: 'POST', body: data});
   }
 
+  /**
+   * A PUT that never throws, whatever the status.
+   *
+   * @param {string} url - The target URL.
+   * @param {*} data - The data to send.
+   * @param {Object} [options={}] - Extra options.
+   * @returns {Promise<Object>} - The raw response; never throws on a failed status.
+   */
   async putSafe(url, data, options = {}) {
     return this.request(url, {...options, method: 'PUT', body: data});
   }
 
+  /**
+   * A DELETE that never throws, whatever the status.
+   *
+   * @param {string} url - The target URL.
+   * @param {Object} [options={}] - Extra options.
+   * @returns {Promise<Object>} - The raw response; never throws on a failed status.
+   */
   async deleteSafe(url, options = {}) {
     return this.request(url, {...options, method: 'DELETE'});
   }
@@ -534,10 +752,25 @@ class HttpClient {
     this.baseURL = url;
   }
 
+  /**
+   * Set one default header that goes out with every request.
+   *
+   * @param {string} name - The header name.
+   * @param {string} value - The value.
+   * @returns {void}
+   */
   setDefaultHeader(name, value) {
     this.defaultHeaders[name] = value;
   }
 
+  /**
+   * Merge several default headers into the existing set.
+   *
+   * This merges rather than replaces, so headers not named here survive.
+   *
+   * @param {Object} headers - The headers to merge in.
+   * @returns {void}
+   */
   setDefaultHeaders(headers) {
     this.defaultHeaders = {
       ...this.defaultHeaders,
@@ -549,8 +782,18 @@ class HttpClient {
     this.timeout = timeout;
   }
 
+  /**
+   * Set the CSRF token attached to state-changing requests.
+   *
+   * The token set here wins over the one SecurityManager holds, so a caller
+   * that manages its own tokens keeps them.
+   *
+   * @param {string} token - The new token.
+   * @returns {void}
+   */
   setCsrfToken(token) {
     this.csrfToken = token;
+    this.csrfTokenIsExplicit = true;
   }
 }
 
@@ -690,7 +933,16 @@ const simpleFetch = {
       // CSRF support (share logic with HttpClient defaults)
       const csrfToken = getCsrfToken(this.config.csrfCookieName || 'XSRF-TOKEN', this.config.csrfSelector || 'meta[name="csrf-token"]');
       if (csrfToken) {
-        config.headers[this.config.csrfHeaderName || 'X-CSRF-Token'] = csrfToken;
+        // Header names are case-insensitive to the browser: a caller-supplied
+        // 'X-CSRF-TOKEN' next to our 'X-CSRF-Token' is sent as one header
+        // "tok, tok", which the server rejects as a malformed token (419).
+        const csrfHeaderName = this.config.csrfHeaderName || 'X-CSRF-Token';
+        for (const name of Object.keys(config.headers)) {
+          if (name !== csrfHeaderName && name.toLowerCase() === csrfHeaderName.toLowerCase()) {
+            delete config.headers[name];
+          }
+        }
+        config.headers[csrfHeaderName] = csrfToken;
         if (['POST', 'PUT', 'PATCH', 'DELETE'].includes((config.method || 'GET').toUpperCase())) {
           if (config.body instanceof FormData) {
             if (!config.body.has('_token')) config.body.append('_token', csrfToken);
@@ -727,6 +979,11 @@ const simpleFetch = {
       // Make request
       const response = await fetch(finalUrl, config);
       clearTimeout(timeoutId);
+
+      // The server rotates the CSRF token on every response. simpleFetch bypasses
+      // the http interceptors, so adopt the rotated token here or the meta tag
+      // goes stale (a new PHP session after idle/GC) and every later POST gets 419.
+      adoptCsrfToken(response.headers.get(this.config.csrfHeaderName || 'X-CSRF-Token'), this.config.csrfSelector || 'meta[name="csrf-token"]');
 
       // Auto-parse response
       const contentType = response.headers.get('content-type') || '';
@@ -981,6 +1238,14 @@ const simpleFetch = {
  * const response = await httpAction.get(url, {}, { reload: () => loadData() });
  */
 const httpAction = {
+  /**
+   * Reshape query options into the form httpAction expects.
+   *
+   * Returns the input untouched when it is not an object, or already has `params`.
+   *
+   * @param {Object} [options={}] - The initial options.
+   * @returns {Object} - The normalized options.
+   */
   normalizeQueryOptions(options = {}) {
     if (!options || typeof options !== 'object' || Array.isArray(options)) {
       return options;
@@ -1032,11 +1297,20 @@ const httpAction = {
     // ResponseHandler.process() expects the inner `data` payload, not the outer HttpClient wrapper.
     // The inner payload is response.data when the server returns JSON, otherwise skip processing.
     if (window.ResponseHandler && response) {
-      const payload = response?.data?.data ?? response?.data ?? response;
-      await window.ResponseHandler.process(payload, context);
+      await window.ResponseHandler.process(this.responsePayload(response), context);
     }
 
     return response;
+  },
+
+  /**
+   * Pick the level of the response that actually carries `actions`.
+   * @param {object} response - Full HttpClient wrapper
+   * @returns {*} Payload for ResponseHandler.process()
+   * @private
+   */
+  responsePayload(response) {
+    return window.ResponseHandler.payloadOf(response);
   },
 
   /**
@@ -1109,6 +1383,40 @@ const httpAction = {
     return this._dispatch('upload', [url, files, options], context);
   }
 };
+
+/**
+ * Adopt a CSRF token rotated by the server: SecurityManager owns the token
+ * while it runs (its state feeds every http request), so update it there and
+ * let it propagate to the meta tag and forms; otherwise write the meta tag.
+ *
+ * @param {string|null} token - Token from the response header, if any
+ * @param {string} [selector] - CSS selector of the CSRF meta tag
+ * @returns {void}
+ */
+function adoptCsrfToken(token, selector = 'meta[name="csrf-token"]') {
+  if (!token) return;
+
+  try {
+    const sm = window.SecurityManager;
+    if (sm?.state && typeof sm.updateCSRFMeta === 'function') {
+      if (sm.state.csrfToken === token) return;
+      sm.state.csrfToken = token;
+      sm.updateCSRFMeta(token);
+      if (typeof sm.updateCSRFInForms === 'function') sm.updateCSRFInForms(token);
+      return;
+    }
+
+    let meta = document.querySelector(selector);
+    if (!meta) {
+      meta = document.createElement('meta');
+      meta.name = 'csrf-token';
+      document.head.appendChild(meta);
+    }
+    meta.setAttribute('content', token);
+  } catch (e) {
+    console.warn('Failed to adopt rotated CSRF token', e);
+  }
+}
 
 function getCsrfToken(cookieName = 'XSRF-TOKEN', selector = 'meta[name="csrf-token"]') {
   const metaToken = document.querySelector(selector);

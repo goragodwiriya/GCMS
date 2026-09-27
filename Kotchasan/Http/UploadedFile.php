@@ -1,5 +1,4 @@
 <?php
-
 namespace Kotchasan\Http;
 
 use Kotchasan\Image;
@@ -240,22 +239,22 @@ class UploadedFile implements UploadedFileInterface
     public function getErrorMessage(): string
     {
         switch ($this->error) {
-            case UPLOAD_ERR_INI_SIZE:
-                return 'The uploaded file exceeds the upload_max_filesize directive in php.ini';
-            case UPLOAD_ERR_FORM_SIZE:
-                return 'The uploaded file exceeds the MAX_FILE_SIZE directive that was specified in the HTML form';
-            case UPLOAD_ERR_PARTIAL:
-                return 'The uploaded file was only partially uploaded';
-            case UPLOAD_ERR_NO_FILE:
-                return 'No file was uploaded';
-            case UPLOAD_ERR_NO_TMP_DIR:
-                return 'Missing a temporary folder';
-            case UPLOAD_ERR_CANT_WRITE:
-                return 'Failed to write file to disk';
-            case UPLOAD_ERR_EXTENSION:
-                return 'A PHP extension stopped the file upload';
-            default:
-                return 'Unknown upload error';
+        case UPLOAD_ERR_INI_SIZE:
+            return 'The uploaded file exceeds the upload_max_filesize directive in php.ini';
+        case UPLOAD_ERR_FORM_SIZE:
+            return 'The uploaded file exceeds the MAX_FILE_SIZE directive that was specified in the HTML form';
+        case UPLOAD_ERR_PARTIAL:
+            return 'The uploaded file was only partially uploaded';
+        case UPLOAD_ERR_NO_FILE:
+            return 'No file was uploaded';
+        case UPLOAD_ERR_NO_TMP_DIR:
+            return 'Missing a temporary folder';
+        case UPLOAD_ERR_CANT_WRITE:
+            return 'Failed to write file to disk';
+        case UPLOAD_ERR_EXTENSION:
+            return 'A PHP extension stopped the file upload';
+        default:
+            return 'Unknown upload error';
         }
     }
 
@@ -397,13 +396,12 @@ class UploadedFile implements UploadedFileInterface
      * @param string $name
      * @param int $width
      * @param string $watermark
-     * @param bool $forceConvert
      * @return array
      */
-    public function resizeImage($exts, $target, $name, $width = 0, $watermark = '', $forceConvert = true)
+    public function resizeImage($exts, $target, $name, $width = 0, $watermark = '')
     {
         $this->check($exts, $target);
-        $ret = Image::resize($this->file, $target, $name, $width, $watermark, $forceConvert);
+        $ret = Image::resize($this->file, $target, $name, $width, $watermark);
         if ($ret === false) {
             throw new \RuntimeException(Language::get('Unable to create image'));
         }
@@ -444,7 +442,7 @@ class UploadedFile implements UploadedFileInterface
             throw new \RuntimeException(Language::get('The type of file is invalid'));
         }
         if (!is_writable($targetDir)) {
-            throw new \InvalidArgumentException(Language::sprintf('Target directory "%s" is not writable', $targetDir));
+            throw new \InvalidArgumentException(Language::sprintf('Target directory %s is not writable', $targetDir));
         }
         return true;
     }

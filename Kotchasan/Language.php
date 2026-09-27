@@ -94,7 +94,7 @@ final class Language extends \Kotchasan\KBase
                 $datas[$lng] = $language;
             }
         }
-        // จัดกลุ่มภาษาตาม key
+        // Group language entries by key
         $languages = [];
         foreach ($datas as $language => $values) {
             foreach ($values as $key => $value) {
@@ -104,7 +104,7 @@ final class Language extends \Kotchasan\KBase
                 }
             }
         }
-        // จัดกลุ่มภาษาตาม id
+        // Re-index the grouped entries by numeric id
         $datas = [];
         $i = 0;
         foreach ($languages as $key => $row) {

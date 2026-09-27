@@ -1,5 +1,4 @@
 <?php
-
 namespace Kotchasan;
 
 /**
@@ -144,7 +143,7 @@ class Barcode
     }
 
     /**
-     * แปลงข้อมูล Barcode 128
+     * Encode data into Code 128 barcode format
      *
      * @param $code
      */

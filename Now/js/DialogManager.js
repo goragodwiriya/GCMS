@@ -1,3 +1,13 @@
+/**
+ * DialogManager
+ *
+ * Shows modal dialogs: `alert`, `confirm` and `prompt` return a Promise that
+ * resolves with the user's answer, and `custom` builds one from arbitrary
+ * options. Dialogs stack — `state.activeDialogs` keeps the order, so Escape and
+ * `bringToFront` always act on the topmost one.
+ *
+ * The backdrop is delegated to BackdropManager rather than drawn here.
+ */
 const DialogManager = {
   config: {
     animation: true,
@@ -33,6 +43,7 @@ const DialogManager = {
           <button class="dialog-close" aria-label="Close"></button>
         </div>
         <div class="dialog-body">
+          <div class="dialog-message"></div>
           <input type="text" class="dialog-input" />
         </div>
         <div class="dialog-footer"></div>
@@ -76,6 +87,14 @@ const DialogManager = {
     return this._getCssZIndexValue('--z-index-alert') ?? this.config.baseZIndex;
   },
 
+  /**
+   * Set up the manager: resolve BackdropManager and bind keyboard handling.
+   *
+   * Runs once; a second call returns immediately.
+   *
+   * @param {Object} [options={}] - Overrides merged into the module config.
+   * @returns {Promise<Object>} - The manager itself, so calls can be chained.
+   */
   async init(options = {}) {
     if (this.state.initialized) return this;
 
@@ -96,13 +115,24 @@ const DialogManager = {
     return this;
   },
 
+  /**
+   * Show a message with a single acknowledge button.
+   *
+   * Both title and message go through `Now.translate`, so callers pass keys or
+   * plain text and get the right language either way.
+   *
+   * @param {string} message - Message to show.
+   * @param {string} [title=null] - Dialog title; defaults to the translated "Alert".
+   * @param {Object} [options={}] - Overrides for this dialog.
+   * @returns {Promise<void>} - Resolves once the user dismisses it.
+   */
   alert(message, title = null, options = {}) {
-    title = title || Now.translate('Alert');
+    title = Now.translate(title || 'Alert');
     return new Promise(resolve => {
       const dialog = this.createDialog({
         template: 'alert',
         title,
-        message,
+        message: Now.translate(message),
         buttons: {
           ok: {
             text: Now.translate('OK'),
@@ -117,13 +147,21 @@ const DialogManager = {
     });
   },
 
+  /**
+   * Ask the user to confirm or cancel.
+   *
+   * @param {string} message - Question to ask.
+   * @param {string} [title=null] - Dialog title; defaults to the translated "Confirm".
+   * @param {Object} [options={}] - Overrides for this dialog.
+   * @returns {Promise<boolean>} - True when confirmed, false when cancelled.
+   */
   confirm(message, title = null, options = {}) {
-    title = title || Now.translate('Confirm');
+    title = Now.translate(title || 'Confirm');
     return new Promise(resolve => {
       const dialog = this.createDialog({
         template: 'confirm',
         title,
-        message,
+        message: Now.translate(message),
         buttons: {
           cancel: {
             text: Now.translate('Cancel'),
@@ -143,13 +181,22 @@ const DialogManager = {
     });
   },
 
+  /**
+   * Ask the user for a value.
+   *
+   * @param {string} message - Prompt text.
+   * @param {string} [defaultValue=''] - Value the input starts with.
+   * @param {string} [title=null] - Dialog title; defaults to the translated "Prompt".
+   * @param {Object} [options={}] - Overrides for this dialog.
+   * @returns {Promise<string|null>} - The entered value, or null when cancelled.
+   */
   prompt(message, defaultValue = '', title = null, options = {}) {
-    title = title || Now.translate('Prompt');
+    title = Now.translate(title || 'Prompt');
     return new Promise(resolve => {
       const dialog = this.createDialog({
         template: 'prompt',
         title,
-        message,
+        message: Now.translate(message),
         defaultValue,
         buttons: {
           cancel: {
@@ -181,6 +228,16 @@ const DialogManager = {
     });
   },
 
+  /**
+   * Build a dialog from arbitrary options.
+   *
+   * Unlike `alert`/`confirm`/`prompt` this returns the dialog element rather
+   * than a Promise, so the caller drives its lifecycle. `options.template`
+   * falls back to the alert layout.
+   *
+   * @param {Object} options - Dialog options, including `template` and `onShow`.
+   * @returns {HTMLElement} - The dialog element.
+   */
   custom(options) {
     const dialog = this.createDialog({
       template: options.template || 'alert',
@@ -199,6 +256,15 @@ const DialogManager = {
     return dialog;
   },
 
+  /**
+   * Build a dialog element and register it.
+   *
+   * Marked `role="dialog"` for assistive tech, and given the next id from
+   * `state.nextId` so it can be tracked in the active stack.
+   *
+   * @param {Object} options - Dialog options.
+   * @returns {HTMLElement} - The created, not-yet-shown dialog.
+   */
   createDialog(options) {
     try {
       const id = this.state.nextId++;
@@ -224,7 +290,11 @@ const DialogManager = {
       }
 
       if (options.message) {
-        const bodyEl = dialog.querySelector('.dialog-body');
+        // Write the message into its own box when the template has one.
+        // `prompt` keeps its <input> inside .dialog-body, so replacing the whole
+        // body with the message used to delete the input — the dialog then had
+        // nothing to type into and always resolved to null.
+        const bodyEl = dialog.querySelector('.dialog-message') || dialog.querySelector('.dialog-body');
         if (bodyEl) {
           if (typeof options.message === 'string') {
             // sanitize incoming HTML string if DOMPurify is available,
@@ -263,6 +333,15 @@ const DialogManager = {
     }
   },
 
+  /**
+   * Keep Tab focus inside the dialog while it is open.
+   *
+   * Does nothing when the dialog contains no focusable elements, so an
+   * information-only dialog does not trap focus with nowhere to go.
+   *
+   * @param {HTMLElement} dialog - Dialog to trap focus within.
+   * @returns {void}
+   */
   setupFocusTrap(dialog) {
     const focusableElements = dialog.querySelectorAll(
       'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
@@ -290,6 +369,16 @@ const DialogManager = {
     });
   },
 
+  /**
+   * Let the user drag the dialog by its header.
+   *
+   * Does nothing when the template has no `.dialog-header`. Handles both mouse
+   * and touch, and stores the handler on the header so `cleanupDialog` can
+   * unbind it later.
+   *
+   * @param {HTMLElement} dialog - Dialog to make draggable.
+   * @returns {void}
+   */
   setupDraggable(dialog) {
     const header = dialog.querySelector('.dialog-header');
     if (!header) return;
@@ -350,6 +439,15 @@ const DialogManager = {
     document.addEventListener('touchcancel', stopDrag);
   },
 
+  /**
+   * Render the dialog's footer buttons, replacing any already there.
+   *
+   * Does nothing when the template has no `.dialog-footer`.
+   *
+   * @param {HTMLElement} dialog - Dialog to render into.
+   * @param {Object} [buttons={}] - Button key to config.
+   * @returns {void}
+   */
   setupButtons(dialog, buttons = {}) {
     const footer = dialog.querySelector('.dialog-footer');
     if (!footer) return;
@@ -380,6 +478,15 @@ const DialogManager = {
     });
   },
 
+  /**
+   * Display a dialog and push it onto the active stack.
+   *
+   * Accepts an element, an id, or a selector; an unresolvable argument logs a
+   * warning and returns null rather than throwing.
+   *
+   * @param {HTMLElement|string} dialog - The dialog, its id, or a selector.
+   * @returns {HTMLElement|null} - The shown dialog, or null when not found.
+   */
   show(dialog) {
     // normalize: accept id/selector string or HTMLElement
     const resolved = this._resolveDialogElement(dialog);
@@ -454,6 +561,12 @@ const DialogManager = {
     return dialog;
   },
 
+  /**
+   * Raise a dialog above the others in the stack.
+   *
+   * @param {HTMLElement|string} dialog - The dialog, its id, or a selector.
+   * @returns {void}
+   */
   bringToFront(dialog) {
     try {
       // allow string id/selector as input
@@ -488,6 +601,12 @@ const DialogManager = {
     }
   },
 
+  /**
+   * Close one dialog and remove it from the active stack.
+   *
+   * @param {HTMLElement|string} dialog - The dialog, its id, or a selector.
+   * @returns {void}
+   */
   close(dialog) {
     if (!dialog) return;
 
@@ -530,6 +649,11 @@ const DialogManager = {
     }, this.config.duration);
   },
 
+  /**
+   * Close every open dialog.
+   *
+   * @returns {void}
+   */
   closeAll() {
     [...this.state.activeDialogs].forEach(id => {
       const dialog = document.getElementById(id);
@@ -539,6 +663,14 @@ const DialogManager = {
     });
   },
 
+  /**
+   * Bind the document-level key handling for open dialogs.
+   *
+   * Keys act on the topmost dialog only, so stacked dialogs close one at a
+   * time rather than all at once.
+   *
+   * @returns {void}
+   */
   setupKeyboardEvents() {
     document.addEventListener('keydown', (e) => {
       if (this.state.activeDialogs.length === 0) return;
@@ -555,11 +687,23 @@ const DialogManager = {
     });
   },
 
+  /**
+   * Translate a key, falling back to the key itself when i18n is not loaded.
+   *
+   * @param {string} key - Translation key.
+   * @param {Object} [params={}] - Values interpolated into the result.
+   * @returns {string} - Translated text, or the key unchanged.
+   */
   translate(key, params = {}) {
     const i18n = Now.getManager('i18n');
     return i18n ? i18n.translate(key, params) : key;
   },
 
+  /**
+   * Tear the manager down: close every dialog and unbind the keyboard handler.
+   *
+   * @returns {void}
+   */
   destroy() {
     this.closeAll();
 
@@ -580,6 +724,15 @@ const DialogManager = {
     this.config = null;
   },
 
+  /**
+   * Unbind a dialog's handlers before it is removed.
+   *
+   * Removes the drag listeners stored on the header by `setupDraggable`, so a
+   * closed dialog does not leave listeners behind.
+   *
+   * @param {HTMLElement} dialog - Dialog being torn down.
+   * @returns {void}
+   */
   cleanupDialog(dialog) {
     try {
       const header = dialog.querySelector('.dialog-header');
@@ -613,6 +766,14 @@ const DialogManager = {
     }
   },
 
+  /**
+   * Report a dialog failure through ErrorManager.
+   *
+   * @param {string} message - What went wrong.
+   * @param {Error} error - The underlying error.
+   * @param {string} type - Which method failed, used as the error context.
+   * @returns {void}
+   */
   handleError(message, error, type) {
     ErrorManager.handle(message, {
       context: `DialogManager.${type}`,

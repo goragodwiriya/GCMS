@@ -54,6 +54,8 @@
   cursor: pointer;
   color: var(--color-text-muted);
   transition: color var(--transition-duration, 0.2s);
+  height: auto;
+  padding: 0;
 }
 .file-browser-close:hover {
   color: var(--color-text);
@@ -151,6 +153,10 @@
 }
 .folder-tree-item {
   position: relative;
+}
+.folder-tree .loading {
+  padding: 8px 15px;
+  text-align: center;
 }
 .folder-tree-link {
   display: flex;
@@ -284,8 +290,6 @@
   background: none;
   border: 1px solid var(--color-border);
   color: var(--color-text-muted);
-  width: 30px;
-  height: 30px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -293,13 +297,11 @@
   transition: all var(--transition-duration, 0.2s);
 }
 .view-option:first-child {
-  border-top-left-radius: var(--border-radius);
-  border-bottom-left-radius: var(--border-radius);
+  border-radius: var(--border-radius) 0 0 var(--border-radius);
   border-right: none;
 }
 .view-option:last-child {
-  border-top-right-radius: var(--border-radius);
-  border-bottom-right-radius: var(--border-radius);
+  border-radius: 0 var(--border-radius) var(--border-radius) 0;
 }
 .view-option.active {
   background-color: var(--color-surface-dark);
@@ -406,10 +408,22 @@
   width: 53px;
   margin-right: 10px;
 }
+/* Thumbnails are <img loading="lazy">, so the box must be sized before the
+   image arrives — otherwise every row has zero height, the browser thinks the
+   whole folder is in view and lazy loading never defers anything. */
 .file-thumbnail img {
   max-width: 100%;
   max-height: 100%;
   object-fit: contain;
+  background-color: var(--color-surface, #f1f5f9);
+}
+.grid-view .file-thumbnail img {
+  width: 90px;
+  height: 90px;
+}
+.list-view .file-thumbnail img {
+  width: 53px;
+  height: 53px;
 }
 .file-thumbnail span {
   font-size: 36px;
@@ -550,4 +564,49 @@
 .file-item:focus-visible {
   outline: 2px solid var(--color-primary);
   outline-offset: -2px;
+}
+/* Hover preview — centred on screen, so it never depends on measuring an image
+   that may not have loaded yet */
+.file-preview-popup {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 10420;
+  padding: 6px;
+  background-color: var(--dialog-bg, var(--color-background));
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius-md);
+  box-shadow: var(--shadow-lg);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity var(--transition-duration, 0.2s);
+  pointer-events: none;
+}
+.file-preview-popup.visible {
+  opacity: 1;
+  visibility: visible;
+}
+.file-preview-popup img {
+  display: block;
+  max-width: min(560px, 70vw);
+  max-height: min(560px, 70vh);
+  width: auto;
+  height: auto;
+  border-radius: var(--border-radius);
+  /* Checkerboard so transparent PNGs stay readable */
+  background-color: var(--color-surface, #f1f5f9);
+  background-image:
+    linear-gradient(45deg, rgba(128, 128, 128, .18) 25%, transparent 25%),
+    linear-gradient(-45deg, rgba(128, 128, 128, .18) 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, rgba(128, 128, 128, .18) 75%),
+    linear-gradient(-45deg, transparent 75%, rgba(128, 128, 128, .18) 75%);
+  background-size: 16px 16px;
+  background-position: 0 0, 0 8px, 8px -8px, -8px 0;
+}
+/* Touch devices have no hover — never reserve space or flash the popup */
+@media (hover: none) {
+  .file-preview-popup {
+    display: none;
+  }
 }

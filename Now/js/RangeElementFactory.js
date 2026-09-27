@@ -1,6 +1,10 @@
 /**
- * Enhanced Range Slider Component - Single & Dual Range Support
- * Creates custom range sliders with better UX than native input[type="range"]
+ * EmbeddedRangeSlider
+ *
+ * A custom-built range slider, single or dual-handle, that replaces the native
+ * `<input type="range">` for better keyboard and touch UX. Instantiated once
+ * per element by `RangeElementFactory`; the constructor moves the original
+ * input off-screen and renders the visible slider in its place.
  */
 class EmbeddedRangeSlider {
   constructor(originalElement) {
@@ -11,7 +15,8 @@ class EmbeddedRangeSlider {
 
     this.name = this._original.getAttribute('name') || '';
     this.id = this._original.id || ('rangeslider-' + Math.random().toString(36).slice(2, 8));
-    this._original.closest('.form-control').classList.add('form-control-range');
+    const _fc = this._original.closest('.form-control');
+    if (_fc) _fc.classList.add('form-control-range');
 
     // Parse configuration
     this.min = parseFloat(this._original.getAttribute('min')) || 0;
@@ -143,14 +148,6 @@ class EmbeddedRangeSlider {
     this.valueDisplay = document.createElement('div');
     this.valueDisplay.className = 'range-value-display';
     this.wrapper.appendChild(this.valueDisplay);
-
-    // Create hidden input for form submission
-    this.hiddenInput = document.createElement('input');
-    this.hiddenInput.type = 'hidden';
-    this.hiddenInput.name = this.name;
-    this._original.name = ''; // Clear original name to prevent duplicate submission
-    this.hiddenInput.id = this.id + '_hidden';
-    this.wrapper.appendChild(this.hiddenInput);
   }
 
   _setupEventListeners() {
@@ -428,7 +425,7 @@ class EmbeddedRangeSlider {
       this.valueDisplay.textContent = `${this._formatValue(this.values[0])} - ${this._formatValue(this.values[1])}`;
 
       // Update hidden input
-      this.hiddenInput.value = `${this.values[0]},${this.values[1]}`;
+      this._setHiddenValue(`${this.values[0]},${this.values[1]}`);
     } else {
       const percent = ((this.values - this.min) / range) * 100;
 
@@ -447,7 +444,20 @@ class EmbeddedRangeSlider {
       this.valueDisplay.textContent = this._formatValue(this.values);
 
       // Update hidden input
-      this.hiddenInput.value = this.values.toString();
+      this._setHiddenValue(this.values.toString());
+    }
+  }
+
+  // Write the canonical value onto the reused original element. The _syncingValue
+  // guard prevents the value-proxy setter from re-applying the value back into the
+  // slider (which would cause infinite recursion via setValue → _updateDisplay).
+  _setHiddenValue(str) {
+    if (!this.hiddenInput) return;
+    this._syncingValue = true;
+    try {
+      this.hiddenInput.value = str;
+    } finally {
+      this._syncingValue = false;
     }
   }
 
@@ -484,10 +494,21 @@ class EmbeddedRangeSlider {
   }
 
   // Public methods
+  /**
+   * The slider's current value.
+   *
+   * @returns {number|Array<number>} - A single value, or `[low, high]` for a dual-range slider.
+   */
   getValue() {
     return this.isDualRange ? [...this.values] : this.values;
   }
 
+  /**
+   * Set the slider's value, snapping each number to the nearest step.
+   *
+   * @param {number|Array<number>} value - A single value, or `[low, high]` for dual-range.
+   * @returns {void}
+   */
   setValue(value) {
     if (this.isDualRange) {
       if (Array.isArray(value) && value.length >= 2) {
@@ -504,6 +525,12 @@ class EmbeddedRangeSlider {
     this._updateDisplay();
   }
 
+  /**
+   * Change the slider's minimum and update the handles' ARIA attributes to match.
+   *
+   * @param {number} min - New minimum.
+   * @returns {void}
+   */
   setMin(min) {
     this.min = min;
     this.leftHandle.setAttribute('aria-valuemin', min);
@@ -516,6 +543,12 @@ class EmbeddedRangeSlider {
     this._updateDisplay();
   }
 
+  /**
+   * Change the slider's maximum and update the handles' ARIA attributes to match.
+   *
+   * @param {number} max - New maximum.
+   * @returns {void}
+   */
   setMax(max) {
     this.max = max;
     this.leftHandle.setAttribute('aria-valuemax', max);
@@ -528,11 +561,23 @@ class EmbeddedRangeSlider {
     this._updateDisplay();
   }
 
+  /**
+   * Change the slider's step and refresh the display to match.
+   *
+   * @param {number} step - New step size.
+   * @returns {void}
+   */
   setStep(step) {
     this.step = step;
     this._updateDisplay();
   }
 
+  /**
+   * Enable or disable the slider, including removing its handles from the tab order.
+   *
+   * @param {boolean} disabled - Whether the slider is disabled.
+   * @returns {void}
+   */
   setDisabled(disabled) {
     this.disabled = disabled;
     this.wrapper.classList.toggle('disabled', disabled);
@@ -542,11 +587,22 @@ class EmbeddedRangeSlider {
     }
   }
 
+  /**
+   * Toggle read-only presentation without removing the slider from the tab order.
+   *
+   * @param {boolean} readonly - Whether the slider is read-only.
+   * @returns {void}
+   */
   setReadonly(readonly) {
     this.readonly = readonly;
     this.wrapper.classList.toggle('readonly', readonly);
   }
 
+  /**
+   * Tear the slider down: disconnect its resize observer and remove its DOM.
+   *
+   * @returns {void}
+   */
   destroy() {
     if (this.resizeObserver) {
       this.resizeObserver.disconnect();
@@ -557,14 +613,72 @@ class EmbeddedRangeSlider {
     }
   }
 
+  /**
+   * The wrapper element this slider rendered into.
+   *
+   * @returns {HTMLElement} - The wrapper.
+   */
   getElement() {
     return this.wrapper;
   }
 
   _replaceOriginalElement() {
     if (this._original.parentNode) {
-      this._original.parentNode.insertBefore(this.wrapper, this._original);
-      this._original.parentNode.removeChild(this._original);
+      // Keep the original element in the DOM as the hidden value holder so that
+      // document.getElementById(id) and id.value keep working like a native input.
+      // (Same approach as DateElementFactory / ColorElementFactory.) Using type
+      // "hidden" also lets it store comma-separated dual-range values.
+      this._original.type = 'hidden';
+      this._original.style.display = 'none';
+      this.hiddenInput = this._original;
+
+      // Insert the custom widget right before the (now hidden) original element.
+      if (this._original.parentNode !== this.wrapper) {
+        this._original.parentNode.insertBefore(this.wrapper, this._original);
+      }
+
+      this._installValueProxy();
+
+      // Seed the canonical value now that hiddenInput is available.
+      this._setHiddenValue(this.isDualRange ? `${this.values[0]},${this.values[1]}` : this.values.toString());
+    }
+  }
+
+  // Make the original element behave like a native range input: reading .value
+  // returns the current value, and assigning .value moves the slider thumb.
+  _installValueProxy() {
+    const slider = this;
+    const proto = (typeof HTMLInputElement !== 'undefined') ? HTMLInputElement.prototype : null;
+    const nativeDesc = proto ? Object.getOwnPropertyDescriptor(proto, 'value') : null;
+    if (!nativeDesc || !nativeDesc.get || !nativeDesc.set) return;
+
+    Object.defineProperty(this._original, 'value', {
+      configurable: true,
+      enumerable: true,
+      get() {
+        return nativeDesc.get.call(this);
+      },
+      set(v) {
+        nativeDesc.set.call(this, v == null ? '' : String(v));
+        if (!slider._syncingValue) {
+          slider._applyExternalValue(v);
+        }
+      }
+    });
+  }
+
+  // Apply a value set externally via element.value = x onto the slider UI.
+  _applyExternalValue(v) {
+    if (this.isDualRange) {
+      const parts = String(v).split(',').map(p => parseFloat(p.trim()));
+      if (parts.length >= 2 && parts.every(n => !isNaN(n))) {
+        this.setValue([parts[0], parts[1]]);
+      }
+    } else {
+      const num = parseFloat(v);
+      if (!isNaN(num)) {
+        this.setValue(num);
+      }
     }
   }
 }
@@ -583,11 +697,24 @@ class RangeElementFactory extends ElementFactory {
     type: 'range'
   };
 
+  /**
+   * Get or create the element's instance state, same as the base ElementFactory.
+   *
+   * @param {HTMLElement} element - Element the state belongs to.
+   * @param {Object} [config={}] - Config merged in when first created.
+   * @returns {Object} - The element's state object.
+   */
   static createInstance(element, config = {}) {
     const instance = super.createInstance(element, config);
     return instance;
   }
 
+  /**
+   * Replace the native range input with an EmbeddedRangeSlider.
+   *
+   * @param {Object} instance - Element instance carrying `element` and `config`.
+   * @returns {void}
+   */
   static setupElement(instance) {
     const {element} = instance;
 
@@ -623,25 +750,18 @@ class RangeElementFactory extends ElementFactory {
         }
       }
 
-      // Setup event forwarding
+      // The original element is reused as the value holder (rangeSlider.hiddenInput
+      // === element), so input/change events already fire on it natively via
+      // _dispatchInputEvent()/_dispatchChangeEvent(). We must NOT re-dispatch those
+      // same events on the element here — that would cause infinite recursion.
+      // Just bridge change into the app event system.
       if (rangeSlider.hiddenInput) {
         rangeSlider.hiddenInput.addEventListener('change', () => {
-          // Dispatch standard change event
-          const changeEvent = new Event('change', {bubbles: true});
-          element.dispatchEvent(changeEvent);
-
-          // Emit to event system
           EventManager.emit('element:change', {
             elementId: element.id,
             values: rangeSlider.getValue(),
             type: 'range'
           });
-        });
-
-        rangeSlider.hiddenInput.addEventListener('input', () => {
-          // Dispatch standard input event
-          const inputEvent = new Event('input', {bubbles: true});
-          element.dispatchEvent(inputEvent);
         });
       }
 

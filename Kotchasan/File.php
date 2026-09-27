@@ -1,5 +1,4 @@
 <?php
-
 namespace Kotchasan;
 
 /**
@@ -25,7 +24,6 @@ class File
         if ($sourceHandle === false) {
             return;
         }
-
         while (false !== ($file = readdir($sourceHandle))) {
             if ($file === '.' || $file === '..') {
                 continue;
@@ -72,7 +70,6 @@ class File
         if ($dirHandle === false) {
             return;
         }
-
         while (false !== ($file = readdir($dirHandle))) {
             if ($file === '.' || $file === '..') {
                 continue;

@@ -35,9 +35,11 @@ class Controller extends \Kotchasan\Controller
         $result = [];
         foreach (\Board\Sitemap\Model::getStories($ids) as $item) {
             $module = $modules[$item->module_id];
+            $lastModified = empty($item->comment_date) ? $item->updated_at : $item->comment_date;
+            $timestamp = strtotime((string) ($lastModified ?: $date));
             $result[] = (object) [
                 'url' => Gcms::createUrl($module, '', 0, $item->id),
-                'date' => date('Y-m-d', strtotime(empty($item->comment_date) ? $item->updated_at : $item->comment_date))
+                'date' => date('Y-m-d', $timestamp ?: strtotime((string) $date))
             ];
         }
         return $result;

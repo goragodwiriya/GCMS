@@ -1,3 +1,11 @@
+/**
+ * ElementFactory
+ *
+ * Base class every `*ElementFactory` extends. Builds a form control from a
+ * field definition, wraps it, wires validation and events, and keeps a private,
+ * per-element state map so subclasses do not need to touch the DOM node's own
+ * properties to remember things about it.
+ */
 class ElementFactory {
   static config = {
     validationMessages: {
@@ -82,6 +90,17 @@ class ElementFactory {
     }
   };
 
+  /**
+   * Read the config a single element declares through its data attributes.
+   *
+   * The base implementation covers the settings common to every element type;
+   * subclasses call this and then add their own via `extractCustomConfig`.
+   *
+   * @param {HTMLElement} element - Element being configured.
+   * @param {Object} [config={}] - Config to extend.
+   * @param {Object} def - Default configuration for this element type.
+   * @returns {Object} - Configuration for this element.
+   */
   static extractConfig(element, config = {}, def) {
     const dataset = element.dataset;
     const result = {};
@@ -133,10 +152,30 @@ class ElementFactory {
     return result;
   }
 
+  /**
+   * Build the underlying element from a field definition.
+   *
+   * `button`, `submit` and `reset` elementTypes render as `<button>`; `switch`
+   * is a checkbox wearing the `switch` class, which is all the toggle styling
+   * needs; anything else falls back to `def.tagName` or `<input>`.
+   *
+   * @param {Object} def - Field definition.
+   * @returns {HTMLElement} - The created, not-yet-enhanced element.
+   */
   static create(def) {
     if (['button', 'submit', 'reset'].includes(def.elementType)) {
       def.tagName = 'button';
       def.type = def.elementType;
+    }
+    if (def.elementType === 'switch') {
+      def.tagName = 'input';
+      def.type = 'checkbox';
+      const classes = String(def.className || '').split(/\s+/).filter(Boolean);
+      if (!classes.includes('switch')) classes.unshift('switch');
+      def.className = classes.join(' ');
+      // The track and the knob are drawn by the sibling <label>, so a switch
+      // always needs a wrapper to hold that pair.
+      def.wrapper = def.wrapper || 'div';
     }
     def.tagName = def.tagName || 'input';
     const element = document.createElement(def.tagName);
@@ -159,6 +198,17 @@ class ElementFactory {
     return this.createInstance(element, config);
   }
 
+  /**
+   * Turn a plain element into a working form control.
+   *
+   * The entry point subclasses' `setupElement` is called from. Throws when
+   * `element` is not a real HTMLElement, and assigns an id when the element
+   * does not already have one.
+   *
+   * @param {HTMLElement} element - Element to enhance.
+   * @param {Object} [def={}] - Field definition.
+   * @returns {Object} - The instance created for this element.
+   */
   static enhance(element, def = {}) {
     if (!element || !(element instanceof HTMLElement)) {
       throw new Error('Invalid element: Must be an HTMLElement');
@@ -192,6 +242,17 @@ class ElementFactory {
     return instance;
   }
 
+  /**
+   * Get or create the private state object for an element.
+   *
+   * State lives in `_privateState`, a WeakMap keyed by the element, so it is
+   * garbage-collected automatically when the element is removed rather than
+   * needing explicit cleanup.
+   *
+   * @param {HTMLElement} element - Element the state belongs to.
+   * @param {Object} [config={}] - Config merged in when the state is first created.
+   * @returns {Object} - The element's state object.
+   */
   static createInstance(element, config = {}) {
     if (!this._privateState.has(element)) {
       this._privateState.set(element, {
@@ -534,6 +595,16 @@ class ElementFactory {
     return instance;
   }
 
+  /**
+   * Replace the element's native `value` property with a tracked one.
+   *
+   * Falls back to a manual getter/setter pair when the platform provides no
+   * property descriptor for the element type, so reading and writing `.value`
+   * still updates the instance state either way.
+   *
+   * @param {Object} instance - Element instance to instrument.
+   * @returns {void}
+   */
   static setupProperties(instance) {
     const {element} = instance;
 
@@ -672,6 +743,15 @@ class ElementFactory {
     });
   }
 
+  /**
+   * Bind the input handler that marks a field modified and validates it.
+   *
+   * Validation is debounced by 300 ms so it runs after the user pauses rather
+   * than on every keystroke.
+   *
+   * @param {Object} instance - Element instance to bind.
+   * @returns {void}
+   */
   static setupEventListeners(instance) {
     const {element} = instance;
     const debouncedValidate = Utils.function.debounce(() => instance.validate(undefined, false), 300);
@@ -696,6 +776,15 @@ class ElementFactory {
     });
   }
 
+  /**
+   * Normalise a validation rule list into a consistent shape.
+   *
+   * Accepts an array or a comma-separated string; a rule written as `name:param`
+   * (e.g. `min:3`) is split into its name and parameter.
+   *
+   * @param {Array|string} rules - Raw rules from config or a data attribute.
+   * @returns {Object} - `{rules: [...]}` in the normalised shape.
+   */
   static parseValidationRules(rules) {
     if (!rules) return {rules: []};
     const ruleList = Array.isArray(rules) ? rules : rules.split(',').map(r => r.trim());
@@ -711,6 +800,15 @@ class ElementFactory {
     };
   }
 
+  /**
+   * Find a wrapper this factory already created around an element.
+   *
+   * Looks up to two levels of ancestor, so markup rendered server-side with the
+   * wrapper already in place is recognised instead of being wrapped again.
+   *
+   * @param {HTMLElement} element - Element to search up from.
+   * @returns {HTMLElement|null} - The existing wrapper, or null.
+   */
   static parseExistingWrapper(element) {
     let current = element;
     let level = 0;
@@ -747,11 +845,41 @@ class ElementFactory {
     element.comment = document.getElementById(`result_${element.id}`);
   }
 
+  /**
+   * Wrap an element in its container, when the definition asks for one.
+   *
+   * A `label` wrapper gets the `form-control` class and an icon class when
+   * `def.icon` is set; a `switch` gets the input and its painting label as
+   * plain siblings; fields with no `def.wrapper` are left unwrapped.
+   *
+   * @param {HTMLElement} element - Element to wrap.
+   * @param {Object} def - Field definition; `wrapper` names the tag to use.
+   * @returns {HTMLElement|undefined} - The wrapper, or undefined when none was created.
+   */
   static createWrapper(element, def) {
     if (!def.wrapper) return;
 
     const wrapper = document.createElement(def.wrapper);
-    if (def.wrapper === 'label') {
+    if (def.elementType === 'switch') {
+      // `.switch + label` is what the stylesheet paints, so the input has to
+      // come first and the label has to be its immediate sibling. No
+      // `form-control` box here: the toggle is the control.
+      wrapper.classList.add('switch-control');
+      wrapper.appendChild(element);
+      const label = document.createElement('label');
+      if (def.label) {
+        label.textContent = Now.translate(def.label);
+        label.dataset.i18n = def.label;
+      } else if (def.ariaLabel) {
+        // No visible text: the input is the control a screen reader reaches,
+        // so the name goes on the input, not on the label that paints it.
+        element.setAttribute('aria-label', def.ariaLabel);
+      }
+      if (element.id) label.htmlFor = element.id;
+      wrapper.appendChild(label);
+      element.label = label;
+      element.container = wrapper;
+    } else if (def.wrapper === 'label') {
       wrapper.className = 'form-control';
       if (def.icon) wrapper.classList.add(def.icon);
       if (def.label) {
@@ -815,6 +943,19 @@ class ElementFactory {
     element.wrapper = wrapper;
   }
 
+  /**
+   * Resolve a numeric setting from the element, its definition or its dataset.
+   *
+   * Only consulted when `key` is a real property on the element, so it is not
+   * used for settings the element type does not actually support. Definition
+   * wins over the data attribute.
+   *
+   * @param {string} key - Property/setting name, e.g. `minRows`.
+   * @param {HTMLElement} element - Element being configured.
+   * @param {Object} def - Field definition.
+   * @param {DOMStringMap} dataset - The element's `data-*` attributes.
+   * @returns {number|undefined} - The resolved number, or undefined.
+   */
   static parseNumeric(key, element, def, dataset) {
     if (key in element) {
       let value;

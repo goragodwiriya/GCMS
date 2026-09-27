@@ -1,3 +1,12 @@
+/**
+ * NotificationManager
+ *
+ * Shows toast notifications in a fixed-position container. When more than
+ * `config.maxVisible` are shown at once, the rest wait in a queue and are
+ * displayed as earlier ones dismiss. `success`, `error`, `warning`, `info` and
+ * `loading` are thin wrappers over `show` with a type-appropriate icon and
+ * duration already filled in.
+ */
 const NotificationManager = {
   config: {
     position: 'top-right',    // top-right, top-left, bottom-right, bottom-left
@@ -21,6 +30,14 @@ const NotificationManager = {
     initialized: false
   },
 
+  /**
+   * Set up the manager: create the container and bind hover-to-pause.
+   *
+   * Runs once; a second call returns immediately.
+   *
+   * @param {Object} [options={}] - Overrides merged into the module config.
+   * @returns {Promise<Object>} - The manager itself, so calls can be chained.
+   */
   async init(options = {}) {
     if (this.state.initialized) return this;
 
@@ -32,6 +49,11 @@ const NotificationManager = {
     return this;
   },
 
+  /**
+   * Build the fixed-position container notifications render into.
+   *
+   * @returns {void}
+   */
   createContainer() {
     const container = document.createElement('div');
     container.className = `notification-container notification-${this.config.position}`;
@@ -46,6 +68,14 @@ const NotificationManager = {
     this.state.container = container;
   },
 
+  /**
+   * Change which corner of the screen notifications appear in.
+   *
+   * An invalid position is rejected with a console warning rather than applied.
+   *
+   * @param {string} position - One of `top-right`, `top-left`, `bottom-right`, `bottom-left`.
+   * @returns {void}
+   */
   setPosition(position) {
     const validPositions = ['top-right', 'top-left', 'bottom-right', 'bottom-left'];
     if (!validPositions.includes(position)) {
@@ -67,6 +97,15 @@ const NotificationManager = {
     }
   },
 
+  /**
+   * Show a notification, initialising the manager first if needed.
+   *
+   * Re-initialises automatically when the container was destroyed, so `show`
+   * still works after a `destroy()`.
+   *
+   * @param {Object|string} options - Notification options, or a plain message string.
+   * @returns {string} - Id of the notification, used with `dismiss`.
+   */
   show(options = {}) {
     // Auto-init if not initialized or container was destroyed
     if (!this.state.initialized || !this.state.container) {
@@ -98,6 +137,14 @@ const NotificationManager = {
     return notification.id;
   },
 
+  /**
+   * Build a notification record from options.
+   *
+   * The message is translated through I18nManager when it is available.
+   *
+   * @param {Object|string} options - Notification options, or a plain message string.
+   * @returns {Object} - The notification record.
+   */
   createNotification(options) {
     if (typeof options === 'string') {
       options = {message: options};
@@ -120,6 +167,12 @@ const NotificationManager = {
     };
   },
 
+  /**
+   * Render a notification record into the DOM.
+   *
+   * @param {Object} notification - Record from `createNotification`.
+   * @returns {HTMLElement} - The rendered notification element.
+   */
   renderNotification(notification) {
     const element = document.createElement('div');
     element.className = `notification notification-${notification.type}`;
@@ -192,6 +245,13 @@ const NotificationManager = {
     }
   },
 
+  /**
+   * Attach the countdown bar shown while a timed notification is visible.
+   *
+   * @param {HTMLElement} element - Rendered notification element.
+   * @param {Object} notification - The notification record.
+   * @returns {void}
+   */
   addProgressBar(element, notification) {
     const progress = document.createElement('div');
     progress.className = 'notification-progress';
@@ -213,6 +273,16 @@ const NotificationManager = {
     });
   },
 
+  /**
+   * Start the timer that dismisses a notification after its duration.
+   *
+   * Ticks against the progress bar's paused state, so hovering (when
+   * `pauseOnHover` is on) actually pauses the countdown rather than only the
+   * visual bar.
+   *
+   * @param {Object} notification - The notification record.
+   * @returns {void}
+   */
   setupAutoDismiss(notification) {
     let timeLeft = notification.duration;
     let lastUpdate = Date.now();
@@ -238,6 +308,12 @@ const NotificationManager = {
     requestAnimationFrame(checkDismiss);
   },
 
+  /**
+   * Remove one notification.
+   *
+   * @param {string} id - Id returned by `show`.
+   * @returns {void}
+   */
   dismiss(id) {
     const notification = Array.from(this.state.notifications)
       .find(n => n.id === id);
@@ -266,6 +342,11 @@ const NotificationManager = {
     window.setTimeout(() => cleanUp(), 3000);
   },
 
+  /**
+   * Show the next queued notification, when one is waiting and the manager is idle.
+   *
+   * @returns {void}
+   */
   processQueue() {
     if (this.state.isProcessing || this.state.queue.length === 0) return;
 
@@ -280,6 +361,11 @@ const NotificationManager = {
     }
   },
 
+  /**
+   * Bind hover-to-pause on the container, when `config.pauseOnHover` is on.
+   *
+   * @returns {void}
+   */
   setupEventListeners() {
     if (this.config.pauseOnHover) {
       this.state.container.addEventListener('mouseenter', (e) => {
@@ -313,6 +399,13 @@ const NotificationManager = {
   },
 
   // Utility methods for different notification types
+  /**
+   * Show a success notification.
+   *
+   * @param {string} message - Message to show.
+   * @param {Object} [options={}] - Overrides merged into the defaults for this type.
+   * @returns {string} - Id of the notification.
+   */
   success(message, options = {}) {
     return this.show({
       type: 'success',
@@ -322,6 +415,13 @@ const NotificationManager = {
     });
   },
 
+  /**
+   * Show an error notification. Stays visible longer than the default (8s).
+   *
+   * @param {string} message - Message to show.
+   * @param {Object} [options={}] - Overrides merged into the defaults for this type.
+   * @returns {string} - Id of the notification.
+   */
   error(message, options = {}) {
     return this.show({
       type: 'error',
@@ -332,6 +432,13 @@ const NotificationManager = {
     });
   },
 
+  /**
+   * Show a warning notification. Stays visible longer than the default (8s).
+   *
+   * @param {string} message - Message to show.
+   * @param {Object} [options={}] - Overrides merged into the defaults for this type.
+   * @returns {string} - Id of the notification.
+   */
   warning(message, options = {}) {
     return this.show({
       type: 'warning',
@@ -342,6 +449,13 @@ const NotificationManager = {
     });
   },
 
+  /**
+   * Show an info notification.
+   *
+   * @param {string} message - Message to show.
+   * @param {Object} [options={}] - Overrides merged into the defaults for this type.
+   * @returns {string} - Id of the notification.
+   */
   info(message, options = {}) {
     return this.show({
       type: 'info',
@@ -351,6 +465,16 @@ const NotificationManager = {
     });
   },
 
+  /**
+   * Show a loading notification with no auto-dismiss timer.
+   *
+   * Duration is forced to 0, so the caller is responsible for calling
+   * `dismiss` once the operation finishes.
+   *
+   * @param {string} message - Message to show.
+   * @param {Object} [options={}] - Overrides merged into the defaults for this type.
+   * @returns {string} - Id of the notification.
+   */
   loading(message, options = {}) {
     return this.show({
       type: 'loading',
@@ -363,6 +487,11 @@ const NotificationManager = {
     });
   },
 
+  /**
+   * Dismiss every visible notification and empty the queue.
+   *
+   * @returns {void}
+   */
   clear() {
     Array.from(this.state.notifications).forEach(notification => {
       this.dismiss(notification.id);
@@ -370,6 +499,11 @@ const NotificationManager = {
     this.state.queue = [];
   },
 
+  /**
+   * Tear the manager down: clear all notifications and remove the container.
+   *
+   * @returns {void}
+   */
   destroy() {
     this.clear();
     if (this.state.container) {

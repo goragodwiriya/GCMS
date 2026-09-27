@@ -669,9 +669,19 @@ class Database
     }
 
     /**
-     * Gets the last executed query.
+     * Gets the name of the underlying database driver (e.g. 'mysql', 'pgsql', 'sqlsrv', 'sqlite').
      *
-     * @return string|null The last executed query or null if no query has been executed.
+     * @return string The driver name.
+     */
+    public function getDriverName(): string
+    {
+        return $this->connection->getDriver()->getName();
+    }
+
+    /**
+     * Get last executed query.
+     *
+     * @return string|null
      */
     public function getLastQuery(): ?string
     {
@@ -757,6 +767,36 @@ class Database
                 'error' => $e->getMessage(),
                 'fallback' => $table
             ]);
+            return $table;
+        }
+    }
+
+    /**
+     * Resolve logical table name using the same connection as a query builder.
+     *
+     * @param ConnectionInterface $connection
+     * @param string $table
+     *
+     * @return string
+     */
+    public static function resolveTableNameByConnection(ConnectionInterface $connection, string $table): string
+    {
+        try {
+            if (!static::$configLoaded) {
+                static::loadConfigFromFile();
+            }
+
+            if (static::$connectionManager === null) {
+                return $table;
+            }
+
+            $connectionName = static::$connectionManager->getConnectionName($connection);
+            if ($connectionName === null) {
+                return static::create()->getTableName($table);
+            }
+
+            return static::create($connectionName)->getTableName($table);
+        } catch (\Exception $e) {
             return $table;
         }
     }

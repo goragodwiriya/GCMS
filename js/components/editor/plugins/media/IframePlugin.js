@@ -8,6 +8,7 @@
 import PluginBase from '../PluginBase.js';
 import BaseDialog from '../../ui/dialogs/BaseDialog.js';
 import EventBus from '../../core/EventBus.js';
+import {readEmbed, toPlaceholders} from '../../core/EmbedPlaceholder.js';
 
 class IframeDialog extends BaseDialog {
   constructor(editor) {
@@ -236,7 +237,8 @@ class IframePlugin extends PluginBase {
     super.init();
 
     this.dialog = new IframeDialog(this.editor);
-    this.dialog.onConfirm = (data) => this.insertIframe(data);
+    this.dialog.onConfirm = (data) => this._editing ? this._updateEmbed(data) : this.insertIframe(data);
+    this._editing = null;
 
     // Listen for toolbar button click
     this.subscribe(EventBus.Events.TOOLBAR_BUTTON_CLICK, (event) => {
@@ -245,12 +247,9 @@ class IframePlugin extends PluginBase {
       }
     });
 
-    // Listen for double-click on existing iframe wrappers to edit
-    this.editor.events?.on(EventBus.Events.CONTENT_DBLCLICK, (event) => {
-      const wrapper = event.target?.closest?.('.rte-iframe-wrapper');
-      if (wrapper) {
-        this._editWrapper(wrapper);
-      }
+    // Double-click on an iframe (shown as a placeholder while editing) to edit it
+    this.subscribe(EventBus.Events.EMBED_DBLCLICK, (event) => {
+      this._editEmbed(event.element);
     });
 
     // Register command
@@ -260,40 +259,108 @@ class IframePlugin extends PluginBase {
   }
 
   openDialog(initialData = {}) {
+    this._editing = null;
     this.saveSelection();
     this.dialog.open(initialData);
   }
 
-  _editWrapper(wrapper) {
-    const iframe = wrapper.querySelector('iframe');
+  /**
+   * Open the dialog pre-filled from the iframe a placeholder stands for
+   * @param {HTMLImageElement} placeholder
+   */
+  _editEmbed(placeholder) {
+    const iframe = readEmbed(placeholder);
     if (!iframe) return;
     this.saveSelection();
 
     const data = {
       mode: 'url',
       url: iframe.getAttribute('src') || '',
-      src: iframe.getAttribute('src') || '',
       width: iframe.style.width || iframe.getAttribute('width') || '100%',
       height: iframe.style.height || iframe.getAttribute('height') || '450',
       allowFullscreen: iframe.hasAttribute('allowfullscreen'),
       scrolling: iframe.getAttribute('scrolling') !== 'no',
-      border: parseInt(iframe.getAttribute('frameborder') || '0') !== 0
+      border: this._hasBorder(iframe)
     };
 
-    // Mark wrapper for replacement
-    this._editingWrapper = wrapper;
+    this._editing = {placeholder, iframe, data};
     this.dialog.open(data);
+  }
 
-    // Override onConfirm to replace existing
-    this.dialog.onConfirm = (newData) => {
-      const newHtml = this._buildHtml(newData);
-      this._editingWrapper?.insertAdjacentHTML('afterend', newHtml);
-      this._editingWrapper?.remove();
-      this._editingWrapper = null;
-      this.dialog.onConfirm = (d) => this.insertIframe(d);
-      this.recordHistory(true);
-      this.focusEditor();
-    };
+  /**
+   * @param {HTMLIFrameElement} iframe
+   * @returns {boolean}
+   */
+  _hasBorder(iframe) {
+    const border = iframe.style.border || iframe.style.borderWidth;
+    if (border) return !/^(0|none)\b/.test(border);
+    return parseInt(iframe.getAttribute('frameborder') ?? '0', 10) !== 0;
+  }
+
+  /**
+   * Apply the dialog to the iframe being edited. In URL mode the existing iframe is
+   * changed in place, so styling the dialog does not know about (e.g. the absolute
+   * positioning of a responsive video) is kept; embed code replaces it outright.
+   * @param {Object} data
+   */
+  _updateEmbed(data) {
+    const {placeholder, iframe, data: before} = this._editing;
+    this._editing = null;
+    if (!placeholder.isConnected) {
+      this.insertIframe(data);
+      return;
+    }
+
+    let html;
+    if (data.mode === 'code' && data.code) {
+      html = data.code;
+    } else {
+      iframe.setAttribute('src', data.src);
+      if (data.width !== before.width) this._applySize(iframe, 'width', data.width);
+      if (data.height !== before.height) this._applySize(iframe, 'height', data.height);
+      iframe.toggleAttribute('allowfullscreen', data.allowFullscreen);
+      if (data.scrolling) {
+        iframe.removeAttribute('scrolling');
+      } else {
+        iframe.setAttribute('scrolling', 'no');
+      }
+      if (data.border !== before.border) {
+        iframe.removeAttribute('frameborder');
+        iframe.style.border = data.border ? '1px solid #ccc' : '0';
+      }
+      html = iframe.outerHTML;
+    }
+
+    if (this.editor.options.sanitize) html = this.editor.sanitizeHtml(html);
+    const fragment = document.createRange().createContextualFragment(html);
+    toPlaceholders(fragment);
+    placeholder.replaceWith(fragment);
+
+    this.recordHistory(true);
+    this.focusEditor();
+  }
+
+  /**
+   * Set a size where the iframe already keeps it (width/height attribute or style)
+   * @param {HTMLIFrameElement} iframe
+   * @param {'width'|'height'} prop
+   * @param {string} value
+   */
+  _applySize(iframe, prop, value) {
+    if (!iframe.style[prop] && iframe.hasAttribute(prop)) {
+      iframe.setAttribute(prop, value);
+    } else {
+      iframe.style[prop] = this._cssSize(value);
+    }
+  }
+
+  /**
+   * A bare number is pixels ("450" → "450px"); anything else is used as given
+   * @param {string} value
+   * @returns {string}
+   */
+  _cssSize(value) {
+    return /^\d+(\.\d+)?$/.test(value) ? `${value}px` : value;
   }
 
   /**
@@ -309,9 +376,10 @@ class IframePlugin extends PluginBase {
 
     const fullscreen = data.allowFullscreen ? ' allowfullscreen' : '';
     const scrolling = data.scrolling ? '' : ' scrolling="no"';
+    const size = `width:${this._cssSize(data.width)};height:${this._cssSize(data.height)}`;
     const border = data.border
-      ? ` style="width:${data.width};height:${data.height};border:1px solid #ccc;display:block;"`
-      : ` style="width:${data.width};height:${data.height};border:0;display:block;"`;
+      ? ` style="${size};border:1px solid #ccc;display:block;"`
+      : ` style="${size};border:0;display:block;"`;
     const loading = ' loading="lazy"';
 
     return `<div class="rte-iframe-wrapper" style="margin:1em 0;"><iframe src="${data.src}"${border}${fullscreen}${scrolling}${loading}></iframe></div>`;

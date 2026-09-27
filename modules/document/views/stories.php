@@ -49,8 +49,8 @@ class View extends \Web\View
         $listitem = Template::create($index->owner, $index->module, 'listitem');
 
         // Picture of default module
-        if (!empty($index->config->default_icon) && file_exists(ROOT_PATH.$index->config->default_icon)) {
-            $default_icon = WEB_URL.$index->config->default_icon;
+        if (!empty($index->default_icon) && file_exists(ROOT_PATH.$index->default_icon)) {
+            $default_icon = WEB_URL.$index->default_icon;
         } else {
             $default_icon = WEB_URL.'images/no-image.webp';
         }
@@ -85,13 +85,13 @@ class View extends \Web\View
 
         // Build category filter links
         $catLinks = '';
-        if (empty($index->config->category_display)) {
+        if (empty($index->category_display)) {
             $url = \Document\Index\Controller::url($index->module);
-            $catLinks .= '<a href="'.$url.'" class="cat-link'.(empty($index->category_id) ? ' active' : '').'">{LNG_All}</a>';
+            $catLinks .= '<a href="'.$url.'"'.(empty($index->category_id) ? ' class="active"' : '').'>{LNG_All}</a>';
             foreach ($index->categories->all('category') as $cat => $text) {
-                $active = in_array($cat, $index->category_id) ? ' active' : '';
+                $active = in_array($cat, $index->category_id) ? ' class="active"' : '';
                 $url = \Document\Index\Controller::url($index->module, $cat);
-                $catLinks .= '<a href="'.$url.'" class="cat-link'.$active.'">'.Text::htmlspecialchars($text->topic).'</a>';
+                $catLinks .= '<a href="'.$url.'"'.$active.'>'.Text::htmlspecialchars($text->topic).'</a>';
             }
         }
 
@@ -109,7 +109,8 @@ class View extends \Web\View
             '/{MODULE}/' => $index->module,
             '/{MODULE_ID}/' => (int) $index->module_id,
             '/{CATEGORY_LINKS}/' => $catLinks,
-            '/{COLS}/' => self::columnsToGridSize($index->config->cols)
+            '/{STYLE}/' => empty($index->style) ? 'iconview' : $index->style,
+            '/{COLS}/' => self::columnsToGridSize($index->cols)
         ]);
 
         $index->detail = $template->render();

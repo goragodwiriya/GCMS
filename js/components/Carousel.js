@@ -85,6 +85,40 @@ const Carousel = {
   },
 
   /**
+   * Initialize every declarative carousel found under `root`.
+   *
+   * Markup opts in with `data-carousel` (plus the optional
+   * `data-carousel-item` / `data-carousel-options`), so a carousel also comes
+   * up when its HTML arrives after page load: an inline <script> shipped next
+   * to the markup never runs when that HTML is injected through innerHTML —
+   * which is exactly how api/index/widgets/render output reaches the Designer
+   * canvas.
+   *
+   * @param {Document|HTMLElement} root - Scope to scan (default: document)
+   */
+  scan(root = document) {
+    const scope = root && root.nodeType ? root : document;
+    const nodes = new Set();
+    if (scope.matches?.('[data-carousel]')) nodes.add(scope);
+    scope.querySelectorAll?.('[data-carousel]').forEach(el => nodes.add(el));
+
+    nodes.forEach(el => {
+      // Already wrapped — re-initializing would nest a second .carousel
+      if (el.dataset.carouselId) return;
+
+      let options = {};
+      if (el.dataset.carouselOptions) {
+        try {
+          options = JSON.parse(el.dataset.carouselOptions);
+        } catch (e) {
+          console.warn('[Carousel] Invalid data-carousel-options on', el);
+        }
+      }
+      this.init(el, el.dataset.carouselItem || '.carousel-item', options);
+    });
+  },
+
+  /**
    * Wrap items in carousel structure
    * @param {Object} instance - Carousel instance
    * @private
@@ -314,6 +348,14 @@ const Carousel = {
     if (width < breakpoints.mobile) instance.itemsPerView = itemsPerView.mobile;
     else if (width < breakpoints.tablet) instance.itemsPerView = itemsPerView.tablet;
     else instance.itemsPerView = itemsPerView.desktop;
+
+    // The stylesheet divides the track by --carousel-items (see
+    // Now/css/carousel.css), so how many items are visible always matches how
+    // many the slide math steps past. Without this the CSS stays at its own
+    // fixed 4/2/1 and any custom itemsPerView is silently ignored.
+    if (instance.track) {
+      instance.track.style.setProperty('--carousel-items', Math.max(1, instance.itemsPerView));
+    }
   },
 
   /**
@@ -427,3 +469,11 @@ const Carousel = {
 
 // Export globally for Now.js
 window.Carousel = Carousel;
+
+// Pick up the declarative markup already on the page. Anything injected later
+// re-enters through Carousel.scan(container).
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => Carousel.scan());
+} else {
+  Carousel.scan();
+}

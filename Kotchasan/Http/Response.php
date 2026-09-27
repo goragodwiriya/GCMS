@@ -38,7 +38,7 @@ class Response implements ResponseInterface
     private $protocolVersion = '1.1';
 
     /**
-     * HTTP status codes และ reason phrases
+     * HTTP status codes and reason phrases
      *
      * @var array
      */
@@ -462,7 +462,7 @@ class Response implements ResponseInterface
     // ===== Static Factory Methods =====
 
     /**
-     * สร้าง Response instance ใหม่
+     * Create a new Response instance
      *
      * @param string|null $content
      * @param int $status
@@ -489,7 +489,7 @@ class Response implements ResponseInterface
     }
 
     /**
-     * สร้าง JSON response
+     * Create a JSON response
      *
      * @param mixed $data
      * @param int $status
@@ -503,7 +503,7 @@ class Response implements ResponseInterface
     }
 
     /**
-     * สร้าง Bad Request response (400)
+     * Create a Bad Request response (400)
      *
      * @param mixed $data
      * @param array $headers
@@ -515,7 +515,7 @@ class Response implements ResponseInterface
     }
 
     /**
-     * สร้าง Unauthorized response (401)
+     * Create an Unauthorized response (401)
      *
      * @param mixed $data
      * @param array $headers
@@ -527,7 +527,7 @@ class Response implements ResponseInterface
     }
 
     /**
-     * สร้าง Forbidden response (403)
+     * Create a Forbidden response (403)
      *
      * @param mixed $data
      * @param array $headers
@@ -539,7 +539,7 @@ class Response implements ResponseInterface
     }
 
     /**
-     * สร้าง Not Found response (404)
+     * Create a Not Found response (404)
      *
      * @param mixed $data
      * @param array $headers
@@ -551,7 +551,7 @@ class Response implements ResponseInterface
     }
 
     /**
-     * สร้าง Server Error response (500)
+     * Create a Server Error response (500)
      *
      * @param mixed $data
      * @param array $headers

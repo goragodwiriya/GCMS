@@ -1,0 +1,58 @@
+<aside data-component="sidebar"></aside>
+<div class="main-content">
+  <div>
+    <header data-component="topbar"></header>
+    <main class="content">
+      <div class="card-groups">
+        <header>
+          <div>
+            <h1 class="icon-download" data-i18n>Download Widget</h1>
+            <p data-i18n>{LNG_Choose which module this widget shows and how}</p>
+          </div>
+        </header>
+
+        <div class="content-body">
+          <!-- Deliberately a <div>, not a <form> — see
+               widgets/document/document.html for why. -->
+          <div data-widget-settings-form="true">
+            <fieldset>
+              <legend class="icon-download" data-i18n>Content</legend>
+
+              <div>
+                <label for="module" data-i18n>Module</label>
+                <span class="form-control icon-menus">
+                  <select id="module" name="module" data-widget-module-source required>
+                    <option value="" data-i18n>Please select a module</option>
+                  </select>
+                </span>
+                <div class="comment" data-i18n>
+                  The download module to list files from
+                </div>
+              </div>
+
+              <div>
+                <label for="limit" data-i18n>Items to show</label>
+                <span class="form-control">
+                  <input type="number" id="limit" name="limit" min="1" max="20" value="5">
+                </span>
+              </div>
+
+              <div>
+                <label for="title" data-i18n>Title override</label>
+                <span class="form-control">
+                  <input type="text" id="title" name="title">
+                </span>
+                <div class="comment" data-i18n>
+                  Leave blank to use the module's own title
+                </div>
+              </div>
+            </fieldset>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+  <footer class="footer">
+    <p class="center">&copy; 2026 GCMS - Powered by <a href="https://nowjs.net">Now.js</a></p>
+  </footer>
+</div>

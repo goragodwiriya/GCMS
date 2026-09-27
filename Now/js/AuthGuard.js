@@ -357,7 +357,19 @@ const AuthGuard = {
     return null;
   },
 
-  // Improved in AuthGuard.handleGuardFailure
+  /**
+   * Act on a guard that refused navigation.
+   *
+   * Builds an error context from the guard result and hands it to the auth error
+   * handling, carrying `options.retryCallback` so the original request can be
+   * replayed once the user satisfies the guard.
+   *
+   * @param {Object} guardResult - `{action, target, reason}` returned by the guard.
+   * @param {Object} route - Route that was being entered.
+   * @param {Object} options - Navigation options, may hold `retryCallback`.
+   * @param {Object} router - Router instance driving the navigation.
+   * @returns {Promise<Object>} - What the caller should do next.
+   */
   async handleGuardFailure(guardResult, route, options, router) {
     try {
       const {action, target, reason} = guardResult;

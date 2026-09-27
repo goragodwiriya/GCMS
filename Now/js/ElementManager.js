@@ -1,3 +1,13 @@
+/**
+ * ElementManager
+ *
+ * The registry that turns plain markup into enhanced form controls. Each
+ * `*ElementFactory` registers a type name here; `scan` walks the DOM for
+ * elements matching a registered type or carrying `data-element`, and `enhance`
+ * hands each one to its factory. Instances are tracked by id and by element in
+ * `state.instances` / `state.elementIndex`, and by container in
+ * `state.containerMap` so a whole container can be torn down at once.
+ */
 const ElementManager = {
   state: {
     elements: new Map(),
@@ -8,6 +18,14 @@ const ElementManager = {
     privateStates: new WeakMap()
   },
 
+  /**
+   * Set up the manager: merge config and wire up ElementFactory's shared state.
+   *
+   * Runs once; a second call returns immediately.
+   *
+   * @param {Object} [options={}] - Overrides merged into the module config.
+   * @returns {Object} - The manager itself, so calls can be chained.
+   */
   init(options = {}) {
     if (this.state.initialized) return this;
 
@@ -21,6 +39,14 @@ const ElementManager = {
     return this;
   },
 
+  /**
+   * Register a factory for an element type.
+   *
+   * @param {string} type - Type name used in `data-element` and `create`.
+   * @param {Object} implementation - The factory implementing this type.
+   * @returns {void}
+   * @throws {Error} - When `type` is not a non-empty string.
+   */
   registerElement(type, implementation) {
     if (!type || typeof type !== 'string') {
       throw new Error('Element type must be a string');
@@ -39,11 +65,30 @@ const ElementManager = {
     return this;
   },
 
+  /**
+   * Remove a registered element type.
+   *
+   * Existing instances of that type are unaffected; only future `create` and
+   * `scan` calls stop recognising it.
+   *
+   * @param {string} type - Type name to remove.
+   * @returns {Object} - The manager itself, so calls can be chained.
+   */
   unRegisterElement(type) {
     this.state.elements.delete(type);
     return this;
   },
 
+  /**
+   * Build a new element of a registered type.
+   *
+   * Throws through ErrorManager when the manager has not been initialised, so
+   * the failure is logged consistently with the rest of the app.
+   *
+   * @param {string} type - Registered element type.
+   * @param {Object} [config={}] - Config passed to the type's factory.
+   * @returns {HTMLElement} - The created element.
+   */
   create(type, config = {}) {
     if (!this.state.initialized) {
       throw ErrorManager.handle('ElementManager must be initialized first', {
@@ -80,10 +125,21 @@ const ElementManager = {
     }
   },
 
+  /**
+   * Turn one plain element into an enhanced instance.
+   *
+   * @param {HTMLElement} element - Element to enhance.
+   * @param {Object} [config={}] - Config passed to the element's factory.
+   * @returns {Object|null} - The created instance, or null on failure.
+   */
   enhance(element, config = {}) {
     try {
       if (!element || !(element instanceof HTMLElement)) {
         throw new Error('Invalid element');
+      }
+
+      if (this.isEnhanceDisabled(element)) {
+        return null;
       }
 
       // Already enhanced: prefer element identity (WeakMap) over id-based lookup
@@ -196,10 +252,22 @@ const ElementManager = {
     }
   },
 
+  /**
+   * Look up an instance by its id.
+   *
+   * @param {string} id - Instance id.
+   * @returns {Object|undefined} - The instance, or undefined when unknown.
+   */
   getInstance(id) {
     return this.state.instances.get(id);
   },
 
+  /**
+   * Look up the instance attached to an element.
+   *
+   * @param {HTMLElement} element - Element to look up.
+   * @returns {Object|null} - The instance, or null when the element was not enhanced.
+   */
   getInstanceByElement(element) {
     if (!element) return null;
     const inst = this.state.elementIndex.get(element);
@@ -211,6 +279,15 @@ const ElementManager = {
     return byId;
   },
 
+  /**
+   * Forget an instance without running its factory's teardown.
+   *
+   * Also drops the element's private ElementFactory state, so use `destroy`
+   * instead when the element's own cleanup should run too.
+   *
+   * @param {string} id - Instance id.
+   * @returns {boolean} - True when an instance was found and removed.
+   */
   removeInstance(id) {
     const instance = this.state.instances.get(id);
     if (!instance) return false;
@@ -223,11 +300,40 @@ const ElementManager = {
     return this.state.instances.delete(id);
   },
 
+  /**
+   * Whether a type is currently registered.
+   *
+   * @param {string} type - Type name to check.
+   * @returns {boolean} - True when a factory is registered for it.
+   */
   hasElement(type) {
     return this.state.elements.has(type);
   },
 
+  /**
+   * Whether an element opted out of enhancement.
+   *
+   * Recognises `data-no-enhance="true"` and `data-enhance="false"` as
+   * equivalent opt-outs.
+   *
+   * @param {HTMLElement} element - Element to check.
+   * @returns {boolean} - True when enhancement is disabled for it.
+   */
+  isEnhanceDisabled(element) {
+    if (!element || !element.dataset) return false;
+    return element.dataset.noEnhance === 'true' || element.dataset.enhance === 'false';
+  },
+
   // Determine whether element should be enhanced (opt-in via data-element or registered type)
+  /**
+   * Whether an element is eligible for enhancement.
+   *
+   * True for an explicit `data-element` attribute, or when the element's tag
+   * and type match a registered element type.
+   *
+   * @param {HTMLElement} element - Element to check.
+   * @returns {boolean} - True when it should be enhanced.
+   */
   shouldEnhance(element) {
     if (!element) return false;
 
@@ -243,6 +349,16 @@ const ElementManager = {
   },
 
   // Scan container for elements with data-element and enhance them
+  /**
+   * Find and enhance every eligible element inside a container.
+   *
+   * Matches `[data-element]` plus every `input`, `select` and `textarea`, then
+   * `shouldEnhance` and `isEnhanceDisabled` decide which of those actually get
+   * enhanced.
+   *
+   * @param {Element|Document} [container=document] - Subtree to scan.
+   * @returns {Array<Object>} - Instances created during this scan.
+   */
   scan(container = document) {
     if (!container || !container.querySelectorAll) return [];
 
@@ -254,6 +370,9 @@ const ElementManager = {
     const elementIds = [];
 
     found.forEach(el => {
+      if (this.isEnhanceDisabled(el)) {
+        return;
+      }
       if (!this.state.elementIndex.has(el)) {
         const instance = this.enhance(el);
         if (instance && instance.element && instance.element.id) {
@@ -276,6 +395,12 @@ const ElementManager = {
   },
 
   // Destroy all elements in a specific container
+  /**
+   * Tear down every instance that was created by scanning a container.
+   *
+   * @param {Element} container - Container previously passed to `scan`.
+   * @returns {boolean} - True when the container had tracked instances.
+   */
   destroyContainer(container) {
     if (!container) return false;
 
@@ -302,6 +427,12 @@ const ElementManager = {
   },
 
   // Destroy element by element reference
+  /**
+   * Tear down whichever instance is attached to an element.
+   *
+   * @param {HTMLElement} el - Element whose instance should be destroyed.
+   * @returns {boolean} - True when an instance was found and destroyed.
+   */
   destroyByElement(el) {
     if (!el) return false;
     const inst = this.getInstanceByElement(el);
@@ -315,6 +446,12 @@ const ElementManager = {
     return false;
   },
 
+  /**
+   * Tear an instance down: run its factory's cleanup and forget it.
+   *
+   * @param {string} id - Instance id.
+   * @returns {boolean} - True when an instance was found and destroyed.
+   */
   destroy(id) {
     const instance = this.state.instances.get(id);
     if (!instance) return false;
@@ -371,6 +508,11 @@ const ElementManager = {
     }
   },
 
+  /**
+   * Tear down every instance and forget every registered type.
+   *
+   * @returns {void}
+   */
   cleanup() {
     Array.from(this.state.instances.keys()).forEach(id => {
       this.destroy(id);

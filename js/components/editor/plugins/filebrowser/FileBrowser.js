@@ -48,6 +48,8 @@ class FileBrowser {
 
     this.currentPath = '/';
     this.currentPresetCategory = null;
+    // null = unknown, false = prepared folder missing on server (tab hidden)
+    this.presetAvailable = null;
     this.selectedFiles = [];
     this.clipboardFile = null;
     this.clipboardAction = null;
@@ -83,6 +85,16 @@ class FileBrowser {
     this.bindMethods();
     this.createDOMElements();
     this.addEventListeners();
+  }
+
+  /**
+   * Delay a reload so typing a word fires one request instead of one per
+   * keystroke — each request lists the whole folder server-side.
+   * @param {() => void} fn
+   */
+  debouncedReload(fn) {
+    clearTimeout(this._searchTimer);
+    this._searchTimer = setTimeout(fn, 250);
   }
 
   /**
@@ -155,7 +167,11 @@ class FileBrowser {
 
       const fetchOptions = {
         method,
-        headers: {'Content-Type': 'application/json'},
+        headers: {
+          'Content-Type': 'application/json',
+          // Custom header enables server-side CSRF validation for cookie auth
+          'X-Requested-With': 'XMLHttpRequest'
+        },
         credentials: 'include'
       };
 
@@ -231,6 +247,8 @@ class FileBrowser {
       const fetchOpts = {
         method: 'POST',
         body: formData,
+        // Custom header enables server-side CSRF validation for cookie auth
+        headers: {'X-Requested-With': 'XMLHttpRequest'},
         credentials: 'include'
       };
 
@@ -240,7 +258,7 @@ class FileBrowser {
         || document.querySelector('input[name="token"]')?.value
         || null;
       if (csrfToken) {
-        fetchOpts.headers = {'X-CSRF-Token': csrfToken};
+        fetchOpts.headers['X-CSRF-Token'] = csrfToken;
       }
 
       const requestOptions = Now.applyRequestLanguage(fetchOpts);
@@ -332,7 +350,7 @@ class FileBrowser {
     presetSearchInput.placeholder = window.translate('Search');
     presetSearchInput.addEventListener('input', (e) => {
       this.searchTerm = e.target.value.trim();
-      this.loadPresets();
+      this.debouncedReload(() => this.loadPresets());
     });
 
     const presetSearchIcon = document.createElement('span');
@@ -453,7 +471,7 @@ class FileBrowser {
     browserSearchInput.placeholder = window.translate('Search');
     browserSearchInput.addEventListener('input', (e) => {
       this.searchTerm = e.target.value.trim();
-      this.loadFiles();
+      this.debouncedReload(() => this.loadFiles());
     });
 
     const browserSearchIcon = document.createElement('span');
@@ -518,13 +536,13 @@ class FileBrowser {
 
     const cancelButton = document.createElement('button');
     cancelButton.type = 'button';
-    cancelButton.className = 'btn icon-reset width100';
+    cancelButton.className = 'btn icon-reset';
     cancelButton.textContent = window.translate('Cancel');
     cancelButton.addEventListener('click', this.close);
 
     const selectButton = document.createElement('button');
     selectButton.type = 'button';
-    selectButton.className = 'btn select';
+    selectButton.className = 'btn icon-valid select';
     selectButton.textContent = window.translate('Choose');
     selectButton.addEventListener('click', this.confirmSelection);
 
@@ -539,7 +557,6 @@ class FileBrowser {
     this.contextMenu.style.display = 'none';
     document.body.appendChild(this.contextMenu);
 
-    this.content.appendChild(this.presetContent);
     this.content.appendChild(this.browserContent);
     if (this.options.showPresetTab) {
       this.content.appendChild(this.presetContent);
@@ -635,9 +652,28 @@ class FileBrowser {
    * เพิ่ม event listeners
    */
   addEventListeners() {
+    if (this._documentListenersBound) return;
+    this._documentListenersBound = true;
+
     document.addEventListener('keydown', this.handleEscapeKey);
 
     document.addEventListener('click', this.hideContextMenu);
+  }
+
+  /**
+   * Counterpart of addEventListeners(), called from close().
+   *
+   * Callers build a fresh FileBrowser for every open and never call destroy(),
+   * so leaving these bound left one dead keydown and one dead click handler on
+   * document per open — each still holding the whole instance, and each firing
+   * close()/onClose() of a dialog that is no longer on screen.
+   */
+  removeEventListeners() {
+    if (!this._documentListenersBound) return;
+    this._documentListenersBound = false;
+
+    document.removeEventListener('keydown', this.handleEscapeKey);
+    document.removeEventListener('click', this.hideContextMenu);
   }
 
   /**
@@ -669,8 +705,10 @@ class FileBrowser {
       // Re-append context menu so it sits later in the DOM than the overlay,
       // ensuring it renders on top at equal z-index levels.
       document.body.appendChild(this.contextMenu);
+      // close() unbinds these again, so reopening the same instance still works
+      this.addEventListeners();
 
-      if (this.options.activeTab === 2) {
+      if (this.options.activeTab === 2 || this.presetAvailable === false || !this.options.showPresetTab) {
         this.switchTab('browser');
       } else {
         this.switchTab('preset');
@@ -695,6 +733,12 @@ class FileBrowser {
    * ปิด FileBrowser modal
    */
   close() {
+    clearTimeout(this._searchTimer);
+    this._previewItem = null;
+    this._lastListing = null;
+    this.hidePreview();
+    this.hideContextMenu();
+    this.removeEventListeners();
     this.overlay.classList.remove('active');
     this.modal.classList.remove('active');
 
@@ -702,6 +746,20 @@ class FileBrowser {
       if (this.overlay.parentNode) {
         document.body.removeChild(this.overlay);
       }
+      // open() puts the menu on document.body; without this it stays there
+      // for the lifetime of the page, once per open.
+      if (this.contextMenu?.parentNode) {
+        this.contextMenu.parentNode.removeChild(this.contextMenu);
+      }
+      /**
+       * The popup lives on document.body, so closing the dialog does not take it
+       * with it — callers create a fresh FileBrowser per open and never call
+       * destroy(), which would otherwise leave one popup behind every time.
+       */
+      if (this._previewEl?.parentNode) {
+        this._previewEl.parentNode.removeChild(this._previewEl);
+      }
+      this._previewEl = null;
     }, 300);
 
     if (typeof this.options.onClose === 'function') {
@@ -747,7 +805,16 @@ class FileBrowser {
 
       const result = await this.makeApiRequest(endpoint, null, 'GET');
 
+      if (result.success && result.data && result.data.available === false) {
+        // Prepared folder does not exist on the server — hide the tab entirely
+        this.setPresetTabVisible(false);
+        this.isLoading = false;
+        this.updateStatus();
+        return;
+      }
+
       if (result.success && result.data.categories) {
+        this.presetAvailable = true;
         this.renderPresetCategories(result.data.categories);
       } else {
         this.isLoading = false;
@@ -757,6 +824,24 @@ class FileBrowser {
       console.error('Error loading preset categories:', error);
       this.isLoading = false;
       this.updateStatus('There is an error in loading categories.');
+    }
+  }
+
+  /**
+   * แสดง/ซ่อน tab "ไฟล์ที่เตรียมไว้" (ซ่อนเมื่อโฟลเดอร์ presetStorageFolder ไม่มีบนเซิร์ฟเวอร์)
+   * @param {boolean} visible
+   */
+  setPresetTabVisible(visible) {
+    this.presetAvailable = visible;
+    const presetTab = this.modal.querySelector('.file-browser-tab[data-tab="preset"]');
+    if (presetTab) {
+      presetTab.style.display = visible ? '' : 'none';
+    }
+    if (!visible) {
+      this.presetContent.classList.remove('active');
+      if (!this.browserContent.classList.contains('active')) {
+        this.switchTab('browser');
+      }
     }
   }
 
@@ -1098,7 +1183,8 @@ class FileBrowser {
 
     if (!folderName) return;
 
-    if (!/^[a-zA-Z0-9_\-]+$/.test(folderName)) {
+    // Same rule as the server (isValidFilename), which also accepts Thai names
+    if (!this.isValidNewName(folderName)) {
       alert(window.translate('The name of the folder is incorrect. Please use the numbers, numbers, numbers and signs only.'));
       return;
     }
@@ -1140,6 +1226,9 @@ class FileBrowser {
    */
   displayFiles(container, files, mode) {
     container.innerHTML = '';
+    // Kept so changeViewMode() can redraw without listing the folder again —
+    // that request is close to a megabyte of JSON on a large folder.
+    this._lastListing = {container, files, mode};
 
     if (files.length === 0) {
       const emptyMessage = document.createElement('div');
@@ -1149,24 +1238,155 @@ class FileBrowser {
       return;
     }
 
-    files.sort((a, b) => {
-      if (a.type === 'folder' && b.type !== 'folder') return -1;
-      if (a.type !== 'folder' && b.type === 'folder') return 1;
-
-      const valueA = a[this.sortBy];
-      const valueB = b[this.sortBy];
-
-      if (this.sortDir === 'asc') {
-        return valueA > valueB ? 1 : -1;
-      } else {
-        return valueA < valueB ? 1 : -1;
-      }
-    });
-
+    /**
+     * No client-side re-sort: the server already ordered the listing with
+     * strnatcasecmp (models/files.php sortItems), which a raw `a > b` compare
+     * here would undo — it is case-sensitive and puts "img10" before "img9".
+     */
+    const fragment = document.createDocumentFragment();
     files.forEach(file => {
-      const fileItem = this.createFileItem(file, mode);
-      container.appendChild(fileItem);
+      fragment.appendChild(this.createFileItem(file, mode));
     });
+    container.appendChild(fragment);
+
+    this.attachListHandlers(container);
+  }
+
+  /**
+   * Bind the file list's behaviour — selection, navigation, context menu and
+   * the hover preview — once per container instead of once per row, so a folder
+   * of a few thousand items costs a handful of listeners rather than four per
+   * item. The popup image is still only fetched once the pointer settles.
+   * @param {HTMLElement} container
+   */
+  attachListHandlers(container) {
+    if (container.dataset.hoverPreviewReady === '1') return;
+    container.dataset.hoverPreviewReady = '1';
+
+    /**
+     * Selection, navigation and the context menu are delegated too, for the
+     * same reason as the preview: one listener per container instead of four
+     * per row. Each row carries its own data in item._fbFile.
+     */
+    container.addEventListener('click', event => {
+      const item = event.target.closest('.file-item');
+      if (!item || !container.contains(item) || !item._fbFile) return;
+      const file = item._fbFile;
+      const mode = item.dataset.mode;
+      if (file.type === 'folder' && mode === 'browser') {
+        this.navigateToFolder(file.path);
+        return;
+      }
+      this.selectFile(file, mode, event.ctrlKey || event.metaKey);
+    });
+
+    container.addEventListener('dblclick', event => {
+      const item = event.target.closest('.file-item');
+      if (!item || !container.contains(item) || !item._fbFile) return;
+      const file = item._fbFile;
+      const mode = item.dataset.mode;
+      if (file.type === 'folder' && mode === 'browser') {
+        this.navigateToFolder(file.path);
+        return;
+      }
+      this.selectedFiles = [{...file, mode}];
+      this.confirmSelection();
+    });
+
+    container.addEventListener('keydown', event => {
+      if (event.key !== 'Enter' && event.key !== ' ') return;
+      const item = event.target.closest('.file-item');
+      if (!item || !container.contains(item) || !item._fbFile) return;
+      event.preventDefault();
+      const file = item._fbFile;
+      const mode = item.dataset.mode;
+      if (file.type === 'folder' && mode === 'browser') {
+        this.navigateToFolder(file.path);
+        return;
+      }
+      this.selectFile(file, mode, event.ctrlKey || event.metaKey);
+    });
+
+    container.addEventListener('contextmenu', event => {
+      const item = event.target.closest('.file-item');
+      if (!item || !container.contains(item) || !item._fbFile) return;
+      event.preventDefault();
+      const file = item._fbFile;
+      const mode = item.dataset.mode;
+      if (!item.classList.contains('selected')) {
+        this.selectFile(file, mode, false);
+      }
+      this.showFileContextMenu(event, file, mode);
+    });
+
+    container.addEventListener('mouseover', event => {
+      const item = event.target.closest('.file-item');
+      if (!item || !container.contains(item)) return;
+      // Moving between children of the same item must not restart the timer
+      if (item === this._previewItem) return;
+      this._previewItem = item;
+      this.hidePreview();
+
+      const url = item.dataset.previewUrl;
+      if (!url) return;
+      clearTimeout(this._previewTimer);
+      this._previewTimer = setTimeout(() => this.showPreview(item, url), 350);
+    });
+
+    container.addEventListener('mouseout', event => {
+      const item = event.target.closest('.file-item');
+      if (!item) return;
+      // Ignore moves that stay inside the same item
+      if (event.relatedTarget && item.contains(event.relatedTarget)) return;
+      this._previewItem = null;
+      this.hidePreview();
+    });
+
+    // Scrolling the list must not leave a popup floating over unrelated files
+    container.addEventListener('scroll', () => {
+      this._previewItem = null;
+      this.hidePreview();
+    }, {passive: true});
+  }
+
+  /**
+   * @param {HTMLElement} item the hovered .file-item
+   * @param {string} url image URL to show
+   */
+  showPreview(item, url) {
+    if (!this._previewEl) {
+      this._previewEl = document.createElement('div');
+      this._previewEl.className = 'file-preview-popup';
+      const img = document.createElement('img');
+      img.alt = '';
+      this._previewEl.appendChild(img);
+      /**
+       * document.body, never the modal: .file-browser-modal carries
+       * `transform: scale()`, which makes it the containing block for
+       * position:fixed children (so "centre of the screen" would become centre
+       * of the dialog), and its `overflow: hidden` would clip the popup.
+       */
+      document.body.appendChild(this._previewEl);
+    }
+
+    const popup = this._previewEl;
+    const img = popup.querySelector('img');
+    const name = item.getAttribute('aria-label') || '';
+    img.alt = name;
+    // Only swap src when the file changed — avoids a flash re-decoding the same image
+    if (img.dataset.src !== url) {
+      img.dataset.src = url;
+      img.src = url;
+    }
+
+    // Centred by CSS — measuring here would read the popup before the image has
+    // loaded, so the size is stale or zero and the placement lands wrong.
+    popup.classList.add('visible');
+  }
+
+  hidePreview() {
+    clearTimeout(this._previewTimer);
+    this._previewEl?.classList.remove('visible');
   }
 
   /**
@@ -1181,21 +1401,18 @@ class FileBrowser {
     item.dataset.path = file.path;
     item.dataset.type = file.type;
     item.dataset.mode = mode;
+    /**
+     * The row's own data, read back by the delegated handlers in
+     * attachListHandlers(). Binding click/dblclick/contextmenu/keydown per item
+     * cost four listeners each, which is ~10,600 on the 2,649-file folder this
+     * was reported against.
+     */
+    item._fbFile = file;
 
     // Keyboard accessibility
     item.setAttribute('tabindex', '0');
     item.setAttribute('role', 'option');
     item.setAttribute('aria-label', file.name);
-    item.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' || e.key === ' ') {
-        e.preventDefault();
-        if (file.type === 'folder' && mode === 'browser') {
-          this.navigateToFolder(file.path);
-        } else {
-          this.selectFile(file, mode, e.ctrlKey || e.metaKey);
-        }
-      }
-    });
 
     const isSelected = this.selectedFiles.some(selectedFile =>
       selectedFile.path === file.path && selectedFile.mode === mode);
@@ -1217,20 +1434,33 @@ class FileBrowser {
       const folderIcon = document.createElement('span');
       folderIcon.className = 'icon-folder';
       thumbnail.appendChild(folderIcon);
-    } else if (isImage) {
-      // Use thumbnail URL or file URL for images — set via DOM style to avoid innerHTML injection
-      const imgUrl = file.thumbnail || file.url;
-      const imgSpan = document.createElement('span');
-      // Sanitise parentheses/quotes that could break out of the url() value
-      const safeUrl = imgUrl.replace(/[()'"\\]/g, ch => encodeURIComponent(ch));
-      imgSpan.style.backgroundImage = `url(${safeUrl})`;
-      thumbnail.appendChild(imgSpan);
+    } else if (isImage && (file.thumbnail || file.url)) {
+      /**
+       * A real <img>, not a CSS background: background-image needs the URL
+       * inside url(), where an unquoted space ends the token and the browser
+       * drops the whole declaration — 376 of the 2,649 legacy files here have a
+       * space in the name and showed no preview at all. src takes the URL as
+       * given, lazy-loads natively, and can report a failure.
+       */
+      const img = document.createElement('img');
+      img.loading = 'lazy';
+      img.decoding = 'async';
+      img.alt = '';
+      // Falls back to the full-size file once, then to the generic icon
+      img.addEventListener('error', () => {
+        if (file.url && img.src !== file.url && img.dataset.fallback !== '1') {
+          img.dataset.fallback = '1';
+          img.src = file.url;
+          return;
+        }
+        img.replaceWith(this.createFileIcon(file));
+      });
+      img.src = file.thumbnail || file.url;
+      thumbnail.appendChild(img);
+      // Read back by attachListHandlers to show the full image on hover
+      item.dataset.previewUrl = file.url || file.thumbnail;
     } else {
-      const ext = file.extension ? file.extension.toLowerCase().replace('.', '') : 'default';
-      const iconClass = this.fileIcons[ext] || this.fileIcons['default'];
-      const iconSpan = document.createElement('span');
-      iconSpan.className = iconClass;
-      thumbnail.appendChild(iconSpan);
+      thumbnail.appendChild(this.createFileIcon(file));
     }
 
     const info = document.createElement('div');
@@ -1265,70 +1495,80 @@ class FileBrowser {
     item.appendChild(thumbnail);
     item.appendChild(info);
 
-    item.addEventListener('click', (e) => {
-      if (file.type === 'folder' && mode === 'browser') {
-        this.navigateToFolder(file.path);
-        return;
-      }
-
-      this.selectFile(file, mode, e.ctrlKey || e.metaKey);
-    });
-
-    item.addEventListener('dblclick', () => {
-      if (file.type === 'folder' && mode === 'browser') {
-        this.navigateToFolder(file.path);
-        return;
-      }
-
-      this.selectedFiles = [{...file, mode}];
-      this.confirmSelection();
-    });
-
-    item.addEventListener('contextmenu', (e) => {
-      e.preventDefault();
-
-      if (!isSelected) {
-        this.selectFile(file, mode, false);
-      }
-
-      const menuItems = [];
-
-      if (file.type === 'folder' && mode === 'browser') {
-        menuItems.push(
-          {label: 'Open', icon: 'icon-folder-open', action: () => this.navigateToFolder(file.path)},
-          {label: 'Create a new folder', icon: 'icon-create-folder', action: () => this.createFolder(file.path)}
-        );
-      } else {
-        menuItems.push(
-          {label: 'Choose', icon: 'icon-valid', action: () => this.confirmSelection()}
-        );
-      }
-
-      if (mode === 'browser') {
-        menuItems.push(
-          {label: 'Rename', icon: 'icon-edit', action: () => this.renameFile(file.path, file.type)},
-          {label: 'Delete', icon: 'icon-delete', action: () => this.deleteFile(file.path, file.type)}
-        );
-
-        if (this.clipboardFile) {
-          menuItems.push(
-            {type: 'separator'},
-            {label: 'Paste', icon: 'icon-paste', action: () => this.pasteFromClipboard(file.path)}
-          );
-        }
-      }
-
-      if (this.options.customContextMenuItems.length > 0) {
-        menuItems.push({type: 'separator'});
-        this.options.customContextMenuItems.forEach(customItem => {
-          menuItems.push(customItem);
-        });
-      }
-
-      this.showContextMenu(e, menuItems);
-    });
-
     return item;
+  }
+
+  /**
+   * Generic icon element for a file that has no usable preview.
+   * @param {Object} file
+   * @returns {HTMLElement}
+   */
+  createFileIcon(file) {
+    const ext = file.extension ? String(file.extension).toLowerCase().replace('.', '') : 'default';
+    const iconSpan = document.createElement('span');
+    iconSpan.className = this.fileIcons[ext] || this.fileIcons['default'];
+    return iconSpan;
+  }
+
+  /**
+   * Context menu for one file row.
+   * @param {MouseEvent} event
+   * @param {Object} file
+   * @param {string} mode
+   */
+  showFileContextMenu(event, file, mode) {
+    const menuItems = [];
+
+    if (file.type === 'folder' && mode === 'browser') {
+      menuItems.push(
+        {label: 'Open', icon: 'icon-folder-open', action: () => this.navigateToFolder(file.path)},
+        {label: 'Create a new folder', icon: 'icon-create-folder', action: () => this.createFolder(file.path)}
+      );
+    } else {
+      menuItems.push(
+        {label: 'Choose', icon: 'icon-valid', action: () => this.confirmSelection()}
+      );
+    }
+
+    if (mode === 'browser') {
+      menuItems.push(
+        {label: 'Rename', icon: 'icon-edit', action: () => this.renameFile(file.path, file.type)},
+        {label: 'Delete', icon: 'icon-delete', action: () => this.deleteFile(file.path, file.type)},
+        {type: 'separator'},
+        {label: 'Copy', icon: 'icon-copy', action: () => this.copyToClipboard(file, 'copy')},
+        {label: 'Cut', icon: 'icon-cut', action: () => this.copyToClipboard(file, 'cut')}
+      );
+
+      if (this.clipboardFile) {
+        menuItems.push(
+          {
+            label: 'Paste', icon: 'icon-clip', action: () => this.pasteFromClipboard(
+              file.type === 'folder' ? file.path : this.currentPath
+            )
+          }
+        );
+      }
+    }
+
+    if (this.options.customContextMenuItems.length > 0) {
+      menuItems.push({type: 'separator'});
+      this.options.customContextMenuItems.forEach(customItem => {
+        menuItems.push(customItem);
+      });
+    }
+
+    this.showContextMenu(event, menuItems);
+  }
+
+  /**
+   * Remember a file for the next Paste.
+   * @param {Object} file
+   * @param {'copy'|'cut'} action
+   */
+  copyToClipboard(file, action) {
+    this.clipboardFile = file;
+    this.clipboardAction = action;
+    this.updateStatus(action === 'cut' ? 'Cut {name}' : 'Copied {name}', {name: file.name});
   }
 
   /**
@@ -1407,7 +1647,12 @@ class FileBrowser {
     breadcrumbsContainer.appendChild(separator.cloneNode(true));
 
     paths.forEach((path, index) => {
-      currentPath += path + '/';
+      /**
+       * No trailing slash: the folder tree and the listing both address folders
+       * as "/a/b", so a breadcrumb pointing at "/a/b/" highlighted nothing in
+       * the tree and made the server build paths holding a double slash.
+       */
+      currentPath = (currentPath === '/' ? '' : currentPath) + '/' + path;
 
       const item = document.createElement('a');
       item.href = '#';
@@ -1468,8 +1713,18 @@ class FileBrowser {
           window.Editor.showNotification('The upload is finished.', 'success');
         }
 
-        setTimeout(() => {
-          this.loadFiles();
+        setTimeout(async () => {
+          await this.loadFiles();
+
+          if (result.file && result.file.path) {
+            this.selectFile(result.file, 'browser');
+
+            const selector = `.file-item[data-path=${this.cssEscape(result.file.path)}][data-mode="browser"]`;
+            const fileItem = this.modal.querySelector(selector);
+            if (fileItem) {
+              fileItem.scrollIntoView({block: 'nearest'});
+            }
+          }
         }, 1000);
       } else {
         this.updateStatus('Unable to upload files');
@@ -1555,13 +1810,38 @@ class FileBrowser {
     return filename;
   }
 
+  /**
+   * Same rule as FileBrowserFiles::isValidFilename() — the server rejects
+   * anything this misses, so it only has to spare the user a round trip.
+   * @param {string} name
+   * @returns {boolean}
+   */
+  isValidNewName(name) {
+    if (typeof name !== 'string') return false;
+    const trimmed = name.trim();
+    if (trimmed === '' || trimmed === '.' || trimmed === '..') return false;
+    if (name.length > 255) return false;
+    // Path separators, Windows-reserved characters and control characters
+    // eslint-disable-next-line no-control-regex
+    if (/[\u0000-\u001F\u007F/\\:*?"<>|]/.test(name)) return false;
+    if (name.includes('..')) return false;
+    if (name.startsWith('.')) return false;
+    if (/[. \t]$/.test(name)) return false;
+    return true;
+  }
+
   async renameFile(path, type) {
     const name = path.split('/').pop();
     const newName = prompt(window.translate('Please specify a new name for {type}', {type: type === 'folder' ? 'folder' : 'file'}), name);
 
     if (!newName || newName === name) return;
 
-    if (!/^[a-zA-Z0-9_\-\.]+$/.test(newName)) {
+    /**
+     * Mirrors FileBrowserFiles::isValidFilename() on the server: a deny list,
+     * not the old ASCII whitelist, which refused every Thai name and every name
+     * holding a space or a parenthesis — i.e. most of the existing files.
+     */
+    if (!this.isValidNewName(newName)) {
       alert(window.translate('Incorrect name Please use the numbers, numbers, numbers and signs only.'));
       return;
     }
@@ -1656,13 +1936,21 @@ class FileBrowser {
     this.updateStatus('Operating');
 
     const data = {
-      action: this.clipboardAction === 'cut' ? 'move' : 'copy',
       source: this.clipboardFile.path,
       destination: dest
     };
 
     try {
-      const result = await this.makeApiRequest('/file-browser', data);
+      /**
+       * The action lives in the endpoint, as it does for every other call.
+       * This used to post to a bare '/file-browser' with the action in the
+       * body — a URL no route answers, so Paste always failed with a 404.
+       */
+      const endpoint = this.clipboardAction === 'cut'
+        ? (this.options.apiActions.move || '/file-browser/move')
+        : (this.options.apiActions.copy || '/file-browser/copy');
+
+      const result = await this.makeApiRequest(endpoint, data);
 
       if (result.success) {
         this.updateStatus(this.clipboardAction === 'cut' ? 'Already moved' : 'Already copied');
@@ -1776,7 +2064,17 @@ class FileBrowser {
       container.className = `file-browser-files ${mode}-view`;
     });
 
-    if (this.presetContent.classList.contains('active')) {
+    /**
+     * Redraw from the listing already in hand. Re-requesting it only to toggle
+     * grid/list meant a full folder listing per click — nearly a megabyte of
+     * JSON on the folder this was reported against.
+     */
+    const activeMode = this.presetContent.classList.contains('active') ? 'preset' : 'browser';
+    if (this._lastListing && this._lastListing.mode === activeMode) {
+      const {container, files, mode: listMode} = this._lastListing;
+      this.displayFiles(container, files, listMode);
+      this.updateFileSelection();
+    } else if (this.presetContent.classList.contains('active')) {
       this.loadPresets();
     } else {
       this.loadFiles();
@@ -1943,7 +2241,14 @@ class FileBrowser {
   formatDate(date) {
     if (!date) return '';
 
-    const d = new Date(date);
+    /**
+     * The API sends `modified` as a Unix timestamp in seconds (PHP filemtime),
+     * but the Date constructor reads a number as milliseconds — every row in
+     * list view used to read as a date in January 1970. Anything below ~1e11 is
+     * far too small to be a millisecond timestamp of a real file.
+     */
+    const d = new Date(typeof date === 'number' && date < 1e11 ? date * 1000 : date);
+    if (isNaN(d.getTime())) return '';
 
     return `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getFullYear()} ${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
   }
@@ -1952,8 +2257,14 @@ class FileBrowser {
    * ทำความสะอาดเมื่อเลิกใช้งาน
    */
   destroy() {
-    document.removeEventListener('keydown', this.handleEscapeKey);
-    document.removeEventListener('click', this.hideContextMenu);
+    this.removeEventListeners();
+
+    clearTimeout(this._searchTimer);
+    clearTimeout(this._previewTimer);
+    if (this._previewEl && this._previewEl.parentNode) {
+      this._previewEl.parentNode.removeChild(this._previewEl);
+    }
+    this._previewEl = null;
 
     if (this.contextMenu && this.contextMenu.parentNode) {
       this.contextMenu.parentNode.removeChild(this.contextMenu);

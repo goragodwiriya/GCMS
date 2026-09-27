@@ -200,12 +200,6 @@ document.addEventListener('DOMContentLoaded', async () => {
           },
           '/profile': {
             template: 'profile.html',
-            title: '{LNG_Edit Profile}',
-            menuPath: '/users',
-            requireAuth: true
-          },
-          '/profile': {
-            template: 'profile.html',
             title: '{LNG_Profile}',
             menuPath: '/users',
             requireAuth: true
@@ -293,36 +287,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             title: '{LNG_AI Settings}',
             requireAuth: true,
             beforeEnter: requireAdmin
-          },
-          '/ai-chat': {
-            template: 'ai-chat.html',
-            title: '{LNG_AI Chat}',
-            requireAuth: true,
-            beforeEnter: requirePermission('can_use_ai_chat')
-          },
-          '/ai-chat-content': {
-            template: 'ai-chat-content.html',
-            title: '{LNG_AI Chat Messages}',
-            requireAuth: true,
-            beforeEnter: requirePermission('can_use_ai_chat')
-          },
-          '/ai-chat-quickanswers': {
-            template: 'ai-chat-quickanswers.html',
-            title: '{LNG_AI Chat Quick Answers}',
-            requireAuth: true,
-            beforeEnter: requirePermission('can_use_ai_chat')
-          },
-          '/ai-handoffs': {
-            template: 'ai-handoffs.html',
-            title: '{LNG_AI Handoffs}',
-            requireAuth: true,
-            beforeEnter: requirePermission('can_use_ai_chat')
-          },
-          '/ai-ocr': {
-            template: 'ai-ocr.html',
-            title: '{LNG_AI OCR}',
-            requireAuth: true,
-            beforeEnter: requirePermission('can_use_ai_chat')
           },
           '/ai-theme-generator': {
             template: 'settings/aitheme.html',

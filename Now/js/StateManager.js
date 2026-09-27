@@ -1,3 +1,16 @@
+/**
+ * StateManager
+ *
+ * A Vuex-shaped store: state is split into named **modules**, each with its own
+ * `state`, synchronous `mutations`, async `actions` and derived `getters`.
+ * `commit('module/mutation')` and `dispatch('module/action')` address them by
+ * that slash-separated name.
+ *
+ * On top of that it provides reactivity (Proxy-based, notifying watchers on
+ * write), path subscriptions, computed values with dependency tracking,
+ * middleware hooks, localStorage persistence, and a mutation history that
+ * supports time-travel debugging.
+ */
 const StateManager = {
   config: {
     debug: false,
@@ -33,6 +46,12 @@ const StateManager = {
   batchQueue: new Map(),
   batchTimeout: null,
 
+  /**
+   * Set up the store: restore persisted state, then make it reactive.
+   *
+   * @param {Object} [options={}] - Overrides merged into the module config.
+   * @returns {Promise<Object>} - The manager itself, so calls can be chained.
+   */
   async init(options = {}) {
     this.config = {...this.config, ...options};
 
@@ -42,6 +61,11 @@ const StateManager = {
     return this;
   },
 
+  /**
+   * Wrap the root state in a Proxy so writes notify watchers.
+   *
+   * @returns {void}
+   */
   setupReactivity() {
     this.state = new Proxy(this.state, {
       set: (target, property, value) => {
@@ -52,10 +76,27 @@ const StateManager = {
     });
   },
 
+  /**
+   * Whether a module is registered.
+   *
+   * @param {string} name - Module name.
+   * @returns {boolean} - True when it exists.
+   */
   hasModule(name) {
     return this.modules.has(name);
   },
 
+  /**
+   * Add a module to the store.
+   *
+   * Registering over an existing name requires `options.force`, which also runs
+   * the old module's `cleanup` before replacing it.
+   *
+   * @param {string} name - Module name, used as the prefix in `commit`/`dispatch`.
+   * @param {Object} module - `{state, mutations, actions, getters, cleanup}`.
+   * @param {Object} [options={}] - `force` replaces an existing module.
+   * @returns {void}
+   */
   registerModule(name, module, options = {}) {
     if (this.modules.has(name)) {
       const oldModule = this.modules.get(name);
@@ -148,6 +189,13 @@ const StateManager = {
     return this;
   },
 
+  /**
+   * Normalise a module definition, wrapping its mutations and actions.
+   *
+   * @param {string} name - Module name.
+   * @param {Object} module - Raw module definition.
+   * @returns {Object} - The processed module record.
+   */
   processModule(name, module) {
     return {
       name,
@@ -161,6 +209,15 @@ const StateManager = {
     };
   },
 
+  /**
+   * Wrap each mutation so strict mode can log it.
+   *
+   * Logging is suppressed while time-travelling, so replaying history does not
+   * fill the console with mutations the user did not just perform.
+   *
+   * @param {Object} mutations - Raw mutation handlers.
+   * @returns {Object} - Wrapped handlers.
+   */
   processMutations(mutations) {
     return Object.entries(mutations).reduce((acc, [key, mutation]) => {
       acc[key] = (state, payload) => {
@@ -173,6 +230,12 @@ const StateManager = {
     }, {});
   },
 
+  /**
+   * Wrap each action so a rejection is reported through ErrorManager.
+   *
+   * @param {Object} actions - Raw action handlers.
+   * @returns {Object} - Wrapped handlers.
+   */
   processActions(actions) {
     return Object.entries(actions).reduce((acc, [key, action]) => {
       acc[key] = async (context, payload) => {
@@ -187,6 +250,13 @@ const StateManager = {
     }, {});
   },
 
+  /**
+   * Build the context object handed to a module's actions.
+   *
+   * @param {string} name - Module name.
+   * @returns {Object} - `{state, getters, commit, dispatch}` scoped to the module.
+   * @throws {Error} - When the module does not exist.
+   */
   getModuleContext(name) {
     const module = this.modules.get(name);
     if (!module) throw new Error(`Module ${name} not found`);
@@ -200,6 +270,15 @@ const StateManager = {
     };
   },
 
+  /**
+   * Build a module's getters as lazily-evaluated properties.
+   *
+   * Each getter is defined with `Object.defineProperty`, so it recomputes on
+   * access rather than being snapshotted at build time.
+   *
+   * @param {string} name - Module name.
+   * @returns {Object} - Object whose properties evaluate the getters.
+   */
   getModuleGetters(name) {
     const module = this.modules.get(name);
     return Object.entries(module.getters).reduce((acc, [key, getter]) => {
@@ -210,6 +289,14 @@ const StateManager = {
     }, {});
   },
 
+  /**
+   * Run a module's mutation synchronously.
+   *
+   * @param {string} type - `moduleName/mutationName`.
+   * @param {*} payload - Payload handed to the mutation.
+   * @returns {void}
+   * @throws {Error} - When the module does not exist.
+   */
   commit(type, payload) {
     try {
       const [moduleName, mutationName] = type.split('/');
@@ -237,6 +324,14 @@ const StateManager = {
     }
   },
 
+  /**
+   * Run a module's action, which may be async and may commit mutations.
+   *
+   * @param {string} type - `moduleName/actionName`.
+   * @param {*} payload - Payload handed to the action.
+   * @returns {Promise<*>} - Whatever the action returns.
+   * @throws {Error} - When the module does not exist.
+   */
   async dispatch(type, payload) {
     try {
       const [moduleName, actionName] = type.split('/');
@@ -263,6 +358,16 @@ const StateManager = {
     }
   },
 
+  /**
+   * Register a computed value that tracks the state paths it reads.
+   *
+   * Dependencies are recorded on first evaluation and the result cached until
+   * one of them changes.
+   *
+   * @param {string} path - Path the computed value is exposed at.
+   * @param {Function} getter - Function producing the value.
+   * @returns {void}
+   */
   registerComputed(path, getter) {
     this.computed.set(path, {
       getter,
@@ -290,6 +395,17 @@ const StateManager = {
     });
   },
 
+  /**
+   * Watch a state path, firing whenever anything under its module changes.
+   *
+   * Coarser than `subscribe`: watchers are notified per module write rather
+   * than per exact path.
+   *
+   * @param {string} path - Dotted path to watch.
+   * @param {Function} callback - Called with the value at that path.
+   * @returns {Function} - Unwatch function.
+   * @throws {Error} - When the path is not well formed.
+   */
   watch(path, callback) {
     try {
       if (!this.isValidPath(path)) {
@@ -317,6 +433,12 @@ const StateManager = {
     }
   },
 
+  /**
+   * Call every watcher whose path falls under a module that changed.
+   *
+   * @param {string} moduleName - Module that was written to.
+   * @returns {void}
+   */
   notifyWatchers(moduleName) {
     this.watchers.forEach((handlers, path) => {
       if (path.startsWith(moduleName)) {
@@ -344,15 +466,37 @@ const StateManager = {
     });
   },
 
+  /**
+   * Read a value by dotted path without the safety of optional chaining.
+   *
+   * Used internally where the path is already known to be valid; prefer `get`
+   * for paths that might not exist.
+   *
+   * @param {string} path - Dotted path.
+   * @returns {*} - The value at that path.
+   */
   getStateValue(path) {
     return path.split('.').reduce((obj, key) => obj[key], this.state);
   },
 
+  /**
+   * Register store middleware.
+   *
+   * @param {Object} middleware - Object implementing one or more hooks.
+   * @returns {Object} - The manager itself, so calls can be chained.
+   */
   use(middleware) {
     this.middleware.push(middleware);
     return this;
   },
 
+  /**
+   * Run every middleware implementing one hook, in registration order.
+   *
+   * @param {string} hook - Hook name.
+   * @param {Object} context - Context passed to each middleware.
+   * @returns {Promise<void>}
+   */
   async runMiddleware(hook, context) {
     for (const middleware of this.middleware) {
       if (middleware[hook]) {
@@ -361,6 +505,16 @@ const StateManager = {
     }
   },
 
+  /**
+   * Snapshot the state after a mutation, for time-travel debugging.
+   *
+   * Skipped while time-travelling, so replaying history does not append to it.
+   * The snapshot is a deep clone, so later mutations do not alter past entries.
+   *
+   * @param {string} type - The mutation that ran.
+   * @param {*} payload - Its payload.
+   * @returns {void}
+   */
   addToHistory(type, payload) {
     if (!this.config.history.enabled || this.isTimeTraveling) return;
 
@@ -387,6 +541,15 @@ const StateManager = {
     this.historyIndex = this.history.length - 1;
   },
 
+  /**
+   * Subscribe to changes at a state path.
+   *
+   * @param {string} path - Dotted path to watch.
+   * @param {Function} callback - Called with the new and old value.
+   * @param {Object} [options={}] - Subscription options.
+   * @returns {string} - Subscription id, used with `unsubscribe`.
+   * @throws {Error} - When `path` is not a string or `callback` is not a function.
+   */
   subscribe(path, callback, options = {}) {
     if (!path || typeof path !== 'string') {
       throw new Error('Path must be a string');
@@ -430,6 +593,12 @@ const StateManager = {
     return () => this.unsubscribe(subId);
   },
 
+  /**
+   * Cancel a subscription by its id.
+   *
+   * @param {string} subscriptionId - Id returned by `subscribe`.
+   * @returns {boolean} - True when a subscription was found and removed.
+   */
   unsubscribe(subscriptionId) {
     let found = false;
     this.subscriptions.forEach((subs, path) => {
@@ -449,6 +618,17 @@ const StateManager = {
     }
   },
 
+  /**
+   * Call the active subscribers registered on one path.
+   *
+   * Subscriptions marked inactive are skipped rather than removed here;
+   * `cleanupSubscriptions` sweeps them later.
+   *
+   * @param {string} path - Path that changed.
+   * @param {*} value - New value.
+   * @param {*} oldValue - Previous value.
+   * @returns {void}
+   */
   notifySubscribers(path, value, oldValue) {
     const subs = this.subscriptions.get(path);
     if (!subs) return;
@@ -472,10 +652,29 @@ const StateManager = {
     });
   },
 
+  /**
+   * Read a value by dotted path.
+   *
+   * A missing link in the chain yields `undefined` rather than throwing.
+   *
+   * @param {string} path - Dotted path, e.g. `user.profile.name`.
+   * @returns {*} - The value, or undefined.
+   */
   get(path) {
     return path.split('.').reduce((obj, key) => obj?.[key], this.state);
   },
 
+  /**
+   * Write a value by dotted path.
+   *
+   * Refuses the whole write when any segment is `__proto__`, `constructor` or
+   * `prototype`, so a path built from user input cannot pollute the prototype
+   * chain.
+   *
+   * @param {string} path - Dotted path to write.
+   * @param {*} value - Value to store.
+   * @returns {void}
+   */
   set(path, value) {
     const parts = path.split('.');
     // Prototype-pollution guard: refuse paths that traverse/write dangerous keys.
@@ -493,6 +692,11 @@ const StateManager = {
     }
   },
 
+  /**
+   * Drop subscriptions that are inactive or older than the configured max age.
+   *
+   * @returns {void}
+   */
   cleanupSubscriptions() {
     const now = Date.now();
     const maxAge = this.config.cleanup.maxSubscriptionAge || 3600000;
@@ -506,6 +710,13 @@ const StateManager = {
     });
   },
 
+  /**
+   * Restore the state to a point in the mutation history.
+   *
+   * @param {number} index - Index into the history.
+   * @returns {void}
+   * @throws {Error} - When history is disabled or the index is out of range.
+   */
   timeTravel(index) {
     try {
       if (!this.config.history.enabled || index < 0 || index >= this.history.length) {
@@ -548,6 +759,14 @@ const StateManager = {
     }
   },
 
+  /**
+   * Write the current state to localStorage.
+   *
+   * Failures are reported through ErrorManager rather than thrown, so a full
+   * or unavailable storage quota does not break the app.
+   *
+   * @returns {void}
+   */
   persistState() {
     try {
       if (!this.config.persistence.enabled) return;
@@ -564,6 +783,11 @@ const StateManager = {
     }
   },
 
+  /**
+   * Load persisted state from localStorage, when persistence is enabled.
+   *
+   * @returns {Promise<void>}
+   */
   async restoreState() {
     if (!this.config.persistence.enabled) return;
 
@@ -582,6 +806,14 @@ const StateManager = {
     }
   },
 
+  /**
+   * Group several writes so subscribers are notified once at the end.
+   *
+   * When batching is disabled in config the callback simply runs immediately.
+   *
+   * @param {Function} callback - Function performing the writes.
+   * @returns {*} - Whatever the callback returns.
+   */
   batch(callback) {
     if (!this.config.batch.enabled) {
       return callback();
@@ -609,6 +841,14 @@ const StateManager = {
     );
   },
 
+  /**
+   * Report a store failure through ErrorManager.
+   *
+   * @param {string} message - What went wrong.
+   * @param {Error|Object} error - The underlying error.
+   * @param {string} type - Which operation failed, used as the error context.
+   * @returns {void}
+   */
   handleError(message, error, type) {
     const errorObj = error || new Error(message);
 
@@ -640,6 +880,11 @@ const StateManager = {
     });
   },
 
+  /**
+   * Restore every module to its initial state and clear the history.
+   *
+   * @returns {void}
+   */
   reset() {
     this.modules.forEach((module, name) => {
       if (module.initialState) {
@@ -663,6 +908,14 @@ const StateManager = {
     }
   },
 
+  /**
+   * Whether a string is a well-formed dotted state path.
+   *
+   * Rejects empty strings and paths with empty segments such as `a..b`.
+   *
+   * @param {string} path - Path to check.
+   * @returns {boolean} - True when the path is usable.
+   */
   isValidPath(path) {
     if (!path || typeof path !== 'string') return false;
     const parts = path.split('.');

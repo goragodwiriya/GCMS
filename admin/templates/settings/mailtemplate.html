@@ -1,0 +1,77 @@
+<aside data-component="sidebar"></aside>
+<div class="main-content">
+  <div>
+    <header data-component="topbar"></header>
+    <main class="content">
+      <form data-form="mailtemplate" data-validate="true" action="../api/index/mailtemplate/save" method="post" data-ajax-submit="true" data-load-query-params="true"
+            data-load-api="../api/index/mailtemplate/get" autocomplete="off" data-on-load="initMailTemplateForm">
+        <div class="card-groups">
+          <header>
+            <div>
+              <h1 class="icon-index" data-text="id ? '{LNG_Edit} {LNG_Mail template}' : '{LNG_Create} {LNG_Mail template}'" data-i18n></h1>
+              <p data-text="id ? '{LNG_Edit existing} {LNG_Mail template}' : '{LNG_Create new} {LNG_Mail template}'" data-i18n></p>
+            </div>
+          </header>
+
+          <div class="content-body">
+
+            <!-- Email Details -->
+            <fieldset>
+              <legend class="icon-index" data-i18n>{LNG_Details of} {LNG_Mail template}</legend>
+
+              <div>
+                <label for="from_email" data-i18n>Sender</label>
+                <span class="form-control icon-email">
+                  <input type="email" id="from_email" name="from_email" maxlength="255" data-attr="value:from_email">
+                </span>
+                <div class="comment" id="result_from_email" data-i18n>
+                  E-mail address for replies. If you do not want a response, please leave blank.
+                </div>
+              </div>
+
+              <div>
+                <label for="copy_to" data-i18n>Copy to</label>
+                <span class="form-control icon-cc">
+                  <input type="tags" id="copy_to" name="copy_to" data-attr="value:copy_to">
+                </span>
+                <div class="comment" id="result_copy_to" data-i18n>
+                  More email addresses to send a copy of the email
+                </div>
+              </div>
+
+              <div>
+                <label for="subject" data-i18n>Subject</label>
+                <span class="form-control icon-edit">
+                  <input type="text" id="subject" name="subject" maxlength="64" required autofocus data-attr="value:subject">
+                </span>
+              </div>
+
+              <div>
+                <label for="language" data-i18n>Language</label>
+                <span class="form-control icon-language">
+                  <select id="language" name="language" data-options-key="language" data-attr="value:language">
+                  </select>
+                </span>
+              </div>
+
+              <div>
+                <label for="detail" data-i18n>Detail</label>
+                <textarea id="detail" name="detail" data-element="richtext" data-attr="value:detail" data-rte-profile="basic" data-rte-min-height="250"></textarea>
+              </div>
+            </fieldset>
+
+            <!-- Submit -->
+            <fieldset class="submit">
+              <button type="submit" class="btn btn-primary icon-save" data-i18n>Save</button>
+              <input type="hidden" name="id" data-attr="value:id">
+            </fieldset>
+
+          </div>
+        </div>
+      </form>
+    </main>
+  </div>
+  <footer class="footer">
+    <p class="center">&copy; 2026 GCMS - Powered by <a href="https://nowjs.net">Now.js</a></p>
+  </footer>
+</div>

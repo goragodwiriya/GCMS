@@ -1,5 +1,4 @@
 <?php
-
 namespace Kotchasan;
 
 /**
@@ -42,19 +41,19 @@ class Image
             throw new \RuntimeException('Invalid image file: '.$source);
         }
         switch ($info['mime']) {
-            case 'image/gif':
-                return imagecreatefromgif($source);
-            case 'image/jpeg':
-            case 'image/jpg':
-            case 'image/pjpeg':
-                return self::orient($source);
-            case 'image/png':
-            case 'image/x-png':
-                return imagecreatefrompng($source);
-            case 'image/webp':
-                return imagecreatefromwebp($source);
-            default:
-                throw new \RuntimeException('Unsupported image type: '.$info['mime']);
+        case 'image/gif':
+            return imagecreatefromgif($source);
+        case 'image/jpeg':
+        case 'image/jpg':
+        case 'image/pjpeg':
+            return self::orient($source);
+        case 'image/png':
+        case 'image/x-png':
+            return imagecreatefrompng($source);
+        case 'image/webp':
+            return imagecreatefromwebp($source);
+        default:
+            throw new \RuntimeException('Unsupported image type: '.$info['mime']);
         }
     }
 
@@ -204,21 +203,21 @@ class Image
         $extension = strtolower(pathinfo($target, PATHINFO_EXTENSION));
 
         switch ($extension) {
-            case 'jpg':
-            case 'jpeg':
-                $result = imagejpeg($imageResource, $target, self::$quality);
-                break;
-            case 'png':
-                $result = imagepng($imageResource, $target);
-                break;
-            case 'gif':
-                $result = imagegif($imageResource, $target);
-                break;
-            case 'webp':
-                $result = imagewebp($imageResource, $target, self::$quality);
-                break;
-            default:
-                throw new \RuntimeException('Unsupported file extension for saving image: '.$extension);
+        case 'jpg':
+        case 'jpeg':
+            $result = imagejpeg($imageResource, $target, self::$quality);
+            break;
+        case 'png':
+            $result = imagepng($imageResource, $target);
+            break;
+        case 'gif':
+            $result = imagegif($imageResource, $target);
+            break;
+        case 'webp':
+            $result = imagewebp($imageResource, $target, self::$quality);
+            break;
+        default:
+            throw new \RuntimeException('Unsupported file extension for saving image: '.$extension);
         }
 
         if ($result === false) {
@@ -377,36 +376,36 @@ class Image
         }
 
         switch ($orientation) {
-            case 2:
-                // Flip horizontal
-                $im = self::flip($im);
-                break;
-            case 3:
-                // Rotate 180 degrees
-                $im = imagerotate($im, 180, 0);
-                break;
-            case 4:
-                // Flip vertical
-                $im = self::flipVertical($im);
-                break;
-            case 5:
-                // Flip vertical and rotate 90 degrees CW
-                $im = self::flipVertical($im);
-                $im = imagerotate($im, -90, 0);
-                break;
-            case 6:
-                // Rotate 90 degrees CW
-                $im = imagerotate($im, -90, 0);
-                break;
-            case 7:
-                // Flip horizontal and rotate 90 degrees CW
-                $im = self::flip($im);
-                $im = imagerotate($im, -90, 0);
-                break;
-            case 8:
-                // Rotate 90 degrees CCW
-                $im = imagerotate($im, 90, 0);
-                break;
+        case 2:
+            // Flip horizontal
+            $im = self::flip($im);
+            break;
+        case 3:
+            // Rotate 180 degrees
+            $im = imagerotate($im, 180, 0);
+            break;
+        case 4:
+            // Flip vertical
+            $im = self::flipVertical($im);
+            break;
+        case 5:
+            // Flip vertical and rotate 90 degrees CW
+            $im = self::flipVertical($im);
+            $im = imagerotate($im, -90, 0);
+            break;
+        case 6:
+            // Rotate 90 degrees CW
+            $im = imagerotate($im, -90, 0);
+            break;
+        case 7:
+            // Flip horizontal and rotate 90 degrees CW
+            $im = self::flip($im);
+            $im = imagerotate($im, -90, 0);
+            break;
+        case 8:
+            // Rotate 90 degrees CCW
+            $im = imagerotate($im, 90, 0);
+            break;
         }
 
         return $im;
@@ -447,29 +446,29 @@ class Image
         $imageHeight = imagesy($imgsrc);
 
         switch (strtolower($pos)) {
-            case 'center':
-                $x = ($imageWidth - $textWidth) / 2;
-                $y = ($imageHeight - $textHeight) / 2;
-                break;
-            case 'bottom-right':
-                $x = $imageWidth - $textWidth - $offset;
-                $y = $imageHeight - $offset;
-                break;
-            case 'bottom-left':
-                $x = $offset;
-                $y = $imageHeight - $offset;
-                break;
-            case 'top-right':
-                $x = $imageWidth - $textWidth - $offset;
-                $y = $textHeight + $offset;
-                break;
-            case 'top-left':
-                $x = $offset;
-                $y = $textHeight + $offset;
-                break;
-            default:
-                $x = $offset;
-                $y = $imageHeight - $offset;
+        case 'center':
+            $x = ($imageWidth - $textWidth) / 2;
+            $y = ($imageHeight - $textHeight) / 2;
+            break;
+        case 'bottom-right':
+            $x = $imageWidth - $textWidth - $offset;
+            $y = $imageHeight - $offset;
+            break;
+        case 'bottom-left':
+            $x = $offset;
+            $y = $imageHeight - $offset;
+            break;
+        case 'top-right':
+            $x = $imageWidth - $textWidth - $offset;
+            $y = $textHeight + $offset;
+            break;
+        case 'top-left':
+            $x = $offset;
+            $y = $textHeight + $offset;
+            break;
+        default:
+            $x = $offset;
+            $y = $imageHeight - $offset;
         }
 
         imagettftext($imgsrc, $font_size, 0, $x, $y, $alpha_color, $font, $text);

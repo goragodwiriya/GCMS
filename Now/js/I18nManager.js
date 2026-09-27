@@ -46,6 +46,17 @@ const I18nManager = {
     return this;
   },
 
+  /**
+   * Switch the active locale and re-translate the page.
+   *
+   * Does nothing when i18n is disabled, and throws when the locale is not in
+   * `config.availableLocales`.
+   *
+   * @param {string} locale - Locale to switch to.
+   * @param {boolean} [force=false] - Re-apply even when it is already current.
+   * @returns {Promise<void>}
+   * @throws {Error} - When the locale is not supported.
+   */
   async setLocale(locale, force = false) {
     try {
       if (!this.config.enabled) return;
@@ -91,10 +102,25 @@ const I18nManager = {
     }
   },
 
+  /**
+   * The locale currently in effect.
+   *
+   * @returns {string} - Locale code, e.g. `th` or `en`.
+   */
   getCurrentLocale() {
     return this.state.current;
   },
 
+  /**
+   * Fetch and cache the translation file for a locale.
+   *
+   * The URL comes from `Now.resolvePath(locale, 'translations')` plus `.json`,
+   * and the request is retried on failure.
+   *
+   * @param {string} locale - Locale to load.
+   * @param {number} [retries=2] - Extra attempts after the first failure.
+   * @returns {Promise<Object>} - The loaded translation map.
+   */
   async loadTranslations(locale, retries = 2) {
     const url = `${Now.resolvePath(locale, 'translations')}.json`;
 
@@ -183,6 +209,13 @@ const I18nManager = {
     }
   },
 
+  /**
+   * Re-translate every `data-i18n` element on the page.
+   *
+   * Called after the locale changes so already-rendered markup catches up.
+   *
+   * @returns {void}
+   */
   updateTranslations() {
     const translations = this.state.translations.get(this.state.current) || {};
 
@@ -202,10 +235,26 @@ const I18nManager = {
     });
   },
 
+  /**
+   * Translate `{LNG_xxx}` markers found in attributes across the whole document.
+   *
+   * @returns {void}
+   */
   translateAttributes() {
     this.translateAttributesIn(document);
   },
 
+  /**
+   * Resolve a key inside a given translation map.
+   *
+   * Keys containing a space are looked up literally rather than split on dots,
+   * so plain sentences can be used as keys.
+   *
+   * @param {string} key - Translation key, or literal text.
+   * @param {Object} translations - Map to look in.
+   * @param {Object} [params={}] - Values interpolated into the result.
+   * @returns {string|undefined} - The translated text, or undefined when absent.
+   */
   getTranslation(key, translations, params = {}) {
     let value;
 
@@ -224,17 +273,27 @@ const I18nManager = {
     return this.interpolate(value, params, translations);
   },
 
+  /**
+   * Resolve the locale to start in: the visitor's own choice first.
+   *
+   * `<html lang>` used to win over everything, which quietly threw away the language
+   * the visitor picked: choose another language, reload, and the page is back to the
+   * one written into the document. The attribute is the document's *default* — a
+   * stored choice is a decision the visitor already made about it.
+   *
+   * Priority: stored choice → `<html lang>` → `defaultLocale`.
+   */
   async loadInitialLocale() {
     let locale = this.config.defaultLocale;
 
     const htmlLang = document.documentElement.getAttribute('lang');
     if (htmlLang && this.config.availableLocales.includes(htmlLang)) {
       locale = htmlLang;
-    } else {
-      const stored = this.getStoredLocale();
-      if (stored && this.config.availableLocales.includes(stored)) {
-        locale = stored;
-      }
+    }
+
+    const stored = this.getStoredLocale();
+    if (stored && this.config.availableLocales.includes(stored)) {
+      locale = stored;
     }
 
     await this.setLocale(locale);
@@ -266,6 +325,17 @@ const I18nManager = {
     });
   },
 
+  /**
+   * Translate `{LNG_xxx}` markers in attributes inside one container.
+   *
+   * Used when new markup is inserted, so only the new subtree is walked instead
+   * of the whole document.
+   *
+   * @param {HTMLElement|Document} container - Subtree to walk.
+   * @param {Object} [translations] - Map to use; defaults to the current locale.
+   * @param {RegExp} [lngPattern] - Pattern matching the markers.
+   * @returns {void}
+   */
   translateAttributesIn(container, translations, lngPattern) {
     if (!translations) {
       translations = this.state.translations.get(this.state.current) || {};
@@ -277,6 +347,7 @@ const I18nManager = {
     const selector = attrs.map(a => `[${a}]`).join(', ');
 
     container.querySelectorAll(selector).forEach(element => {
+      if (this.isExcluded(element)) return;
       attrs.forEach(attr => {
         const value = element.getAttribute(attr);
         if (value && lngPattern.test(value)) {
@@ -386,8 +457,29 @@ const I18nManager = {
    * - {LNG_...} in translatable attributes
    * - {LNG_...} in text nodes
    */
+  /**
+   * Whether a node sits inside an element marked `translate="no"`.
+   *
+   * The DOM observer translates every `{LNG_...}` it meets, including ones that
+   * arrived as *data* — a document title stored as `{LNG_Documents}` used to be
+   * shown as "Documents". The standard HTML `translate="no"` attribute is the
+   * opt-out: nothing inside such an element is touched (text nodes, attributes,
+   * data-i18n, and the data-text / data-attr `{LNG_...}` pass in TemplateManager).
+   * TableManager sets it on plain data cells; a template puts it around any
+   * user-supplied content it renders.
+   *
+   * @param {Node} node - Element or text node
+   * @returns {boolean}
+   */
+  isExcluded(node) {
+    if (!node) return false;
+    const el = node.nodeType === Node.ELEMENT_NODE ? node : node.parentElement;
+    return !!(el && typeof el.closest === 'function' && el.closest('[translate="no"]'));
+  },
+
   translateNode(node) {
     if (!node || !node.isConnected) return;
+    if (this.isExcluded(node)) return;
 
     const translations = this.state.translations.get(this.state.current) || {};
     const lngPattern = /\{LNG_[^}]+\}/;
@@ -445,6 +537,7 @@ const I18nManager = {
    * are preserved in the template and handled by their respective managers.
    */
   _translateI18nElement(element, translations) {
+    if (this.isExcluded(element)) return;
     // Skip elements managed by TemplateManager's data-text directive
     // to prevent conflicting translations (data-text handles its own {LNG_} translation)
     if (element._textBinding) return;
@@ -541,7 +634,7 @@ const I18nManager = {
       NodeFilter.SHOW_TEXT,
       {
         acceptNode: (node) =>
-          lngPattern.test(node.textContent)
+          lngPattern.test(node.textContent) && !this.isExcluded(node)
             ? NodeFilter.FILTER_ACCEPT
             : NodeFilter.FILTER_REJECT
       }
@@ -557,6 +650,19 @@ const I18nManager = {
     }
   },
 
+  /**
+   * Translate a key into the current or a given locale.
+   *
+   * Keys containing a space are treated as literal text rather than a dotted
+   * path. When the locale is English and `config.noTranslateEnglish` is on, the
+   * key is returned with `{LNG_xxx}` markers stripped but runtime placeholders
+   * such as `{count}` still interpolated.
+   *
+   * @param {string} key - Translation key, or literal text.
+   * @param {Object} [params={}] - Values interpolated into the result.
+   * @param {string} [locale=null] - Locale to use; defaults to the current one.
+   * @returns {string} - Translated text, or the key when nothing matches.
+   */
   translate(key, params = {}, locale = null) {
     if (typeof key !== 'string') return key;
 
@@ -576,6 +682,16 @@ const I18nManager = {
     return this.getTranslation(key, translations, params);
   },
 
+  /**
+   * Last resort when a key has no translation in the current locale.
+   *
+   * Without params the key is returned as-is. With params, the default locale is
+   * consulted so placeholders still get filled rather than shown raw.
+   *
+   * @param {string} key - Translation key.
+   * @param {Object} params - Values to interpolate.
+   * @returns {string} - Best available text.
+   */
   getFallbackTranslation(key, params) {
     if (!params || Object.keys(params).length === 0) {
       return key;
@@ -597,37 +713,83 @@ const I18nManager = {
     return this.interpolate(key, params);
   },
 
-  interpolate(text, params, translations) {
+  /**
+   * Fill placeholders in a string.
+   *
+   * `{LNG_xxx}` markers are replaced from the translation map first — an unknown
+   * marker falls back to its own name — then runtime `{param}` placeholders are
+   * substituted from `params`.
+   *
+   * `{LNG_xxx}` is the only marker that is searched for. Any other `{...}` is
+   * replaced only when the caller passed that exact name in `params`, and is
+   * otherwise left as written. The second pass used to look every `{...}` up in
+   * the catalog and, when nothing matched, drop the braces — so a value such as
+   * `{"a":1}` came back as `"a":1`, `{{7*7}}` as `{7*7}`, and a `{Guest}` that
+   * happened to be a catalog key came back translated. Text that carries no
+   * `{LNG_...}` and no requested param now passes through untouched, which is
+   * what a cell, a tag or a title built from row data needs. This is the same
+   * contract as Kotchasan's `Language::replace()`: substitute what was asked
+   * for, never scan for more.
+   *
+   * @param {string} text - Text containing placeholders.
+   * @param {Object} [params={}] - Runtime values, keyed by placeholder name.
+   * @param {Object} [translations] - Map used for `{LNG_xxx}`; defaults to current.
+   * @returns {string} - Text with placeholders filled.
+   */
+  interpolate(text, params = {}, translations) {
     const trans = translations || this.getTranslations();
+    const values = params && typeof params === 'object' ? params : {};
 
-    // Handle {LNG_xxx} pattern first
+    // 1. {LNG_xxx}: the translation marker. An unknown key shows its own name.
     let result = text.replace(/\{LNG_([^}]+)\}/g, (match, key) => {
       return trans[key] ?? key;
     });
 
-    // Handle {xxx} pattern (existing behavior)
+    // 2. {name}: a runtime value the caller supplied. Anything else stays as
+    //    written — braces are data, not a request to translate. A supplied value
+    //    is inserted verbatim; it is not scanned again.
     result = result.replace(/\{([^}]+)\}/g, (match, key) => {
-      if (params[key] !== undefined) {
-        return params[key];
+      if (Object.prototype.hasOwnProperty.call(values, key) && values[key] !== undefined) {
+        return String(values[key]);
       }
-      if (trans[key]) {
-        return trans[key];
-      }
-      return key;
+      return match;
     });
 
     return result;
   },
 
+  /**
+   * Build a translate function bound to one locale.
+   *
+   * Handy when a component must render in a locale other than the current one.
+   *
+   * @param {string} locale - Locale the returned function translates into.
+   * @returns {Function} - `(key, params) => string`.
+   */
   getTranslator(locale) {
     return (key, params = {}) => this.translate(key, params, locale);
   },
 
+  /**
+   * The whole translation map for a locale.
+   *
+   * @param {string} [locale=null] - Locale to read; defaults to the current one.
+   * @returns {Object} - Translation map, empty when the locale is not loaded.
+   */
   getTranslations(locale = null) {
     const targetLocale = locale || this.getCurrentLocale();
     return this.state.translations.get(targetLocale) || {};
   },
 
+  /**
+   * Collect one key's translation across every loaded locale.
+   *
+   * Keys containing a space are looked up literally; others are treated as a
+   * dotted path.
+   *
+   * @param {string} key - Translation key.
+   * @returns {Object} - Map of locale code to translated text.
+   */
   getKeyTranslations(key) {
     const translations = {};
     this.state.translations.forEach((value, locale) => {
@@ -642,6 +804,13 @@ const I18nManager = {
     return translations;
   },
 
+  /**
+   * Whether a key has a translation.
+   *
+   * @param {string} key - Translation key, or literal text.
+   * @param {string} [locale=null] - Locale to check; defaults to the current one.
+   * @returns {boolean} - True when the key resolves to something.
+   */
   hasTranslation(key, locale = null) {
     const translations = this.getTranslations(locale);
     // If key contains spaces, look it up directly

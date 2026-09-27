@@ -1,0 +1,112 @@
+<aside data-component="sidebar"></aside>
+<div class="main-content">
+  <div>
+    <header data-component="topbar"></header>
+    <main class="content">
+      <div class="card-groups">
+        <header>
+          <div>
+            <h1 class="icon-cog" data-i18n>{LNG_E-Document} {LNG_Settings}</h1>
+            <p data-i18n>{LNG_Module settings} {LNG_E-Document}</p>
+          </div>
+        </header>
+        <div class="content-body">
+          <form data-form="edocumentSettings" action="../api/edocument/settings/save" method="POST" data-ajax-submit="true" data-load-api="../api/edocument/settings/get"
+                data-load-query-params="true" data-confirm="Confirm save">
+            <fieldset>
+              <legend class="icon-config" data-i18n>{LNG_Module settings}</legend>
+              <div>
+                <label for="format_no" data-i18n>{LNG_Document number}</label>
+                <span class="form-control icon-number">
+                  <input type="text" id="format_no" name="format_no" data-attr="value:format_no" maxlength="20">
+                </span>
+                <div class="comment" data-i18n>{LNG_Specify the format of the document number as% 04d means adding zeros until the four-digit number on the front, such as 0001.}</div>
+              </div>
+              <div>
+                <label for="send_mail" data-i18n>{LNG_Emailing}</label>
+                <span class="form-control icon-email">
+                  <select id="send_mail" name="send_mail" data-attr="value:send_mail">
+                    <option value="0" data-i18n>Disabled</option>
+                    <option value="1" data-i18n>Enabled</option>
+                  </select>
+                </span>
+                <div class="comment" data-i18n>{LNG_When adding a new document Email alert to the recipient. When enabled this option.}</div>
+              </div>
+            </fieldset>
+            <fieldset>
+              <legend class="icon-upload" data-i18n>{LNG_Upload}</legend>
+              <div>
+                <label for="file_typies" data-i18n>Type of file uploads</label>
+                <span class="form-control icon-file">
+                  <input type="text" id="file_typies" name="file_typies" data-attr="value:file_typies">
+                </span>
+                <div class="comment" data-i18n> Specify the file extension that allows uploading. English lowercase letters and numbers 2-4 characters to separate each type with a
+                  comma (,) and without spaces. eg zip,rar,doc,docx </div>
+              </div>
+              <div>
+                <label for="upload_size" data-i18n>{LNG_Size of} {LNG_upload file}</label>
+                <span class="form-control icon-upload">
+                  <select id="upload_size" name="upload_size" data-options-key="upload_sizes" data-attr="value:upload_size"></select>
+                </span>
+              </div>
+            </fieldset>
+            <fieldset>
+              <legend class="icon-download" data-i18n>Download</legend>
+              <div>
+                <label for="download_action" data-i18n>{LNG_When download}</label>
+                <span class="form-control icon-download">
+                  <select id="download_action" name="download_action" data-attr="value:download_action">
+                    <option value="0" data-i18n>Download the file</option>
+                    <option value="1" data-i18n>Open the file in the browser</option>
+                  </select>
+                </span>
+                <div class="comment" data-i18n>{LNG_Only PDF and image files can be opened in the browser, other types are always downloaded}</div>
+              </div>
+            </fieldset>
+            <fieldset>
+              <legend class="icon-grid" data-i18n>Display</legend>
+              <div>
+                <label for="list_per_page" data-i18n>Items per page</label>
+                <span class="form-control icon-number">
+                  <input type="number" id="list_per_page" name="list_per_page" data-attr="value:list_per_page" min="1" max="100">
+                </span>
+                <div id="result_list_per_page" class="comment" data-i18n>Determine how many items to display per page</div>
+              </div>
+            </fieldset>
+            <fieldset>
+              <legend class="icon-shield" data-i18n>Permissions</legend>
+              <div>
+                <label for="can_upload" data-i18n>Upload</label>
+                <span class="form-control icon-user">
+                  <select id="can_upload" name="can_upload" data-options-key="user_status" data-attr="value:can_upload" multiple></select>
+                </span>
+                <div class="comment" data-i18n>{LNG_Members of this group can upload file}</div>
+              </div>
+              <div>
+                <label for="moderator" data-i18n>Moderator</label>
+                <span class="form-control icon-user">
+                  <select id="moderator" name="moderator" data-options-key="user_status" data-attr="value:moderator" multiple></select>
+                </span>
+                <div class="comment" data-i18n>{LNG_Members of this group can edit, delete items created by others}</div>
+              </div>
+              <div>
+                <label for="can_config" data-i18n>Settings</label>
+                <span class="form-control icon-user">
+                  <select id="can_config" name="can_config" data-options-key="user_status" data-attr="value:can_config" multiple></select>
+                </span>
+                <div class="comment" data-i18n>{LNG_Members of this group can setting the module (not recommend)}</div>
+              </div>
+            </fieldset>
+            <fieldset class="submit">
+              <button type="submit" class="btn btn-primary icon-save" data-i18n>Save</button>
+              <input type="hidden" name="module_id" data-attr="value:module_id">
+            </fieldset>
+          </form>
+        </div>
+      </div>
+    </main>
+  </div>
+  <footer class="footer">
+    <p class="center">&copy; 2026 GCMS - Powered by <a href="https://nowjs.net">Now.js</a></p>
+  </footer>
+</div>

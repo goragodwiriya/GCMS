@@ -1,5 +1,4 @@
 <?php
-
 namespace Kotchasan;
 
 /**
@@ -770,12 +769,12 @@ class Pdf extends \PDF\FPDF
 
             if (!empty($node->attributes['ALIGN']) && $cw > $w) {
                 switch (strtoupper($node->attributes['ALIGN'])) {
-                    case 'CENTER':
-                        $x = ($cw - $w) / 2;
-                        break;
-                    case 'RIGHT':
-                        $x = $cw - $w;
-                        break;
+                case 'CENTER':
+                    $x = ($cw - $w) / 2;
+                    break;
+                case 'RIGHT':
+                    $x = $cw - $w;
+                    break;
                 }
             }
         }
@@ -1082,12 +1081,12 @@ class Pdf extends \PDF\FPDF
             if (isset($node->parentNode->attributes['TEXT-ALIGN'])) {
                 // Determine the horizontal position based on the text alignment
                 switch ($node->parentNode->attributes['TEXT-ALIGN']) {
-                    case 'CENTER':
-                        $l = ($this->w - ($width * $k)) / 2;
-                        break;
-                    case 'RIGHT':
-                        $l = ($this->w - ($width * $k));
-                        break;
+                case 'CENTER':
+                    $l = ($this->w - ($width * $k)) / 2;
+                    break;
+                case 'RIGHT':
+                    $l = ($this->w - ($width * $k));
+                    break;
                 }
             }
 

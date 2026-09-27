@@ -1,5 +1,4 @@
 <?php
-
 namespace Kotchasan;
 
 /**
@@ -73,7 +72,7 @@ class Promptpay
      *
      * @assert ('0123456789')->payload() [==] '00020101021129370016A000000677010111011300661234567895802TH530376463047CC1'
      * @assert ('660123456789')->payload() [==] '00020101021129370016A000000677010111011300661234567895802TH530376463047CC1'
-     * @assert ('660123456789', 99)->payload() [==] '00020101021229370016A000000677010111011300661234567895802TH5303764540599.00630472B'
+     * @assert ('660123456789', 99)->payload() [==] '00020101021229370016A000000677010111011300661234567895802TH5303764540599.006304072B'
      * @assert ('66123456789')->payload() [==] '00020101021129370016A000000677010111011300661234567895802TH530376463047CC1'
      * @assert ('123456789012')->payload() [==] '00020101021129370016A000000677010111011301234567890125802TH530376463048AF8'
      *
@@ -173,13 +172,16 @@ class Promptpay
     /**
      * Generate the checksum (CRC) using the CRC-16 algorithm.
      *
+     * EMVCo tag 63 must always be 4 hex digits. dechex() drops leading zeros,
+     * so roughly 1 in 16 amounts produced a 3-digit CRC that banking apps reject.
+     *
      * @param string $data The input data.
      *
-     * @return string The generated checksum.
+     * @return string The generated checksum, zero-padded to 4 digits.
      */
     private function hashString($data)
     {
-        return strtoupper(dechex($this->hashBytes(unpack('C*', $data))));
+        return sprintf('%04X', $this->hashBytes(unpack('C*', $data)));
     }
 
     /**

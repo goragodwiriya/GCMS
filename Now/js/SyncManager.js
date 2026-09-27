@@ -140,6 +140,14 @@ const SyncManager = {
     }
   },
 
+  /**
+   * Turn syncing on, initialising the manager first if needed.
+   *
+   * Auto sync only starts when `config.autoSync` is set and the browser is
+   * currently online, so an offline page does not spin on failing requests.
+   *
+   * @returns {Promise<void>}
+   */
   async enable() {
     if (!this.state.initialized) {
       await this.init();
@@ -158,6 +166,14 @@ const SyncManager = {
     return this;
   },
 
+  /**
+   * Stop syncing and clear its timers.
+   *
+   * Halts auto sync and cancels any pending debounced sync, so no request
+   * fires after the manager is switched off.
+   *
+   * @returns {void}
+   */
   disable() {
     this.state.enabled = false;
     this.config.enabled = false;

@@ -764,6 +764,7 @@ function initAiSettings(element, data) {
       custom_model: ai_custom_model ? ai_custom_model.value.trim() : '',
       use_custom_model: ai_model && ai_model.value === '__custom__' ? 1 : 0,
       api_key: ai_api_key ? ai_api_key.value : '',
+      has_api_key: (ai_api_key && ai_api_key.value !== '') ? true : !!(providerState[provider] && providerState[provider].has_api_key),
       api_url: apiUrl,
       max_tokens: ai_max_tokens ? ai_max_tokens.value : '',
       temperature: ai_temperature ? ai_temperature.value : '',
@@ -837,7 +838,10 @@ function initAiSettings(element, data) {
   const renderModelGuidance = (provider) => {
     const meta = getProviderMeta(provider);
     if (ai_api_key) {
-      ai_api_key.placeholder = meta.local ? Now.translate('Not required for local models') : '';
+      const hasKey = !!(providerState[provider] && providerState[provider].has_api_key);
+      ai_api_key.placeholder = hasKey
+        ? Now.translate('A key is saved — leave blank to keep it')
+        : (meta.local ? Now.translate('Not required for local models') : Now.translate('Enter API key'));
     }
     if (ai_api_url) {
       ai_api_url.placeholder = meta.default_api_url || '';
@@ -875,7 +879,9 @@ function initAiSettings(element, data) {
 
     renderModelOptions(provider, current.model_option);
     if (ai_api_key) {
-      ai_api_key.value = current.api_key;
+      // The saved key is never sent to the browser — keep the field empty; the
+      // placeholder (set in renderModelGuidance) shows whether a key is stored.
+      ai_api_key.value = '';
     }
     if (ai_api_url) {
       ai_api_url.value = current.api_url;
@@ -1229,162 +1235,6 @@ function initThemeSettingsAssistant(element, data) {
 }
 
 /**
- * Format with options status
- */
-function formatTableOptionStatus(cell, rawValue, rowData, attributes) {
-  const opts = attributes.lookupOptions || attributes.tableDataOptions || attributes.tableFilterOptions;
-
-  // Normalizer: build a map value->text
-  const makeMap = (options) => {
-    if (!options) return new Map();
-    if (Array.isArray(options)) {
-      // [{value,text}, ...]
-      return new Map(options.map(o => [String(o.value), o.text]));
-    }
-    // object map {val: label, ...}
-    return new Map(Object.entries(options).map(([k, v]) => [String(k), v]));
-  };
-
-  const map = makeMap(opts);
-
-  const key = rawValue === null || rawValue === undefined ? '' : String(rawValue);
-  const label = map.has(key) ? map.get(key) : (rawValue && rawValue.text) ? rawValue.text : key;
-  const index = map.has(key) ? Array.from(map.keys()).indexOf(key) : -1;
-
-
-  cell.innerHTML = `<span class="status${index}" data-i18n>${label}</span>`;
-}
-
-function formatStarStatus(cell, rawValue, rowData, attributes) {
-  if (rawValue === 'active' || parseInt(rawValue) === 1) {
-    cell.innerHTML = '<span class="icon-star2 color-primary"></span>';
-  } else {
-    cell.innerHTML = '<span class="icon-star0 color-silver"></span>';
-  }
-}
-
-function formatActiveStatus(cell, rawValue, rowData, attributes) {
-  if (rawValue === 'active' || parseInt(rawValue) === 1) {
-    cell.innerHTML = '<span class="icon-valid color-red" title="' + Now.translate('Active') + '"></span>';
-  } else {
-    cell.innerHTML = '<span class="icon-invalid color-silver" title="' + Now.translate('Inactive') + '"></span>';
-  }
-}
-
-function formatLink(cell, rawValue, rowData, attributes) {
-  if (!rawValue) {
-    cell.innerHTML = '-';
-    return;
-  }
-
-  const value = String(rawValue).trim();
-
-  // Simple recognizers
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  const phoneRegex = /^\+?[0-9()\s\-./]{6,}$/;
-  const urlProtocolRegex = /^https?:\/\//i;
-
-  const makeLink = (href, text, iconClass) => {
-    const a = document.createElement('a');
-    a.href = href;
-    // Open http(s) links in new tab, others (mailto/tel) in same
-    if (/^https?:\/\//i.test(href)) {
-      a.target = '_blank';
-      a.rel = 'noopener';
-    }
-    if (iconClass) a.className = iconClass;
-    a.textContent = text;
-    cell.innerHTML = '';
-    cell.appendChild(a);
-  };
-
-  if (/^mailto:/i.test(value)) {
-    makeLink(value, value.replace(/^mailto:/i, ''), 'icon-mail');
-    return;
-  }
-
-  if (/^tel:/i.test(value)) {
-    makeLink(value, value.replace(/^tel:/i, ''), 'icon-phone');
-    return;
-  }
-
-  if (emailRegex.test(value)) {
-    makeLink('mailto:' + value, value, 'icon-mail');
-    return;
-  }
-
-  if (phoneRegex.test(value)) {
-    // Normalize phone for href (keep leading + if present)
-    const telHref = 'tel:' + value.replace(/[^\d+]/g, '');
-    makeLink(telHref, value, 'icon-phone');
-    return;
-  }
-
-  // Fallback: treat as URL
-  let href = value;
-  if (!urlProtocolRegex.test(href)) href = 'http://' + href;
-  const displayUrl = href.replace(/^https?:\/\//, '').replace(/\/$/, '');
-  makeLink(href, displayUrl, 'icon-world');
-}
-
-function formatImage(cell, rawValue, rowData, attributes) {
-  cell.innerHTML = '';
-  if (!rawValue) return;
-
-  // Build the thumbnail via DOM + style API instead of string concatenation.
-  // Reject dangerous schemes and any character that could break out of the
-  // CSS url() context (quotes, parens, angle brackets, whitespace, backslash).
-  const url = String(rawValue).trim();
-  const isDangerousScheme = /^(?:javascript|data|vbscript|file|about):/i.test(url);
-  const hasUnsafeChars = /["'()\\\s<>]/.test(url);
-  if (isDangerousScheme || hasUnsafeChars) return;
-
-  const thumb = document.createElement('div');
-  thumb.className = 'thumbnail';
-  thumb.style.backgroundImage = `url("${url}")`;
-  cell.appendChild(thumb);
-}
-
-/**
- * Attach a "copy to language" handler to the #copy_menu button.
- * @param {HTMLElement} element - Form root element
- * @param {string} endpoint - API endpoint to POST to
- * @param {string} saveFirstMsg - Translation key shown when id is missing
- * @returns {Function} Cleanup function that removes the listener
- */
-function makeCopyButton(element, endpoint, saveFirstMsg) {
-  const copyBtn = element.querySelector('#copy_menu');
-  const languageSelect = element.querySelector('#language');
-  if (!copyBtn || !languageSelect) return () => {};
-
-  const handler = async () => {
-    const lang = languageSelect.value;
-    if (!lang) {
-      NotificationManager.warning(Now.translate('Please select a language to copy to'));
-      return;
-    }
-    const id = element.querySelector('[name="id"]')?.value;
-    if (!id) {
-      NotificationManager.warning(Now.translate(saveFirstMsg));
-      return;
-    }
-    try {
-      const response = await ApiService.post(endpoint, {id, language: lang});
-      if (response.success) {
-        NotificationManager.success(response.data.message || Now.translate('Copied successfully'));
-      } else {
-        NotificationManager.error(response.data.message || Now.translate('Copy failed'));
-      }
-    } catch {
-      NotificationManager.error(Now.translate('Copy failed'));
-    }
-  };
-
-  copyBtn.addEventListener('click', handler);
-  return () => copyBtn.removeEventListener('click', handler);
-}
-
-/**
  * Attach a language-change handler that reloads the form with the selected language,
  * and a copy-to-language handler. Used by forms where content is per-language file
  * (intro, maintenance) rather than per-record database entries.
@@ -1601,7 +1451,7 @@ function initThemeGallery(element, context) {
   });
 
   // Wire up activate buttons
-  element.querySelectorAll('.theme-card__actions button[data-theme]').forEach(btn => {
+  element.querySelectorAll('.theme-card__actions button[data-theme-activate]').forEach(btn => {
     btn.addEventListener('click', async () => {
       const themeName = btn.dataset.theme;
       if (!themeName) return;
@@ -1620,6 +1470,29 @@ function initThemeGallery(element, context) {
         });
         btn.disabled = false;
         btn.textContent = originalText;
+      }
+    });
+  });
+
+  // Wire up delete buttons (personal themes only — server re-validates ownership)
+  element.querySelectorAll('.theme-card__actions button[data-theme-delete]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const themeName = btn.dataset.theme;
+      if (!themeName) return;
+
+      const confirmed = await DialogManager.confirm(Now.translate('Delete this theme permanently?'));
+      if (!confirmed) return;
+
+      btn.disabled = true;
+      try {
+        await httpAction.post('../api/index/themes/delete', {theme: themeName});
+      } catch (error) {
+        NotificationManager.show({
+          type: 'error',
+          title: Now.translate('Error'),
+          message: error.message || Now.translate('Could not delete theme')
+        });
+        btn.disabled = false;
       }
     });
   });
@@ -2182,7 +2055,7 @@ function initAiTheme(element) {
         prompt,
         color_scheme: element.querySelector('#ai_color_scheme').value,
         name: (element.querySelector('#ai_theme_name').value || '').trim(),
-        include_home_html: !!(includeHomeEl && includeHomeEl.checked)
+        include_home_html: false
       });
       const result = unwrapApiResponse(response);
 

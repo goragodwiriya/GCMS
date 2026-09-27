@@ -397,9 +397,16 @@ class GalleryUploadPlugin extends PluginBase {
     formData.append('file', file);
     formData.append('path', this.options.uploadPath || imageOpts.uploadPath || '/');
 
+    // Custom header enables server-side CSRF validation for cookie auth
+    const baseOptions = {
+      method: 'POST',
+      body: formData,
+      headers: {'X-Requested-With': 'XMLHttpRequest'},
+      credentials: 'include'
+    };
     const requestOptions = typeof Now !== 'undefined' && Now.applyRequestLanguage
-      ? Now.applyRequestLanguage({method: 'POST', body: formData, credentials: 'include'})
-      : {method: 'POST', body: formData, credentials: 'include'};
+      ? Now.applyRequestLanguage(baseOptions)
+      : baseOptions;
 
     const response = await fetch(uploadUrl, requestOptions);
     if (!response.ok) throw new Error(`HTTP ${response.status}`);

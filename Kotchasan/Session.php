@@ -1,5 +1,4 @@
 <?php
-
 namespace Kotchasan;
 
 use Kotchasan\Database;

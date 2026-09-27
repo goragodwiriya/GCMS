@@ -10,6 +10,48 @@
  * @license https://www.kotchasan.com/license/
  */
 
+/**
+ * Icon + example placeholder per property `name`, applied to every property
+ * panel input so they read consistently regardless of field type. Keyed by
+ * property name (not field type) since the same property (e.g. "label",
+ * "required") is reused across many field types in FieldTypeRegistry.
+ */
+const FB_PROPERTY_META = {
+  label: {icon: 'icon-edit'},
+  placeholder: {icon: 'icon-edit'},
+  value: {icon: 'icon-edit'},
+  title: {icon: 'icon-edit'},
+  description: {icon: 'icon-file', placeholder: 'Optional helper text shown under the title'},
+  maxLength: {icon: 'icon-number'},
+  minLength: {icon: 'icon-number'},
+  pattern: {icon: 'icon-edit', placeholder: 'e.g. ^[0-9]{5}$'},
+  options: {icon: 'icon-code', placeholder: '[{"value":"1","label":"Option 1"}]'},
+  dataSource: {icon: 'icon-link', placeholder: 'e.g. api/index/departments (GET, returns {data:[{value,text}]})'},
+  min: {icon: 'icon-number'},
+  max: {icon: 'icon-number'},
+  step: {icon: 'icon-number'},
+  rows: {icon: 'icon-number'},
+  allowedTypes: {icon: 'icon-file', placeholder: 'e.g. jpg,png,pdf'},
+  maxFileSize: {icon: 'icon-number', placeholder: 'e.g. 2097152 (2MB in bytes)'},
+  maxSelections: {icon: 'icon-number'},
+  maxTags: {icon: 'icon-number'},
+  suggestions: {icon: 'icon-search', placeholder: 'e.g. Bangkok,Chiang Mai,Phuket'},
+  separator: {icon: 'icon-minus', placeholder: ','},
+  color: {icon: 'icon-color'},
+  style: {icon: 'icon-border_horizontal'},
+  thickness: {icon: 'icon-number'},
+  collapsible: {icon: 'icon-expand'},
+  collapsed: {icon: 'icon-collapse'},
+  columns: {icon: 'icon-cols', placeholder: '[{"width":50,"fields":[]},{"width":50,"fields":[]}]'},
+  format: {icon: 'icon-menus', placeholder: 'e.g. YYYY-MM-DD'},
+  minDate: {icon: 'icon-number'},
+  maxDate: {icon: 'icon-number'},
+  minDateTime: {icon: 'icon-number'},
+  maxDateTime: {icon: 'icon-number'},
+  minTime: {icon: 'icon-number'},
+  maxTime: {icon: 'icon-number'}
+};
+
 const FormBuilderManager = {
   config: {
     propertyPanelSelector: '#property-panel',
@@ -175,6 +217,16 @@ const FormBuilderManager = {
     // Store reference to the actual input element for later access
     wrapperElement._fbInputElement = inputElement;
     wrapperElement._fbInstance = fieldInstance;
+    // Element carrying the icon-*/form-control class (see ElementFactory.createWrapper)
+    wrapperElement._fbIconContainer = fieldInstance.container || wrapperElement;
+
+    // Clean/runtime mode: the factory's create() already fully initialised this
+    // element (options, placeholder, picker, ...). Mark it so a later
+    // FormManager/ElementManager enhance() pass skips it — re-enhancing an
+    // already-built element duplicates the placeholder option (and date pickers).
+    if (options.clean && inputElement && inputElement.dataset) {
+      inputElement.dataset.noEnhance = 'true';
+    }
 
     // Add FormBuilder specific attributes to wrapper (only if not clean)
     if (!options.clean) {
@@ -196,6 +248,16 @@ const FormBuilderManager = {
     return wrapperElement;
   },
 
+  /**
+   * Build a checkbox field definition for the builder canvas.
+   *
+   * Assigns a generated field id when `config.id` is missing, so every field on
+   * the canvas stays addressable.
+   *
+   * @param {Object} [config={}] - Field properties such as label, name and required.
+   * @param {Object} [options={}] - Placement options, e.g. target row or column.
+   * @returns {Object} - The field definition that was added.
+   */
   createCheckbox(config = {}, options = {}) {
     // Generate unique field ID if not provided
     if (!config.id) {
@@ -214,6 +276,7 @@ const FormBuilderManager = {
     const label = document.createElement('label');
     label.htmlFor = config.id;
     label.textContent = config.label || 'Checkbox Field';
+    label.setAttribute('data-i18n', '');
     wrapperElement.appendChild(label);
 
     // Comment/help text
@@ -222,9 +285,7 @@ const FormBuilderManager = {
       commentEl.className = 'comment';
       commentEl.id = `result_${config.id}`;
       commentEl.textContent = config.comment;
-      if (config.i18nComment) {
-        commentEl.setAttribute('data-i18n', config.i18nComment === true ? '' : config.i18nComment);
-      }
+      commentEl.setAttribute('data-i18n', '');
       wrapperElement.appendChild(commentEl);
     }
 
@@ -245,6 +306,16 @@ const FormBuilderManager = {
     return wrapperElement;
   },
 
+  /**
+   * Build a radio group field definition for the builder canvas.
+   *
+   * Assigns a generated field id when `config.id` is missing, so every field on
+   * the canvas stays addressable.
+   *
+   * @param {Object} [config={}] - Field properties such as label, name and required.
+   * @param {Object} [options={}] - Placement options, e.g. target row or column.
+   * @returns {Object} - The field definition that was added.
+   */
   createRadio(config = {}, options = {}) {
     // Generate unique field ID if not provided
     if (!config.id) {
@@ -299,9 +370,7 @@ const FormBuilderManager = {
       commentEl.className = 'comment';
       commentEl.id = `result_${config.id}`;
       commentEl.textContent = config.comment;
-      if (config.i18nComment) {
-        commentEl.setAttribute('data-i18n', config.i18nComment === true ? '' : config.i18nComment);
-      }
+      commentEl.setAttribute('data-i18n', '');
       wrapperElement.appendChild(commentEl);
     }
 
@@ -319,24 +388,35 @@ const FormBuilderManager = {
     return wrapperElement;
   },
 
+  /**
+   * Build a icon picker field definition for the builder canvas.
+   *
+   * Assigns a generated field id when `config.id` is missing, so every field on
+   * the canvas stays addressable.
+   *
+   * @param {Object} [config={}] - Field properties such as label, name and required.
+   * @param {Object} [options={}] - Placement options, e.g. target row or column.
+   * @returns {Object} - The field definition that was added.
+   */
   createIconSelect(config = {}, options = {}) {
     // Generate unique field ID if not provided
     if (!config.id) {
-      config.id = this.generateFieldId('icon-select');
+      config.id = this.generateFieldId('icons');
     }
 
     const wrapperElement = document.createElement('div');
-    wrapperElement.className = 'icon-select-group';
+    wrapperElement.className = 'icons-select-group';
 
     // Label
     if (config.label) {
       const labelEl = document.createElement('label');
+      labelEl.setAttribute('data-i18n', '');
       labelEl.textContent = config.label;
       wrapperElement.appendChild(labelEl);
     }
 
     const radioGroup = document.createElement('div');
-    radioGroup.className = 'icon-radios';
+    radioGroup.className = 'icons-radios';
 
     const iconOptions = config.icons || [
       'icon-email', 'icon-user', 'icon-customer', 'icon-password', 'icon-phone', 'icon-address',
@@ -382,6 +462,17 @@ const FormBuilderManager = {
     return wrapperElement;
   },
 
+  /**
+   * Build an input field of the given type.
+   *
+   * The generic constructor the typed helpers delegate to; `type` chooses which
+   * entry in FieldTypeRegistry is used and seeds the generated field id.
+   *
+   * @param {string} type - Field type, e.g. `text`, `email`, `number`.
+   * @param {Object} [config={}] - Field properties such as label, name and required.
+   * @param {Object} [options={}] - Placement options, e.g. target row or column.
+   * @returns {Object} - The field definition that was added.
+   */
   createInput(type, config = {}, options = {}) {
     // Generate unique field ID if not provided
     if (!config.id) {
@@ -412,9 +503,7 @@ const FormBuilderManager = {
     const labelEl = document.createElement('label');
     labelEl.htmlFor = config.id;
     labelEl.textContent = config.label || this.generateLabel(type);
-    if (config.i18nLabel) {
-      labelEl.setAttribute('data-i18n', config.i18nLabel === true ? '' : config.i18nLabel);
-    }
+    labelEl.setAttribute('data-i18n', '');
     wrapperElement.appendChild(labelEl);
 
     // Input wrapper with icon class (allow override)
@@ -439,14 +528,13 @@ const FormBuilderManager = {
       commentEl.className = 'comment';
       commentEl.id = `result_${config.id}`;
       commentEl.textContent = config.comment;
-      if (config.i18nComment) {
-        commentEl.setAttribute('data-i18n', config.i18nComment === true ? '' : config.i18nComment);
-      }
+      commentEl.setAttribute('data-i18n', '');
       wrapperElement.appendChild(commentEl);
     }
 
     // Store reference to the actual input element for later access
     wrapperElement._fbInputElement = inputElement;
+    wrapperElement._fbIconContainer = controlSpan;
 
     if (!options.clean) {
       // Add FormBuilder specific attributes to wrapper
@@ -462,6 +550,16 @@ const FormBuilderManager = {
     return wrapperElement;
   },
 
+  /**
+   * Build a fieldset field definition for the builder canvas.
+   *
+   * Assigns a generated field id when `config.id` is missing, so every field on
+   * the canvas stays addressable. Fieldsets group other fields rather than collecting a value of their own.
+   *
+   * @param {Object} [config={}] - Field properties such as label, name and required.
+   * @param {Object} [options={}] - Placement options, e.g. target row or column.
+   * @returns {Object} - The field definition that was added.
+   */
   createFieldset(config = {}, options = {}) {
     // Generate unique field ID if not provided
     if (!config.id) {
@@ -487,6 +585,7 @@ const FormBuilderManager = {
     // Title/Legend
     if (config.title) {
       const legend = document.createElement('legend');
+      legend.setAttribute('data-i18n', '');
       legend.textContent = config.title;
       fieldsetElement.appendChild(legend);
     }
@@ -495,6 +594,7 @@ const FormBuilderManager = {
     if (config.description) {
       const desc = document.createElement('p');
       desc.className = 'fieldset-description';
+      desc.setAttribute('data-i18n', '');
       desc.textContent = config.description;
       fieldsetElement.appendChild(desc);
     }
@@ -734,6 +834,16 @@ const FormBuilderManager = {
   },
 
 
+  /**
+   * Build a divider field definition for the builder canvas.
+   *
+   * Assigns a generated field id when `config.id` is missing, so every field on
+   * the canvas stays addressable. Dividers are presentational and submit no value.
+   *
+   * @param {Object} [config={}] - Field properties such as label, name and required.
+   * @param {Object} [options={}] - Placement options, e.g. target row or column.
+   * @returns {Object} - The field definition that was added.
+   */
   createDivider(config = {}, options = {}) {
     // Generate unique field ID if not provided
     if (!config.id) {
@@ -804,6 +914,16 @@ const FormBuilderManager = {
     // Apply form settings
     if (schema.settings) {
       this.applyFormSettings(formElement, schema.settings);
+    }
+
+    // Apply caller-provided attributes (e.g. data-form, data-ajax-submit, action)
+    // Must happen before FormManager.initForm reads the form configuration
+    if (options.formAttributes && typeof options.formAttributes === 'object') {
+      Object.entries(options.formAttributes).forEach(([name, value]) => {
+        if (value !== undefined && value !== null) {
+          formElement.setAttribute(name, value);
+        }
+      });
     }
 
     const rowFieldIds = new Set();
@@ -878,7 +998,8 @@ const FormBuilderManager = {
       const saveBtn = document.createElement('button');
       saveBtn.type = 'submit';
       saveBtn.className = 'btn btn-primary icon-save';
-      saveBtn.textContent = 'Save'; // Default text, data-i18n will handle translation if present
+      const submitLabel = options.submitLabel || 'Save';
+      saveBtn.textContent = (window.Now && typeof Now.translate === 'function') ? Now.translate(submitLabel) : submitLabel;
       saveBtn.setAttribute('data-i18n', '');
 
       submitFieldset.appendChild(saveBtn);
@@ -987,6 +1108,11 @@ const FormBuilderManager = {
    * @param {Object} config Field configuration
    */
   makeFieldInteractive(fieldElement, config) {
+    // Builder-mode marker class used by insertion-point/ordering selectors
+    if (!fieldElement.classList.contains('fb-row') && !fieldElement.classList.contains('fb-fieldset')) {
+      fieldElement.classList.add('fb-field');
+    }
+
     // Add selection capability
     fieldElement.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -1064,13 +1190,16 @@ const FormBuilderManager = {
 
     const title = document.createElement('h3');
     title.textContent = meta?.label || field.type;
+    title.setAttribute('data-i18n', '');
     this.propertyPanel.appendChild(title);
 
     const isLayoutType = ['row', 'fieldset', 'divider'].includes(field.type);
     if (!isLayoutType) {
       const nameRow = document.createElement('div');
-      nameRow.className = 'fb-prop-row';
+      const wrapper = document.createElement('div');
+      wrapper.className = 'form-control icon-edit';
       const nameLabel = document.createElement('label');
+      nameLabel.setAttribute('data-i18n', '');
       nameLabel.textContent = 'Field Name';
       const nameInput = document.createElement('input');
       nameInput.type = 'text';
@@ -1080,7 +1209,8 @@ const FormBuilderManager = {
       nameInput.addEventListener('input', (e) => this._onPropertyInput(e));
       nameInput.addEventListener('change', (e) => this._onPropertyInput(e));
       nameRow.appendChild(nameLabel);
-      nameRow.appendChild(nameInput);
+      wrapper.appendChild(nameInput);
+      nameRow.appendChild(wrapper);
       this.propertyPanel.appendChild(nameRow);
     }
 
@@ -1096,8 +1226,9 @@ const FormBuilderManager = {
     // delete button
     const del = document.createElement('button');
     del.type = 'button';
-    del.className = 'fb-prop-delete';
+    del.className = 'btn btn-danger icon-delete';
     del.textContent = 'Delete Field';
+    del.setAttribute('data-i18n', '');
     del.addEventListener('click', () => {
       this.removeField(fieldId);
     });
@@ -1117,24 +1248,26 @@ const FormBuilderManager = {
 
     const titleText = '{LNG_Form} {LNG_Settings}';
     const title = document.createElement('h3');
-    title.textContent = Now.translate(titleText);
-    title.setAttribute('data-i18n', titleText);
+    title.textContent = titleText;
+    title.setAttribute('data-i18n', '');
     this.propertyPanel.appendChild(title);
 
     const schema = this.getSchema();
 
     // Helper to build a labeled input row
-    const buildRow = (labelText, inputEl) => {
+    const buildRow = (labelText, inputEl, className) => {
       const row = document.createElement('div');
-      row.className = 'fb-prop-row';
       if (labelText) {
         const label = document.createElement('label');
-        label.textContent = Now.translate(labelText);
-        label.setAttribute('data-i18n', labelText);
+        label.textContent = labelText;
+        label.setAttribute('data-i18n', '');
         row.appendChild(label);
       }
-      inputEl.classList.add('fb-prop-input');
-      row.appendChild(inputEl);
+      const wrapper = document.createElement('div');
+      wrapper.className = 'form-control';
+      if (className) wrapper.classList.add(className);
+      wrapper.appendChild(inputEl);
+      row.appendChild(wrapper);
       return row;
     };
 
@@ -1148,7 +1281,7 @@ const FormBuilderManager = {
       this.state.currentSchema.metadata = this.state.currentSchema.metadata || {};
       this.state.currentSchema.metadata.title = e.target.value;
     });
-    this.propertyPanel.appendChild(buildRow('Form Name', nameInput));
+    this.propertyPanel.appendChild(buildRow('Form Name', nameInput, 'icon-edit'));
 
     // Description
     const descEl = document.createElement('textarea');
@@ -1159,7 +1292,7 @@ const FormBuilderManager = {
       this.state.currentSchema.metadata = this.state.currentSchema.metadata || {};
       this.state.currentSchema.metadata.description = e.target.value;
     });
-    this.propertyPanel.appendChild(buildRow('Description', descEl));
+    this.propertyPanel.appendChild(buildRow('Description', descEl, 'icon-file'));
 
     // Submission method select
     const methodSelect = document.createElement('select');
@@ -1167,6 +1300,7 @@ const FormBuilderManager = {
       const opt = document.createElement('option');
       opt.value = m;
       opt.textContent = m;
+      opt.setAttribute('data-i18n', '');
       methodSelect.appendChild(opt);
     });
     methodSelect.value = (schema.settings?.submission?.method || 'POST').toUpperCase();
@@ -1176,19 +1310,40 @@ const FormBuilderManager = {
       this.state.currentSchema.settings.submission = this.state.currentSchema.settings.submission || {};
       this.state.currentSchema.settings.submission.method = e.target.value;
     });
-    this.propertyPanel.appendChild(buildRow('Method', methodSelect));
+    this.propertyPanel.appendChild(buildRow('Method', methodSelect, 'icon-menus'));
+
+    // Require login before submitting (per-form access control, enforced server-side)
+    const requireLoginRow = document.createElement('div');
+    requireLoginRow.className = 'fb-prop-row';
+    const requireLoginInput = document.createElement('input');
+    requireLoginInput.type = 'checkbox';
+    requireLoginInput.className = 'switch';
+    requireLoginInput.id = 'fb-schema-require-login';
+    requireLoginInput.checked = !!(this.state.schemaSettings && this.state.schemaSettings.require_login);
+    requireLoginInput.addEventListener('change', (e) => {
+      this.state.schemaSettings = this.state.schemaSettings || {};
+      this.state.schemaSettings.require_login = e.target.checked;
+    });
+    const requireLoginLabel = document.createElement('label');
+    requireLoginLabel.htmlFor = requireLoginInput.id;
+    requireLoginLabel.textContent = 'Require login to submit';
+    requireLoginLabel.setAttribute('data-i18n', '');
+    requireLoginRow.appendChild(requireLoginInput);
+    requireLoginRow.appendChild(requireLoginLabel);
+    this.propertyPanel.appendChild(requireLoginRow);
 
     // Form ID
     const endpointInput = document.createElement('input');
     endpointInput.type = 'hidden';
     endpointInput.value = schema.metadata?.id || 0;
-    this.propertyPanel.appendChild(buildRow(null, endpointInput));
+    this.propertyPanel.appendChild(endpointInput);
 
     // Save button
     const saveBtn = document.createElement('button');
     saveBtn.type = 'button';
-    saveBtn.className = 'fb-prop-save';
-    saveBtn.textContent = 'Save Form Settings';
+    saveBtn.className = 'fb-prop-save btn btn-primary icon-save';
+    saveBtn.textContent = 'Save';
+    saveBtn.setAttribute('data-i18n', '');
     saveBtn.addEventListener('click', async () => {
       const name = this.state.schemaName || (this.state.currentSchema && this.state.currentSchema.metadata && this.state.currentSchema.metadata.title) || '';
       const description = this.state.currentSchema?.metadata?.description || '';
@@ -1205,15 +1360,18 @@ const FormBuilderManager = {
     else if (propType === 'checkbox') fieldType = 'checkbox';
     else if (propType === 'select') fieldType = 'select';
     else if (propType === 'textarea' || propType === 'options-editor' || propType === 'datasource-editor' || propType === 'tags') fieldType = 'textarea';
-    else if (propType === 'icon-select') fieldType = 'icon-select';
+    else if (propType === 'icons') fieldType = 'icons';
+
+    const meta = FB_PROPERTY_META[prop.name] || {};
 
     const config = {
       id: `prop_${fieldId}_${prop.name}`,
       label: prop.label || prop.name,
-      placeholder: prop.placeholder || '',
+      placeholder: prop.placeholder || meta.placeholder || '',
+      icon: prop.icon || meta.icon || '',
       value: currentVal,
       options: prop.options || [],
-      // For icon-select specific options if passed
+      // For icons specific options if passed
       name: `prop_${fieldId}_${prop.name}`, // Group name for radios
       _fbNoInteractive: true
     };
@@ -1233,7 +1391,7 @@ const FormBuilderManager = {
         fieldElement = this.createCheckbox(config);
       } else if (fieldType === 'number') {
         fieldElement = this.createField('number', config);
-      } else if (fieldType === 'icon-select') {
+      } else if (fieldType === 'icons') {
         fieldElement = this.createIconSelect(config);
       } else {
         fieldElement = this.createField('text', config);
@@ -1242,10 +1400,8 @@ const FormBuilderManager = {
       return null;
     }
 
-    fieldElement.classList.add('fb-prop-field');
-
-    // Handle special listeners for icon-select
-    if (fieldType === 'icon-select') {
+    // Handle special listeners for icons
+    if (fieldType === 'icons') {
       const inputs = fieldElement._fbInputs || [];
       inputs.forEach(input => {
         input.dataset.propName = prop.name;
@@ -1295,7 +1451,7 @@ const FormBuilderManager = {
     let newVal;
     if (input.type === 'checkbox') newVal = input.checked;
     else if (input.type === 'radio') {
-      // For icon-select (radio), we take value of this specific radio if checked,
+      // For icons (radio), we take value of this specific radio if checked,
       // but typically we just want the value of the group.
       // Since _onPropertyInput triggers on 'change' of a specific radio, this.value is the new icon class.
       newVal = input.value;
@@ -1605,6 +1761,20 @@ const FormBuilderManager = {
     return null;
   },
 
+  /**
+   * Move a field into another column of the layout.
+   *
+   * Called while dragging on the builder canvas; updates the schema so the field
+   * belongs to `targetColumn` and re-renders the affected rows.
+   *
+   * A fieldset is refused: it groups other fields, so it cannot itself sit inside
+   * a row column. The user is told through NotificationManager when that happens.
+   *
+   * @param {string} fieldId - Id of the field being moved.
+   * @param {Event} event - The drag event that triggered the move.
+   * @param {HTMLElement|number} targetColumn - Column the field is dropped into.
+   * @returns {void}
+   */
   handleFieldMoveToColumn(fieldId, event, targetColumn) {
     const fieldElement = document.querySelector(`[data-fb-id="${fieldId}"]`);
     if (!fieldElement || !targetColumn) return;
@@ -2084,10 +2254,12 @@ const FormBuilderManager = {
       copyBtn.type = 'button';
       copyBtn.className = 'btn icon-copy';
       copyBtn.textContent = options.copyLabel || 'Copy';
+      copyBtn.setAttribute('data-i18n', '');
 
       const pre = document.createElement('pre');
       pre.className = 'fb-schema-json-pre';
       pre.textContent = pretty;
+      pre.setAttribute('data-i18n', '');
 
       copyBtn.addEventListener('click', async () => {
         try {
@@ -2152,6 +2324,21 @@ const FormBuilderManager = {
   },
 
   /**
+   * Unwrap an ApiService/HttpClient response wrapper to the API body
+   * ApiService resolves to {success: httpOk, status, data: <API JSON body>}
+   * while the API body itself is {success, message, data}
+   *
+   * @param {Object} result Response wrapper or API body
+   * @returns {Object} API body
+   */
+  _unwrapApiResponse(result) {
+    if (result && typeof result.data === 'object' && result.data !== null && 'success' in result.data) {
+      return result.data;
+    }
+    return result;
+  },
+
+  /**
    * Trigger custom event
    *
    * @param {string} eventName Event name
@@ -2176,13 +2363,22 @@ const FormBuilderManager = {
     // If numeric, fetch from API
     if (typeof schema === 'number' || (typeof schema === 'string' && !isNaN(schema))) {
       try {
-        const requestOptions = Now.applyRequestLanguage({method: 'GET'});
-        const response = await fetch(`${this.config.apiEndpoint}/schema?id=${schema}`, requestOptions);
-        const result = await response.json();
-        if (result.success) {
-          schemaData = result.data;
+        let result;
+        if (window.ApiService && typeof ApiService.get === 'function') {
+          result = await ApiService.get(`${this.config.apiEndpoint}/schema`, {id: schema});
+          result = this._unwrapApiResponse(result);
         } else {
-          throw new Error(result.message || 'Failed to load schema');
+          const requestOptions = Now.applyRequestLanguage({method: 'GET'});
+          const response = await fetch(`${this.config.apiEndpoint}/schema?id=${schema}`, requestOptions);
+          result = await response.json();
+        }
+        if (result && result.success) {
+          schemaData = result.data;
+          if (result.data && result.data.settings) {
+            this.state.schemaSettings = result.data.settings;
+          }
+        } else {
+          throw new Error((result && result.message) || 'Failed to load schema');
         }
       } catch (error) {
         console.error('Failed to load schema:', error);
@@ -2562,7 +2758,21 @@ const FormBuilderManager = {
         // update label if exists
         const labelEl = dom.querySelector('label, .fb-field-label');
         const labelText = fieldConfig.label || this.state.currentSchema.fields[index].label;
-        if (labelEl && labelText !== undefined) labelEl.textContent = labelText;
+        if (labelEl && labelText !== undefined) {
+          labelEl.textContent = labelText;
+          labelEl.setAttribute('data-i18n', '');
+        }
+
+        // update icon class on the form-control container (or wrapper for label-style fields)
+        if (fieldConfig.icon !== undefined) {
+          const iconContainer = dom._fbIconContainer || dom;
+          Array.from(iconContainer.classList)
+            .filter(cls => cls.startsWith('icon-'))
+            .forEach(cls => iconContainer.classList.remove(cls));
+          if (fieldConfig.icon) {
+            iconContainer.classList.add(fieldConfig.icon);
+          }
+        }
 
         // update input attributes if element stored
         const inputEl = dom._fbInputElement || dom.querySelector('input, textarea, select');
@@ -2726,24 +2936,32 @@ const FormBuilderManager = {
   async saveSchemaToServer(name, description, status = 'draft') {
     const schema = this.getSchema();
 
+    const payload = {
+      id: this.state.schemaId || null,
+      name: name,
+      description: description,
+      status: status,
+      settings: this.state.schemaSettings || undefined,
+      schema_json: schema
+    };
+
     try {
-      const requestOptions = Now.applyRequestLanguage({
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({
-          id: this.state.schemaId || null,
-          name: name,
-          description: description,
-          status: status,
-          schema_json: schema
-        })
-      });
+      let result;
+      if (window.ApiService && typeof ApiService.post === 'function') {
+        // ApiService handles CSRF token, auth and retries
+        result = await ApiService.post(`${this.config.apiEndpoint}/schema`, payload);
+        result = this._unwrapApiResponse(result);
+      } else {
+        const requestOptions = Now.applyRequestLanguage({
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify(payload)
+        });
+        const response = await fetch(`${this.config.apiEndpoint}/schema`, requestOptions);
+        result = await response.json();
+      }
 
-      const response = await fetch(`${this.config.apiEndpoint}/schema`, requestOptions);
-
-      const result = await response.json();
-
-      if (result.success) {
+      if (result && result.success) {
         this.state.schemaId = result.data.id;
         this.triggerEvent('schemaSaved', {id: result.data.id});
       }
@@ -2751,7 +2969,7 @@ const FormBuilderManager = {
       return result;
     } catch (error) {
       console.error('Failed to save schema:', error);
-      return {success: false, message: error.message};
+      return {success: false, message: error?.data?.message || error.message};
     }
   },
 
@@ -2887,7 +3105,90 @@ const FormBuilderManager = {
       reader.onerror = () => reject(new Error('Failed to read file'));
       reader.readAsText(file);
     });
+  },
+
+  /**
+   * Runtime renderer (declarative): fetch a JSON form schema from an API and
+   * render a working, submittable form into `element`. No HTML comes from the
+   * API — only a field definition (fields/metadata); FormBuilder builds the
+   * real inputs via the existing ElementFactory classes and FormManager.
+   *
+   * Markup:
+   *   <div data-formbuilder-src="api/data/edit/schema"
+   *        data-load-query-params="true"
+   *        data-action="api/data/edit/save"></div>
+   *
+   * Reusable across projects — any endpoint returning {fields, metadata} works.
+   *
+   * @param {HTMLElement} element Host element carrying data-formbuilder-src
+   * @returns {Promise<void>}
+   */
+  async mountRuntime(element) {
+    if (!element || element._fbRuntimeMounted) return;
+    element._fbRuntimeMounted = true;
+
+    const src = element.dataset.formbuilderSrc || element.dataset.src;
+    if (!src) return;
+
+    // Append the current page query string (e.g. ?entity=&id=) when requested,
+    // mirroring FormManager's data-load-query-params behaviour.
+    let url = src;
+    if (element.dataset.loadQueryParams === 'true') {
+      const qs = window.location.search.replace(/^\?/, '');
+      if (qs) url += (url.includes('?') ? '&' : '?') + qs;
+    }
+
+    try {
+      // The schema carries the record's current values baked in, so it must
+      // never come from a cache: ApiService caches GET for 60s by default and
+      // nothing invalidates it on submit (FormManager.submitAjax posts through
+      // window.http, not ApiService.post). Without this the form would still
+      // show the pre-save values when the user edits the same record again.
+      // Mirrors FormManager.buildApiGetOptions() for data-load-api.
+      const res = await ApiService.get(url, {}, {
+        deduplicate: false,
+        headers: {'Cache-Control': 'no-cache', 'Pragma': 'no-cache'},
+        cache: {enabled: false, storageType: 'no-store', expiry: {get: 0}}
+      });
+      // Unwrap {success, data:{fields, metadata}} or a bare schema.
+      let schema = (res && res.data !== undefined) ? res.data : res;
+      if (schema && schema.data && schema.data.fields) schema = schema.data;
+      if (!schema || !Array.isArray(schema.fields)) {
+        throw new Error('Invalid form schema');
+      }
+
+      const formAttributes = {
+        'data-form': (schema.metadata && schema.metadata.id) || 'runtime-form',
+        'data-ajax-submit': 'true',
+        'data-validate': 'true',
+        'method': 'post',
+        'autocomplete': 'off'
+      };
+      if (element.dataset.action) formAttributes.action = element.dataset.action;
+      if (element.dataset.confirm) formAttributes['data-confirm'] = element.dataset.confirm;
+
+      element.innerHTML = '';
+      this.renderForm(schema, element, {
+        clean: true,
+        formAttributes,
+        submitLabel: element.dataset.submitLabel || 'Save'
+      });
+    } catch (err) {
+      element._fbRuntimeMounted = false; // allow a retry on next mount
+      console.error('FormBuilderManager.mountRuntime failed:', err);
+      if (window.Toast && typeof Toast.error === 'function') {
+        Toast.error(err.message || 'Failed to load form');
+      }
+    }
   }
 };
 
 window.FormBuilderManager = FormBuilderManager;
+
+// Declarative auto-init: render a runtime form for any [data-formbuilder-src]
+// element added to the DOM (route change, modal open, etc.).
+if (window.CoreObserver && typeof CoreObserver.onAdd === 'function') {
+  CoreObserver.onAdd('[data-formbuilder-src]', (element) => {
+    FormBuilderManager.mountRuntime(element);
+  });
+}

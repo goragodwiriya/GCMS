@@ -1,3 +1,18 @@
+/**
+ * ReactiveManager
+ *
+ * The reactivity core of Now.js — objects are wrapped in a Proxy that records which
+ * effect read which property (track), and a write wakes only the effects concerned
+ * (trigger). It provides `reactive`, `computed`, `effect` and `watch`, and ties
+ * component state to the lifecycle.
+ *
+ * Updates are batched through `queueMicrotask` and flushed once, so many writes
+ * in the same tick render a single time.
+ *
+ * Garbage collection works at two levels with separate jobs:
+ * - `sweepDeadWatchers()` sweeps dead watchers system-wide, on a timer
+ * - `cleanup(computation)` releases one computation’s dependencies before it reruns
+ */
 const ReactiveManager = {
   config: {
     debug: false,
@@ -16,9 +31,17 @@ const ReactiveManager = {
     updateQueued: false,
     rawToProxy: new WeakMap(),
     proxyToRaw: new WeakMap(),
-    cleanedEffects: new WeakSet()
+    cleanedEffects: new WeakSet(),
+    batchDepth: 0,
+    cleanupTimer: null
   },
 
+  /**
+   * Set up the manager and start the periodic sweeper.
+   *
+   * @param {Object} [options={}] - Values merged over the config.
+   * @returns {Promise<Object>} - The manager itself, for chaining.
+   */
   async init(options = {}) {
     this.config = {...this.config, ...options};
 
@@ -27,6 +50,16 @@ const ReactiveManager = {
     return this;
   },
 
+  /**
+   * Record that the running effect read this property.
+   *
+   * Does nothing when no effect is running, so reading outside an effect leaves no
+   * dependency behind.
+   *
+   * @param {Object} target - The object being read.
+   * @param {string} prop - The property being read.
+   * @returns {void}
+   */
   track(target, prop) {
     if (!this.state.currentEffect) return;
 
@@ -46,6 +79,13 @@ const ReactiveManager = {
     effects.add(this.state.currentEffect);
   },
 
+  /**
+   * Wake every effect that depends on the property just written.
+   *
+   * @param {Object} target - The object being written.
+   * @param {string} prop - The property being written.
+   * @returns {void}
+   */
   trigger(target, prop) {
     const targetId = target.__reactiveId;
     if (!targetId) return;
@@ -65,6 +105,11 @@ const ReactiveManager = {
     this.runEffects(effects);
   },
 
+  /**
+   * Wake every registered effect that is still active.
+   *
+   * @returns {void}
+   */
   triggerEffects() {
     this.state.effects.forEach(effect => {
       if (effect.active) {
@@ -78,6 +123,12 @@ const ReactiveManager = {
     });
   },
 
+  /**
+   * Run several effects, queued or immediately depending on the config.
+   *
+   * @param {Iterable<Function>} effects - The effects to run.
+   * @returns {void}
+   */
   runEffects(effects) {
     effects.forEach(effect => {
       if (effect.active) {
@@ -91,6 +142,12 @@ const ReactiveManager = {
     });
   },
 
+  /**
+   * Run one effect, routing any error into ErrorManager.
+   *
+   * @param {Function} effect - The effect to run.
+   * @returns {void}
+   */
   runEffect(effect) {
     try {
       effect();
@@ -102,6 +159,13 @@ const ReactiveManager = {
     }
   },
 
+  /**
+   * Schedule the update queue to flush on the next microtask.
+   *
+   * A guard flag prevents double scheduling, so many writes in one tick flush once.
+   *
+   * @returns {void}
+   */
   scheduleUpdate() {
     if (!this.state.updateQueued) {
       this.state.updateQueued = true;
@@ -111,6 +175,11 @@ const ReactiveManager = {
     }
   },
 
+  /**
+   * Run every effect waiting in the queue, then clear it.
+   *
+   * @returns {void}
+   */
   flushUpdates() {
     if (!this.state.updateQueued) return;
 
@@ -125,6 +194,15 @@ const ReactiveManager = {
     });
   },
 
+  /**
+   * Wrap an object to make it reactive.
+   *
+   * Non-objects are returned unchanged; objects get a `__reactiveId` used as the key
+   * in the dependency table.
+   *
+   * @param {Object} target - The object to make reactive.
+   * @returns {Proxy|*} - The wrapping Proxy, or the value itself when not an object.
+   */
   reactive(target) {
     if (!target || typeof target !== 'object') {
       return target;
@@ -170,6 +248,12 @@ const ReactiveManager = {
     });
   },
 
+  /**
+   * Run a function, and run it again whenever a value it read changes.
+   *
+   * @param {Function} fn - The function to track.
+   * @returns {Function} - The effect; set `.active = false` to stop it.
+   */
   effect(fn) {
     const effect = () => {
       if (!effect.active) return;
@@ -198,10 +282,24 @@ const ReactiveManager = {
     };
   },
 
+  /**
+   * Check whether a value is reactive.
+   *
+   * @param {*} value - The value to check.
+   * @returns {boolean} - true when it is reactive.
+   */
   isReactive(value) {
     return Boolean(value && value.__isReactive);
   },
 
+  /**
+   * Derive a value from state and cache it until a source value changes.
+   *
+   * Computed lazily — recalculated only on the first read after being marked dirty.
+   *
+   * @param {Function} getter - The function returning the value.
+   * @returns {Object} - An object with `.value`; read it for the latest value.
+   */
   computed(getter) {
     let value;
     let dirty = true;
@@ -229,6 +327,17 @@ const ReactiveManager = {
     };
   },
 
+  /**
+   * Watch a value. Two shapes are accepted.
+   *
+   * A function as the first argument becomes `watchEffect(fn, callback)`;
+   * an object becomes `watchProp(target, prop, callback)`.
+   *
+   * @param {Function|Object} arg1 - The function to track, or the target object.
+   * @param {Function|string} arg2 - The callback, or the property name.
+   * @param {Function|Object} [arg3] - The callback, or options.
+   * @returns {Function} - A function that stops watching.
+   */
   watch(arg1, arg2, arg3) {
     if (typeof arg1 === 'function') {
       return this.watchEffect(arg1, arg2);
@@ -237,6 +346,13 @@ const ReactiveManager = {
     return this.watchProp(arg1, arg2, arg3);
   },
 
+  /**
+   * Watch a function’s result and call the callback when it changes.
+   *
+   * @param {Function} fn - The function returning the watched value.
+   * @param {Function} callback - Called when the result changes.
+   * @returns {Function} - A function that stops watching.
+   */
   watchEffect(fn, callback) {
     let isActive = true;
     const effect = () => {
@@ -275,6 +391,15 @@ const ReactiveManager = {
     };
   },
 
+  /**
+   * Watch a single property of an object.
+   *
+   * @param {Object} target - The target object.
+   * @param {string} prop - The property to watch.
+   * @param {Function} callback - Called when the value changes.
+   * @param {Object} [options={}] - Extra options.
+   * @returns {Function} - A function that stops watching.
+   */
   watchProp(target, prop, callback, options = {}) {
     if (!target.__reactiveId) {
       target.__reactiveId = this.generateId();
@@ -313,33 +438,22 @@ const ReactiveManager = {
     };
   },
 
+  /**
+   * Check whether an object is already wrapped by this manager’s Proxy.
+   *
+   * @param {*} obj - The value to check.
+   * @returns {boolean} - true when it is a reactive Proxy.
+   */
   isProxy(obj) {
     return Boolean(obj && obj.__isReactive);
   },
 
-  findComponentForTarget(target) {
-    for (const [componentId, state] of this.state.componentStates) {
-      if (this.isStateTarget(target, state)) {
-        return ComponentManager.instances.get(componentId);
-      }
-    }
-    return null;
-  },
-
-  isStateTarget(target, state) {
-    if (target === state) return true;
-
-    for (const value of Object.values(state)) {
-      if (value && typeof value === 'object') {
-        if (value === target || this.isStateTarget(target, value)) {
-          return true;
-        }
-      }
-    }
-
-    return false;
-  },
-
+  /**
+   * Queue an effect, or run it immediately when batchUpdates is off.
+   *
+   * @param {Function} effect - The effect to run.
+   * @returns {void}
+   */
   queueEffect(effect) {
     if (!effect.active) return;
 
@@ -355,28 +469,29 @@ const ReactiveManager = {
     }
   },
 
-  createComponentState(component) {
-    try {
-      if (!component.reactive) {
-        return component.state;
-      }
-
-      const reactiveState = this.reactive(component.state);
-      this.state.componentStates.set(component.id, reactiveState);
-      return reactiveState;
-    } catch (error) {
-      ErrorManager.handle(error, {
-        context: 'ReactiveManager.createComponentState',
-        data: {component}
-      });
-      return component.state;
-    }
-  },
-
+  /**
+   * Read a value from state by dot path.
+   *
+   * @param {Object} state - The state to read.
+   * @param {string} path - A dot path such as `user.name`.
+   * @returns {*} - The value at that path, or undefined.
+   */
   getStateValue(state, path) {
     return path.split('.').reduce((obj, key) => obj?.[key], state);
   },
 
+  /**
+   * Watch a whole object, nested values included.
+   *
+   * Comparison snapshots through `JSON.parse(JSON.stringify())` every time, so it
+   * **cannot be used on objects with circular references**, and is expensive on
+   * large structures.
+   *
+   * @param {Object} target - The object to watch.
+   * @param {Function} callback - Called when anything inside changes.
+   * @param {Object} [options={}] - Extra options.
+   * @returns {Function} - A function that stops watching.
+   */
   watchDeep(target, callback, options = {}) {
     return this.watch(
       () => JSON.parse(JSON.stringify(target)),
@@ -385,6 +500,18 @@ const ReactiveManager = {
     );
   },
 
+  /**
+   * Write a value into state by dot path.
+   *
+   * The whole path is refused when any segment is `__proto__`, `constructor` or
+   * `prototype`, to block prototype pollution. The value is deep-cloned first, so a
+   * caller mutating the original afterwards does not touch the state.
+   *
+   * @param {Object} state - The state to write into.
+   * @param {string} path - The dot path.
+   * @param {*} value - The value to write.
+   * @returns {void}
+   */
   setStateValue(state, path, value) {
     const clonedValue = this.deepClone(value);
     const parts = path.split('.');
@@ -399,34 +526,12 @@ const ReactiveManager = {
     }
   },
 
-  bindComponentEvents(component) {
-    if (!component.events) return;
-
-    try {
-      const eventManager = Now.getManager('event');
-      if (!eventManager) {
-        ErrorManager.handle('Event system not available', {
-          context: 'ReactiveManager.bindComponentEvents'
-        });
-        return;
-      }
-
-      Object.entries(component.events).forEach(([eventName, handler]) => {
-        const boundHandler = handler.bind(component);
-        if (!component._eventHandlers) {
-          component._eventHandlers = new Map();
-        }
-        component._eventHandlers.set(eventName, boundHandler);
-        eventManager.on(eventName, boundHandler);
-      });
-    } catch (error) {
-      ErrorManager.handle(error, {
-        context: 'ReactiveManager.bindComponentEvents',
-        data: {component}
-      });
-    }
-  },
-
+  /**
+   * Detach the events bound to a component.
+   *
+   * @param {Object} component - The component to unbind.
+   * @returns {void}
+   */
   unbindComponentEvents(component) {
     if (!component._eventHandlers) return;
 
@@ -441,50 +546,14 @@ const ReactiveManager = {
     delete component._eventHandlers;
   },
 
-  createStateProxy() {
-    return new Proxy(this.state, {
-      set: (target, property, value) => {
-        if (Array.isArray(target) && /^\d+$/.test(property)) {
-          this.notifyArrayChange(target);
-        }
-
-        target[property] = value;
-        this.notifyChange(property);
-        return true;
-      }
-    });
-  },
-
-  notifyArrayChange(array) {
-    const watchers = this.state.watchers.get(array);
-    if (!watchers) return;
-
-    this.notifyWatchers(array, 'length', array.length);
-
-    watchers.forEach((watcherSet, key) => {
-      if (key !== 'length') {
-        this.notifyWatchers(array, key, array[key]);
-      }
-    });
-  },
-
-  notifyChange(property) {
-    const watchers = this.getWatchers(property);
-    watchers.forEach(watcher => {
-      try {
-        this.state.pendingUpdates.add(() => watcher(this.state[property]));
-        this.scheduleUpdate();
-
-        EventManager.emit('reactive:change', {
-          property,
-          value: this.state[property]
-        });
-      } catch (error) {
-        throw error;
-      }
-    });
-  },
-
+  /**
+   * Run a function as the current effect, so `track` can collect dependencies.
+   *
+   * The previous effect is saved and restored afterwards, so calls can nest.
+   *
+   * @param {Function} fn - The function to run while collecting dependencies.
+   * @returns {*} - Whatever fn returned.
+   */
   runWithTracking(fn) {
     const prevEffect = this.state.currentEffect;
     this.state.currentEffect = fn;
@@ -496,30 +565,47 @@ const ReactiveManager = {
     }
   },
 
+  /**
+   * Start the periodic sweeper and hook it to beforeunload and visibilitychange.
+   *
+   * All three call sites go to `sweepDeadWatchers()`. The timer stops while the
+   * page is hidden and starts again when it becomes visible.
+   *
+   * @returns {void}
+   */
   startCleanup() {
     this.state.cleanupTimer = setInterval(() => {
-      this.cleanup();
+      this.sweepDeadWatchers();
     }, this.config.cleanupInterval);
 
     window.addEventListener('beforeunload', () => {
-      this.cleanup();
+      this.sweepDeadWatchers();
       clearInterval(this.state.cleanupTimer);
     });
 
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'hidden') {
-        this.cleanup();
+        this.sweepDeadWatchers();
         clearInterval(this.state.cleanupTimer);
         this.state.cleanupTimer = null;
       } else if (!this.state.cleanupTimer) {
         this.state.cleanupTimer = setInterval(() => {
-          this.cleanup();
+          this.sweepDeadWatchers();
         }, this.config.cleanupInterval);
       }
     });
   },
 
-  cleanup() {
+  /**
+   * Sweep every dead watcher across the whole dependency table in one pass.
+   *
+   * Keys whose watchers have all gone are dropped, and a target left with no
+   * keys is dropped too, so dead dependencies do not pile up for the lifetime
+   * of the page.
+   *
+   * @returns {void}
+   */
+  sweepDeadWatchers() {
     for (const [target, deps] of this.state.dependencies) {
       for (const [key, watchers] of deps) {
         const activeWatchers = new Set(
@@ -537,14 +623,14 @@ const ReactiveManager = {
         this.state.dependencies.delete(target);
       }
     }
-
-    for (const [effect, cached] of this.state.computedCache) {
-      if (!this.isWatcherValid(effect)) {
-        this.state.computedCache.delete(effect);
-      }
-    }
   },
 
+  /**
+   * Check whether a watcher is still referenced in the dependency table.
+   *
+   * @param {Function} watcher - The watcher to check.
+   * @returns {boolean} - true while it is still referenced.
+   */
   isWatcherValid(watcher) {
     for (const deps of this.state.dependencies.values()) {
       for (const watchers of deps.values()) {
@@ -556,6 +642,12 @@ const ReactiveManager = {
     return false;
   },
 
+  /**
+   * Mark an effect as cleaned up.
+   *
+   * @param {Function} effect - The effect to clean up.
+   * @returns {void}
+   */
   cleanupEffect(effect) {
     if (!effect) return;
 
@@ -582,45 +674,19 @@ const ReactiveManager = {
     this.state.pendingUpdates.delete(effect);
   },
 
-  deepClone(value) {
-    if (typeof value !== 'object' || value === null) return value;
-    return JSON.parse(JSON.stringify(value));
-  },
-
+  /**
+   * Check that the state is a usable object.
+   *
+   * @param {*} state - The value to check.
+   * @returns {void}
+   * @throws {Error} - When it is not an object.
+   */
   validateState(state) {
     if (!state || typeof state !== 'object') {
       throw new Error('Invalid state object');
     }
   },
 
-  createComputation(fn, context) {
-    const computation = {
-      fn,
-      context,
-      dependencies: new Set(),
-      isComputing: false
-    };
-    this.state.effects.add(computation);
-    return computation;
-  },
-
-  runComputation(computation) {
-    if (!computation || computation.isComputing) return;
-
-    if (computation.context?._skipReactive) return;
-
-    computation.isComputing = true;
-    const previousEffect = this.state.currentEffect;
-    this.state.currentEffect = computation;
-
-    try {
-      this.cleanup(computation);
-      computation.fn.call(computation.context);
-    } finally {
-      computation.isComputing = false;
-      this.state.currentEffect = previousEffect;
-    }
-  },
 
   _bindComponentEvents(instance) {
     if (!instance || !instance.reactive) return;
@@ -660,6 +726,14 @@ const ReactiveManager = {
     }
   },
 
+  /**
+   * Create a component’s reactive state with a Proxy.
+   *
+   * The state is copied before wrapping, so the instance’s original is untouched.
+   *
+   * @param {Object} instance - component instance
+   * @returns {Proxy} - The Proxy-wrapped state.
+   */
   createComponentState(instance) {
     const state = {...instance.state};
 
@@ -699,15 +773,35 @@ const ReactiveManager = {
     }
   },
 
+  /**
+   * Release a computation’s dependencies.
+   *
+   * A thin wrapper around `cleanup(computation)`.
+   *
+   * @param {Object} computation - The computation to release.
+   * @returns {void}
+   */
   cleanupDependencies(computation) {
     if (!computation) return;
     this.cleanup(computation);
   },
 
+  /**
+   * Check whether a value can be iterated with for...of.
+   *
+   * @param {*} value - The value to check.
+   * @returns {boolean} - true when it has Symbol.iterator.
+   */
   isIterable(value) {
     return value != null && typeof value[Symbol.iterator] === 'function';
   },
 
+  /**
+   * Turn dependencies into an array, whether the source is a Set, an array or empty.
+   *
+   * @param {Set|Array|null} deps - The source dependencies.
+   * @returns {Array} - The dependencies as an array.
+   */
   getDependenciesArray(deps) {
     if (!deps) return [];
     if (this.isIterable(deps)) return Array.from(deps);
@@ -715,6 +809,14 @@ const ReactiveManager = {
     return [];
   },
 
+  /**
+   * Check whether this is a usable computation.
+   *
+   * Must be an object whose `fn` is a function and whose `dependencies` is a Set.
+   *
+   * @param {*} computation - The value to check.
+   * @returns {boolean} - true when it is usable.
+   */
   isValidComputation(computation) {
     return computation &&
       typeof computation === 'object' &&
@@ -722,6 +824,15 @@ const ReactiveManager = {
       computation.dependencies instanceof Set;
   },
 
+  /**
+   * Create a computation record, validating the arguments.
+   *
+   *
+   * @param {Function} fn - The computation’s function.
+   * @param {Object} context - The context bound to the computation.
+   * @returns {Object} - computation record
+   * @throws {Error} - When fn is not a function.
+   */
   createComputation(fn, context) {
     if (typeof fn !== 'function') {
       throw new Error('Computation must be a function');
@@ -742,6 +853,15 @@ const ReactiveManager = {
     throw new Error('Invalid computation created');
   },
 
+  /**
+   * Release one computation from every dependency table it ever read.
+   *
+   * Call it before rerunning a computation so stale dependencies do not linger.
+   * Sweeping dead watchers system-wide lives in `sweepDeadWatchers()`.
+   *
+   * @param {Object} computation - The computation to release.
+   * @returns {void}
+   */
   cleanup(computation) {
     if (!this.isValidComputation(computation)) return;
 
@@ -764,6 +884,14 @@ const ReactiveManager = {
     computation.dependencies.clear();
   },
 
+  /**
+   * Add a dependency to the running effect.
+   *
+   * Skipped when the context sets `_skipReactive`.
+   *
+   * @param {*} dep - The dependency to add.
+   * @returns {void}
+   */
   addDependency(dep) {
     if (this.state.currentEffect?.context?._skipReactive) {
       return;
@@ -787,6 +915,15 @@ const ReactiveManager = {
     }
   },
 
+  /**
+   * Process a single change record.
+   *
+   * Skipped when the target sets `_skipReactive`, which avoids a loop while the
+   * system writes back into the state itself.
+   *
+   * @param {Object} change - The change record; must carry `target` and `prop`.
+   * @returns {void}
+   */
   triggerUpdate(change) {
     if (!change || !change.target || !change.prop) return;
 
@@ -806,6 +943,14 @@ const ReactiveManager = {
     }
   },
 
+  /**
+   * Run a computation, collecting the dependencies it reads along the way.
+   *
+   * It does not consult `context._skipReactive`.
+   *
+   * @param {Object} computation - The computation to run.
+   * @returns {void}
+   */
   runComputation(computation) {
     if (!this.isValidComputation(computation) || computation.isComputing) return;
 
@@ -824,6 +969,14 @@ const ReactiveManager = {
     }
   },
 
+  /**
+   * Bind a component’s events into the reactive system.
+   *
+   * Does nothing when the instance has not enabled reactive.
+   *
+   * @param {Object} instance - component instance
+   * @returns {void}
+   */
   bindComponentEvents(instance) {
     if (!instance || !instance.reactive) return;
 
@@ -903,12 +1056,28 @@ const ReactiveManager = {
     });
   },
 
+  /**
+   * Check that the config is a usable object.
+   *
+   * @param {*} config - The value to check.
+   * @returns {void}
+   * @throws {Error} - When it is not an object.
+   */
   validateConfig(config) {
     if (!config || typeof config !== 'object') {
       throw new Error('Invalid configuration object');
     }
   },
 
+  /**
+   * Deep-copy a value, circular references included.
+   *
+   * Objects already seen are remembered in `seen`, so recursion never runs away.
+   *
+   * @param {*} value - The value to clone.
+   * @param {WeakMap} [seen=new WeakMap()] - Objects already cloned; internal use.
+   * @returns {*} - The cloned value.
+   */
   deepClone(value, seen = new WeakMap()) {
     if (!value || typeof value !== 'object') return value;
     if (seen.has(value)) return seen.get(value);
@@ -923,6 +1092,12 @@ const ReactiveManager = {
     return clone;
   },
 
+  /**
+   * Wrap an array reactively, mutating methods such as push and splice included.
+   *
+   * @param {Array} array - The array to wrap.
+   * @returns {Proxy} - The wrapped array.
+   */
   createArrayProxy(array) {
     if (!array.__reactiveId) {
       array.__reactiveId = this.generateId();
@@ -977,23 +1152,44 @@ const ReactiveManager = {
     });
   },
 
+  /**
+   * Turn debug mode on.
+   *
+   * @returns {void}
+   */
   enableDebug() {
     DEBUG.enabled = true;
   },
 
+  /**
+   * Turn debug mode off.
+   *
+   * @returns {void}
+   */
   disableDebug() {
     DEBUG.enabled = false;
   },
 
+  /**
+   * Summarize the internals for debugging — dependencies, pending queue and effect count.
+   *
+   * @returns {Object} - The internal state.
+   */
   getDebugInfo() {
     return {
       dependencies: Array.from(this.state.dependencies.entries()),
-      computedCache: Array.from(this.state.computedCache.entries()),
       pendingUpdates: Array.from(this.state.pendingUpdates),
-      componentStates: Array.from(this.state.componentStates.entries())
+      effects: this.state.effects.size
     };
   },
 
+  /**
+   * React to a component lifecycle event such as mount or unmount.
+   *
+   * @param {Object} component - The component the event belongs to.
+   * @param {string} event - The lifecycle event name.
+   * @returns {void}
+   */
   handleLifecycle(component, event) {
     if (!component || !event) return;
 
@@ -1012,6 +1208,14 @@ const ReactiveManager = {
     }
   },
 
+  /**
+   * Make a component’s state reactive and bind the watchers it declares.
+   *
+   * Does nothing when the component has not set `reactive`.
+   *
+   * @param {Object} component - The component to set up.
+   * @returns {void}
+   */
   setupComponentReactivity(component) {
     if (!component.reactive) return;
 
@@ -1033,10 +1237,14 @@ const ReactiveManager = {
     }
   },
 
+  /**
+   * Release a component’s state and dependencies from the tables.
+   *
+   * @param {Object} component - The component being destroyed.
+   * @returns {void}
+   */
   cleanupComponentReactivity(component) {
     if (!component.id) return;
-
-    this.state.componentStates.delete(component.id);
 
     const componentDeps = Array.from(this.state.dependencies.values())
       .filter(deps => this.isComponentDependency(deps, component));
@@ -1046,12 +1254,25 @@ const ReactiveManager = {
     });
   },
 
+  /**
+   * Clear and rebuild a component’s reactivity from scratch.
+   *
+   * @param {Object} component - The component to rebuild.
+   * @returns {void}
+   */
   updateComponentReactivity(component) {
     this.cleanupComponentReactivity(component);
 
     this.setupComponentReactivity(component);
   },
 
+  /**
+   * Check whether any watcher in a dependency set belongs to this component.
+   *
+   * @param {Map} deps - The dependency table.
+   * @param {Object} component - The component to check for.
+   * @returns {boolean} - true when found.
+   */
   isComponentDependency(deps, component) {
     return Array.from(deps.values()).some(watchers =>
       Array.from(watchers).some(watcher =>
@@ -1060,30 +1281,15 @@ const ReactiveManager = {
     );
   },
 
-  notifyWatchers(target, key, value, oldValue) {
-    const watchers = this.state.watchers.get(target);
-    if (!watchers) return;
-
-    const keyWatchers = watchers.get(key);
-    if (!keyWatchers) return;
-
-    keyWatchers.forEach(watcher => {
-      try {
-        if (this.config.batchUpdates) {
-          this.state.pendingUpdates.add(() => watcher(value, oldValue));
-          this.scheduleUpdate();
-        } else {
-          watcher(value, oldValue);
-        }
-      } catch (error) {
-        ErrorManager.handle(error, {
-          context: 'ReactiveManager.notifyWatchers',
-          data: {target, key, value, oldValue}
-        });
-      }
-    });
-  },
-
+  /**
+   * Batch several writes so effects wake once at the end.
+   *
+   * Both plain and Promise-returning functions work — the latter decrements the batch
+   * depth in `finally`, so awaiting never leaves a batch stuck open.
+   *
+   * @param {Function} fn - The function performing the writes.
+   * @returns {*} - Whatever fn returned.
+   */
   batch(fn) {
     this.state.batchDepth++;
     try {
@@ -1111,6 +1317,11 @@ const ReactiveManager = {
     }
   },
 
+  /**
+   * Generate an id for a reactive object.
+   *
+   * @returns {string} - An id prefixed with `reactive_`.
+   */
   generateId() {
     return 'reactive_' + Math.random().toString(36).substr(2, 9);
   }

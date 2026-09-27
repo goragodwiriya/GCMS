@@ -1,5 +1,4 @@
 <?php
-
 namespace Kotchasan;
 
 /**
@@ -685,44 +684,44 @@ class Validator
                 // Check type if specified
                 if (isset($rules['type'])) {
                     switch ($rules['type']) {
-                        case 'string':
-                            if (!is_string($value)) {
-                                return false;
-                            }
-                            break;
-                        case 'integer':
-                        case 'int':
-                            if (!is_int($value)) {
-                                return false;
-                            }
-                            break;
-                        case 'float':
-                        case 'double':
-                            if (!is_float($value) && !is_int($value)) {
-                                return false;
-                            }
-                            break;
-                        case 'boolean':
-                        case 'bool':
-                            if (!is_bool($value)) {
-                                return false;
-                            }
-                            break;
-                        case 'array':
-                            if (!is_array($value)) {
-                                return false;
-                            }
-                            break;
-                        case 'object':
-                            if (!is_object($value)) {
-                                return false;
-                            }
-                            break;
-                        case 'null':
-                            if ($value !== null) {
-                                return false;
-                            }
-                            break;
+                    case 'string':
+                        if (!is_string($value)) {
+                            return false;
+                        }
+                        break;
+                    case 'integer':
+                    case 'int':
+                        if (!is_int($value)) {
+                            return false;
+                        }
+                        break;
+                    case 'float':
+                    case 'double':
+                        if (!is_float($value) && !is_int($value)) {
+                            return false;
+                        }
+                        break;
+                    case 'boolean':
+                    case 'bool':
+                        if (!is_bool($value)) {
+                            return false;
+                        }
+                        break;
+                    case 'array':
+                        if (!is_array($value)) {
+                            return false;
+                        }
+                        break;
+                    case 'object':
+                        if (!is_object($value)) {
+                            return false;
+                        }
+                        break;
+                    case 'null':
+                        if ($value !== null) {
+                            return false;
+                        }
+                        break;
                     }
                 }
 
@@ -737,61 +736,61 @@ class Validator
                 if (isset($rules['validate'])) {
                     foreach ($rules['validate'] as $rule => $param) {
                         switch ($rule) {
-                            case 'email':
-                                if (!self::email($value)) {
-                                    return false;
-                                }
-                                break;
-                            case 'url':
-                                if (!self::url($value)) {
-                                    return false;
-                                }
-                                break;
-                            case 'date':
-                                if (!self::date($value)) {
-                                    return false;
-                                }
-                                break;
-                            case 'time':
-                                if (!self::time($value)) {
-                                    return false;
-                                }
-                                break;
-                            case 'pattern':
-                                if (!self::pattern($value, $param)) {
-                                    return false;
-                                }
-                                break;
-                            case 'in':
-                                if (!self::inList($value, is_array($param) ? $param : explode(',', $param))) {
-                                    return false;
-                                }
-                                break;
-                            case 'between':
-                                $params = is_array($param) ? $param : explode(',', $param);
-                                if (!self::between($value, $params[0] ?? 0, $params[1] ?? PHP_INT_MAX)) {
-                                    return false;
-                                }
-                                break;
-                            case 'min':
-                                if (is_string($value) && mb_strlen($value) < $param) {
-                                    return false;
-                                } elseif (is_numeric($value) && $value < $param) {
-                                    return false;
-                                }
-                                break;
-                            case 'max':
-                                if (is_string($value) && mb_strlen($value) > $param) {
-                                    return false;
-                                } elseif (is_numeric($value) && $value > $param) {
-                                    return false;
-                                }
-                                break;
-                            case 'callback':
-                                if (is_callable($param) && !$param($value)) {
-                                    return false;
-                                }
-                                break;
+                        case 'email':
+                            if (!self::email($value)) {
+                                return false;
+                            }
+                            break;
+                        case 'url':
+                            if (!self::url($value)) {
+                                return false;
+                            }
+                            break;
+                        case 'date':
+                            if (!self::date($value)) {
+                                return false;
+                            }
+                            break;
+                        case 'time':
+                            if (!self::time($value)) {
+                                return false;
+                            }
+                            break;
+                        case 'pattern':
+                            if (!self::pattern($value, $param)) {
+                                return false;
+                            }
+                            break;
+                        case 'in':
+                            if (!self::inList($value, is_array($param) ? $param : explode(',', $param))) {
+                                return false;
+                            }
+                            break;
+                        case 'between':
+                            $params = is_array($param) ? $param : explode(',', $param);
+                            if (!self::between($value, $params[0] ?? 0, $params[1] ?? PHP_INT_MAX)) {
+                                return false;
+                            }
+                            break;
+                        case 'min':
+                            if (is_string($value) && mb_strlen($value) < $param) {
+                                return false;
+                            } elseif (is_numeric($value) && $value < $param) {
+                                return false;
+                            }
+                            break;
+                        case 'max':
+                            if (is_string($value) && mb_strlen($value) > $param) {
+                                return false;
+                            } elseif (is_numeric($value) && $value > $param) {
+                                return false;
+                            }
+                            break;
+                        case 'callback':
+                            if (is_callable($param) && !$param($value)) {
+                                return false;
+                            }
+                            break;
                         }
                     }
                 }

@@ -110,7 +110,7 @@ class Model extends \Kotchasan\KBase
     private function getInstalledModules($owners)
     {
         $query = \Kotchasan\Model::createQuery()
-            ->select('D.id index_id', 'I.module_id', 'M.module', 'M.owner', 'M.config', 'D.topic', 'D.keywords', 'D.description')
+            ->select('D.id index_id', 'I.module_id', 'M.module', 'M.owner', 'M.config', 'D.topic', 'D.keywords', 'D.description', 'D.detail')
             ->from('index I')
             ->join('index_detail D', [['D.id', 'I.id'], ['D.module_id', 'I.module_id'], ['D.language', ['', LANGUAGE]]])
             ->join('modules M', ['M.id', 'I.module_id'])
@@ -123,7 +123,14 @@ class Model extends \Kotchasan\KBase
         $result = [];
 
         foreach ($query->fetchAll() as $item) {
-            $item->config = json_decode($item->config);
+            $config = json_decode((string) $item->config);
+            if (!is_object($config)) {
+                $config = (object) [];
+            }
+            $item->config = $config;
+            foreach ($config as $key => $value) {
+                $item->$key = $value;
+            }
             $result[$item->index_id] = $item;
         }
         return $result;
@@ -161,7 +168,7 @@ class Model extends \Kotchasan\KBase
             ->first();
 
         if ($search) {
-            $search->config = json_decode($search->config);
+            $search->config = json_decode((string) $search->config);
             if (!is_object($search->config)) {
                 $search->config = (object) [];
             }
@@ -199,7 +206,7 @@ class Model extends \Kotchasan\KBase
             $search = \Kotchasan\Model::createQuery()
                 ->select('D.topic', 'D.keywords', 'D.detail', 'D.description')
                 ->from('index I')
-                ->join('index_detail D', [['D.id', 'I.id'], ['D.module_id', 'I.module_id'], ['D.language', 'I.language']])
+                ->join('index_detail D', [['D.id', 'I.id'], ['D.module_id', 'I.module_id'], ['D.language', ['', LANGUAGE]]])
                 ->where([
                     ['I.id', (int) $index->index_id],
                     ['I.module_id', (int) $index->module_id]

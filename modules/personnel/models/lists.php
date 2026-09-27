@@ -36,7 +36,7 @@ class Model extends \Kotchasan\Model
             $where[] = ['department', $department];
         }
         $query = static::createQuery()
-            ->select('id', 'name', 'department', 'position', 'phone', 'email', 'level', 'detail')
+            ->select('id', 'name', 'department', 'position', 'phone', 'email', 'level', 'detail', 'picture')
             ->from('personnel')
             ->where($where)
             ->orderBy('department', 'ASC')

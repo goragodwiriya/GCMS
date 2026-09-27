@@ -1,0 +1,44 @@
+<aside data-component="sidebar"></aside>
+<div class="main-content">
+  <div>
+    <header data-component="topbar"></header>
+    <main class="content">
+      <div class="card-groups">
+        <header>
+          <div>
+            <h1 class="icon-video" data-i18n>{LNG_List of} {LNG_Video}</h1>
+            <p data-i18n>Manage YouTube videos</p>
+          </div>
+          <a class="btn btn-primary icon-new" href="/video" data-params="module_id" data-i18n>{LNG_Add} {LNG_Video}</a>
+        </header>
+        <div class="content-body">
+          <div class="tablebody">
+            <table class="table border fullwidth" data-table="videoList" data-source="../api/video/setup" data-search-columns="topic" data-default-sort="last_update desc"
+                   data-page-size="25" data-show-checkbox="true" data-actions='{"delete":"Delete"}' data-action-url="../api/video/setup/action" data-action-params="module_id"
+                   data-action-button="Process|btn-success" data-row-actions='{
+                       "edit": {
+                         "label": "Edit",
+                         "className": "btn btn-success icon-edit"
+                       }
+                   }'>
+              <thead>
+                <tr>
+                  <th data-field="image" data-formatter="formatImage" class="center" data-cell-class="center" data-i18n>{LNG_Thumbnail}</th>
+                  <th data-field="topic" data-sort="topic" data-template="<span class='two_line'>${topic}</span>" data-i18n>{LNG_Topic}</th>
+                  <th data-field="youtube" class="center" data-cell-class="center"
+                      data-template="<a href='https://www.youtube.com/watch?v=${youtube}' target='_blank' rel='noopener'>${youtube}</a>" data-i18n>{LNG_Youtube ID}</th>
+                  <th data-field="views" data-sort="views" class="center" data-cell-class="center" data-format="number" data-i18n>{LNG_Views}</th>
+                  <th data-field="last_update" data-sort="last_update" class="center" data-cell-class="center" data-format="datetime" data-i18n>{LNG_Last Update}</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+  <footer class="footer">
+    <p class="center">&copy; 2026 GCMS - Powered by <a href="https://nowjs.net">Now.js</a></p>
+  </footer>
+</div>

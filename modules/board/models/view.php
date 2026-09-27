@@ -34,6 +34,7 @@ class Model extends \Kotchasan\Model
                 'Q.category_id',
                 'Q.topic',
                 'Q.detail',
+                'Q.picture',
                 'Q.published',
                 'Q.pin',
                 'Q.locked',
@@ -69,7 +70,7 @@ class Model extends \Kotchasan\Model
             ['{', '}', '\\', WEB_URL],
             $result->detail
         );
-        $categories = json_decode($result->category_name, true) ?: '';
+        $categories = json_decode((string) $result->category_name, true) ?: '';
         $result->category_name = $categories[LANGUAGE] ?? $categories[''] ?? '';
 
         // Increment view counter atomically to avoid race conditions
@@ -82,6 +83,7 @@ class Model extends \Kotchasan\Model
                 'R.member_id',
                 'U.name sender',
                 'R.detail',
+                'R.picture',
                 'R.updated_at'
             )
             ->from('board_r R')

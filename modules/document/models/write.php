@@ -24,6 +24,7 @@ class Model extends \Kotchasan\Model
      * Returns new article defaults when id = 0
      *
      * @param int $id
+     * @param int $module_id
      *
      * @return object|null
      */
@@ -35,6 +36,7 @@ class Model extends \Kotchasan\Model
                 'module_id' => $module_id,
                 'tags' => [],
                 'published' => 1,
+                'show_news' => 1,
                 'published_date' => date('Y-m-d'),
                 'category_id' => '',
                 'languages' => array_keys(Language::installedLanguage()),
@@ -51,7 +53,6 @@ class Model extends \Kotchasan\Model
                 $index->description[$lng] = '';
                 $index->keywords[$lng] = '';
                 $index->detail[$lng] = '';
-
             }
 
             return $index;
@@ -121,6 +122,8 @@ class Model extends \Kotchasan\Model
         foreach ($query->fetchAll() as $item) {
             $index->tags[] = $item->tag;
         }
+
+        $index->show_news = (int) $index->show_news;
 
         return $index;
     }

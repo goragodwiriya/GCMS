@@ -33,11 +33,12 @@ class View extends \Web\View
         } else {
             $template = '<p style="padding: 20px; text-align: center; font-weight: bold;">Website Temporarily Closed for Maintenance, Please try again in a few minutes.<br>ปิดปรับปรุงเว็บไซต์ชั่วคราวเพื่อบำรุงรักษา กรุณาลองใหม่ในอีกสักครู่</p>';
         }
-        $favicon = is_file(ROOT_PATH.DATA_FOLDER.'image/favicon.ico') ? WEB_URL.DATA_FOLDER.'image/favicon.ico' : WEB_URL.'favicon.ico';
+        $favicon = \Web\Gcms::favicon();
         parent::setContents([
             '/{TITLE}/' => self::$cfg->web_title,
             '/{CONTENT}/' => $template,
-            '/{FAVICON}/' => $favicon,
+            '/{FAVICON}/' => $favicon['url'],
+            '/{FAVICON_TYPE}/' => $favicon['type'],
             '/{LANGUAGE}/' => LANGUAGE
         ]);
         return parent::renderHTML(file_get_contents(ROOT_PATH.'themes/empty.html'));

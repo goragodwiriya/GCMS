@@ -101,6 +101,13 @@ class Sortable {
     this.init();
   }
 
+  /**
+   * Wire up every handler and start accepting drags.
+   *
+   * Does nothing while `options.disabled` is on.
+   *
+   * @returns {void}
+   */
   init() {
     if (this.options.disabled) return;
 
@@ -114,6 +121,14 @@ class Sortable {
     this.addEventListeners();
   }
 
+  /**
+   * Attach the mouse, touch and keyboard listeners to the container.
+   *
+   * They are bound with `passive: false` because the handler must call
+   * `preventDefault()` to stop the page scrolling with the finger during a drag.
+   *
+   * @returns {void}
+   */
   addEventListeners() {
     const options = {passive: false};
 
@@ -126,6 +141,14 @@ class Sortable {
     }
   }
 
+  /**
+   * Begin a drag, creating the ghost and the placeholder.
+   *
+   * Only the left mouse button is accepted, and nothing happens while disabled.
+   *
+   * @param {MouseEvent|TouchEvent} e - The event that starts the drag.
+   * @returns {void}
+   */
   handleDragStart(e) {
     try {
       if (this.options.disabled || (e.button !== undefined && e.button !== 0)) {
@@ -183,6 +206,15 @@ class Sortable {
     }
   }
 
+  /**
+   * Move the placeholder to follow the drag position.
+   *
+   * Layout work is deferred to `requestAnimationFrame` so layout is not recomputed
+   * on every one of the rapid events fired during a drag.
+   *
+   * @param {MouseEvent|TouchEvent} e - The event fired during the drag.
+   * @returns {void}
+   */
   handleDragOver(e) {
     if (!this.state.dragging) return;
     e.preventDefault();
@@ -233,6 +265,11 @@ class Sortable {
     });
   }
 
+  /**
+   * End the drag, drop the item into its new position, and clean up the ghost and placeholder.
+   *
+   * @returns {void}
+   */
   handleDragEnd() {
     if (!this.state.dragging) return;
 
@@ -317,6 +354,15 @@ class Sortable {
     }
   }
 
+  /**
+   * Support moving items with the keyboard.
+   *
+   * Only runs while focus is on an item matching `options.draggable`, so
+   * keyboard-only users can reorder without dragging.
+   *
+   * @param {KeyboardEvent} e - The key event.
+   * @returns {void}
+   */
   handleKeyDown(e) {
     if (this.options.disabled) return;
 
@@ -339,6 +385,12 @@ class Sortable {
     }
   }
 
+  /**
+   * Work out and apply the scroll speed from the distance to the edge.
+   *
+   * @param {Object} point - The current drag coordinates.
+   * @returns {void}
+   */
   handleScrolling(point) {
     const sensitivity = this.options.scrollSensitivity;
     const speed = this.options.scrollSpeed;
@@ -365,6 +417,12 @@ class Sortable {
     }
   }
 
+  /**
+   * Scroll the page automatically when the drag nears the screen edge.
+   *
+   * @param {MouseEvent|TouchEvent} e - The event fired during the drag.
+   * @returns {void}
+   */
   handleScroll(e) {
     if (!this.state.dragging) return;
 
@@ -409,6 +467,14 @@ class Sortable {
     }
   }
 
+  /**
+   * Work out which item this event starts dragging.
+   *
+   * When `options.handle` is set, a drag only starts from the handle itself.
+   *
+   * @param {MouseEvent|TouchEvent} e - The event that starts the drag.
+   * @returns {HTMLElement|null} - The item to drag, or null.
+   */
   getDragElement(e) {
     const target = e.target;
 
@@ -420,6 +486,16 @@ class Sortable {
     return target.closest(this.options.draggable);
   }
 
+  /**
+   * Create the floating copy that follows the cursor during a drag.
+   *
+   * Table rows (`<tr>`) get a light icon ghost locked to the horizontal axis,
+   * because floating a full row clone throws the column widths off.
+   *
+   * @param {HTMLElement} dragEl - The item being dragged.
+   * @param {MouseEvent|TouchEvent} e - The event that starts the drag.
+   * @returns {HTMLElement} - The ghost element.
+   */
   createGhost(dragEl, e) {
     const pageX = e.pageX || (e.touches && e.touches[0] ? e.touches[0].pageX : 0);
     const pageY = e.pageY || (e.touches && e.touches[0] ? e.touches[0].pageY : 0);
@@ -488,6 +564,15 @@ class Sortable {
     this.state.ghost = ghost;
   }
 
+  /**
+   * Create the gap that shows where the dragged item will land.
+   *
+   * Table rows use a thin dashed row instead of reserving the real height, so the
+   * table layout does not shift during the drag.
+   *
+   * @param {HTMLElement} dragEl - The item being dragged.
+   * @returns {HTMLElement} - The placeholder element.
+   */
   createPlaceholder(dragEl) {
     const rect = dragEl.getBoundingClientRect();
 
@@ -523,6 +608,13 @@ class Sortable {
     this.state.placeholder = placeholder;
   }
 
+  /**
+   * Move the ghost to the pointer position.
+   *
+   * @param {number} pageX - The horizontal coordinate.
+   * @param {number} pageY - The vertical coordinate.
+   * @returns {void}
+   */
   moveGhost(pageX, pageY) {
     // Capture state needed for animation frame
     const ghost = this.state.ghost;
@@ -552,6 +644,15 @@ class Sortable {
     });
   }
 
+  /**
+   * Find the item under the given coordinates.
+   *
+   * The item being dragged is skipped so it never targets itself.
+   *
+   * @param {number} x - The horizontal coordinate.
+   * @param {number} y - The vertical coordinate.
+   * @returns {HTMLElement|null} - The item found, or null.
+   */
   findElementUnderPoint(x, y) {
     const elements = Array.from(this.element.querySelectorAll(this.options.draggable));
 
@@ -573,6 +674,16 @@ class Sortable {
     return null;
   }
 
+  /**
+   * Work out which container these coordinates are over.
+   *
+   * Without `options.group` only its own container is considered, so dragging
+   * between lists requires matching group names first.
+   *
+   * @param {number} x - The horizontal coordinate.
+   * @param {number} y - The vertical coordinate.
+   * @returns {Object|null} - `{container, element}`, or null.
+   */
   findTargetContainer(x, y) {
     // If no group, only check current container
     if (!this.options.group) {
@@ -618,11 +729,24 @@ class Sortable {
     return null;
   }
 
+  /**
+   * The position of an item inside its container.
+   *
+   * @param {HTMLElement} el - The item to locate.
+   * @returns {number} - The zero-based index, or -1 when not found.
+   */
   getIndex(el) {
     return Array.from(this.element.querySelectorAll(this.options.draggable))
       .indexOf(el);
   }
 
+  /**
+   * Swap two items, with animation.
+   *
+   * @param {HTMLElement} el1 - The first item.
+   * @param {HTMLElement} el2 - The second item.
+   * @returns {void}
+   */
   swapElements(el1, el2) {
     const rect1 = el1.getBoundingClientRect();
     const rect2 = el2.getBoundingClientRect();
@@ -648,6 +772,13 @@ class Sortable {
     });
   }
 
+  /**
+   * Move an item up or down by one position.
+   *
+   * @param {HTMLElement} el - The item to move.
+   * @param {number} direction - -1 for up, 1 for down.
+   * @returns {void}
+   */
   moveElement(el, direction) {
     const elements = Array.from(this.element.querySelectorAll(this.options.draggable));
     const index = elements.indexOf(el);
@@ -667,6 +798,12 @@ class Sortable {
     }
   }
 
+  /**
+   * Toggle an item’s selected state, then fire the `sortable:select` event.
+   *
+   * @param {HTMLElement} el - The item to toggle.
+   * @returns {void}
+   */
   toggleSelection(el) {
     el.classList.toggle('selected');
 
@@ -676,6 +813,15 @@ class Sortable {
     });
   }
 
+  /**
+   * Dispatch a `sortable:` CustomEvent from the container.
+   *
+   * `bubbles` and `cancelable` are set, so listeners further up can receive and cancel it.
+   *
+   * @param {string} name - The event name, without the `sortable:` prefix.
+   * @param {Object} detail - The data carried on the event.
+   * @returns {void}
+   */
   dispatchEvent(name, detail) {
     this.element.dispatchEvent(new CustomEvent('sortable:' + name, {
       bubbles: true,
@@ -802,10 +948,20 @@ class Sortable {
     }
   }
 
+  /**
+   * Allow dragging again.
+   *
+   * @returns {void}
+   */
   enable() {
     this.options.disabled = false;
   }
 
+  /**
+   * Disable dragging, cancelling any drag still in progress.
+   *
+   * @returns {void}
+   */
   disable() {
     this.options.disabled = true;
 
@@ -814,6 +970,11 @@ class Sortable {
     }
   }
 
+  /**
+   * Remove every listener and restore the container.
+   *
+   * @returns {void}
+   */
   destroy() {
     this.element.removeEventListener('mousedown', this.handlers.dragStart);
     this.element.removeEventListener('touchstart', this.handlers.dragStart);

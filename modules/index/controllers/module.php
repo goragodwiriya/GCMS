@@ -28,6 +28,13 @@ class Controller extends \Kotchasan\Controller
     private $module;
 
     /**
+     * Menu data (used to find the home page)
+     *
+     * @var \Index\Menu\Controller|null
+     */
+    private $menu;
+
+    /**
      * initial class
      *
      * @param \Index\Menu\Controller $menu
@@ -43,6 +50,7 @@ class Controller extends \Kotchasan\Controller
         $dir = ROOT_PATH.'modules/';
         // Read the names of modules and directories of all installed modules
         $obj->module = new \Index\Module\Model($dir, $menu);
+        $obj->menu = $menu instanceof \Index\Menu\Controller ? $menu : null;
         if (MAIN_INIT == 'indexhtml') {
             // Load installed modules and can be used
             foreach ($obj->module->getModulesByOwner() as $owner => $modules) {
@@ -136,8 +144,13 @@ class Controller extends \Kotchasan\Controller
         $module = null;
         if (!empty($module_list)) {
             if (empty($modules['module'])) {
-                // No module specified, use the first module
-                $module = $modulesByName[reset($module_list)];
+                // No module specified, use the home page (first menu item).
+                // Falling back to the first installed module is order-dependent:
+                // the query has no ORDER BY, so a home page whose row id is
+                // higher than another page's (e.g. the Thai copy of home added
+                // after "contactus") would lose to that page.
+                $home = $this->menu ? $this->menu->getHomeMenu() : false;
+                $module = !empty($home->module) ? $home->module : $modulesByName[reset($module_list)];
             } elseif ($modules['module'] === 'search') {
                 // Call search page (index module)
                 $module = (object) [

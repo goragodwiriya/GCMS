@@ -1,3 +1,9 @@
+.widget-document-latest.iconview,
+.widget-document-latest.listview {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
 .widget-document-latest.iconview h3,
 .widget-document-carousel h3 {
   -webkit-line-clamp: 1;
@@ -12,11 +18,11 @@
   display: grid;
   gap: var(--space-2);
 }
-.widget-doc-highlight .widget-item .figure {
+.widget-doc-highlight .item .figure {
   max-height: 20.1rem;
   aspect-ratio: auto;
 }
-.widget-doc-highlight .iconview .widget-item {
+.widget-doc-highlight .iconview .item {
   max-height: 7rem;
 }
 .widget-doc-highlight .iconview .description {
@@ -27,7 +33,7 @@
     grid-template-columns: 1fr;
   }
 }
-.widget-document-latest.iconview .widget-item {
+.widget-document-latest.iconview .item {
   border-bottom: 1px solid var(--color-border);
 }
 .widget-document-latest.iconview .figure {

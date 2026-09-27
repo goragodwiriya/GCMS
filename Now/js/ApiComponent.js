@@ -284,9 +284,13 @@ const ApiComponent = {
         }
       }
 
-      // Show loading state only when a network request is required.
+      // Show loading state only when a network request is required. Background
+      // polling refreshes pass {silent:true} so the loading state (which dims
+      // the element via .api-loading) does not flash on every interval.
       instance.loading = true;
-      this.renderLoading(instance);
+      if (!requestOptions.silent) {
+        this.renderLoading(instance);
+      }
 
       // Prepare options
       const reqOptions = this.buildRequestOptions(instance, useCache, requestOptions);
@@ -313,16 +317,22 @@ const ApiComponent = {
           response = await window.http.get(url, reqOptions);
       }
 
-      // Handle 403 Forbidden - redirect to 403 page
+      // Handle 403 Forbidden - redirect to the forbidden page, but only if this
+      // instance is still actually part of the page (see isAlive())
       if (response?.status === 403) {
+        if (!this.isAlive(instance)) {
+          return;
+        }
+
         console.warn('ApiComponent: Access forbidden (403) for API data');
 
         const forbiddenMessage = response?.data?.message || response?.data?.data?.message || '';
         const forbiddenParams = forbiddenMessage ? {message: forbiddenMessage} : {};
-        const forbiddenUrl = forbiddenMessage ? `/403?message=${encodeURIComponent(forbiddenMessage)}` : '/403';
+        const forbiddenTarget = this.getForbiddenTarget();
+        const forbiddenUrl = forbiddenMessage ? `${forbiddenTarget}?message=${encodeURIComponent(forbiddenMessage)}` : forbiddenTarget;
 
         if (window.RouterManager?.navigate) {
-          window.RouterManager.navigate('/403', forbiddenParams);
+          window.RouterManager.navigate(forbiddenTarget, forbiddenParams);
           return;
         }
 
@@ -335,8 +345,12 @@ const ApiComponent = {
         return;
       }
 
-      // Handle 401 Unauthorized - redirect to login
+      // Handle 401 Unauthorized - redirect to login, same liveness guard as 403
       if (response?.status === 401) {
+        if (!this.isAlive(instance)) {
+          return;
+        }
+
         console.warn('ApiComponent: Unauthorized (401) for API data');
 
         if (window.RouterManager?.navigate) {
@@ -383,16 +397,22 @@ const ApiComponent = {
       }
 
     } catch (error) {
-      // Handle 403 Forbidden - redirect to 403 page
+      // Handle 403 Forbidden - redirect to the forbidden page, but only if this
+      // instance is still actually part of the page (see isAlive())
       if (error?.status === 403 || error?.response?.status === 403) {
+        if (!this.isAlive(instance)) {
+          return;
+        }
+
         console.warn('ApiComponent: Access forbidden (403) for API data');
 
         const forbiddenMessage = error?.response?.data?.message || error?.response?.data?.data?.message || error?.message || '';
         const forbiddenParams = forbiddenMessage ? {message: forbiddenMessage} : {};
-        const forbiddenUrl = forbiddenMessage ? `/403?message=${encodeURIComponent(forbiddenMessage)}` : '/403';
+        const forbiddenTarget = this.getForbiddenTarget();
+        const forbiddenUrl = forbiddenMessage ? `${forbiddenTarget}?message=${encodeURIComponent(forbiddenMessage)}` : forbiddenTarget;
 
         if (window.RouterManager?.navigate) {
-          window.RouterManager.navigate('/403', forbiddenParams);
+          window.RouterManager.navigate(forbiddenTarget, forbiddenParams);
           return;
         }
 
@@ -405,8 +425,12 @@ const ApiComponent = {
         return;
       }
 
-      // Handle 401 Unauthorized - redirect to login
+      // Handle 401 Unauthorized - redirect to login, same liveness guard as 403
       if (error?.status === 401 || error?.response?.status === 401) {
+        if (!this.isAlive(instance)) {
+          return;
+        }
+
         console.warn('ApiComponent: Unauthorized (401) for API data');
 
         if (window.RouterManager?.navigate) {
@@ -458,11 +482,32 @@ const ApiComponent = {
     return `${method}:${url}:${dataString}`;
   },
 
+  /**
+   * Coerce a cache lifetime into a usable number of milliseconds.
+   *
+   * Anything that is not a finite, non-negative integer falls back to `fallback`,
+   * so a malformed `data-cache-time` cannot disable caching by accident.
+   *
+   * @param {*} value - Raw value, typically from a data attribute.
+   * @param {number} [fallback=60000] - Used when `value` is unusable.
+   * @returns {number} - Lifetime in milliseconds.
+   */
   normalizeCacheTime(value, fallback = 60000) {
     const parsed = parseInt(value, 10);
     return Number.isFinite(parsed) && parsed >= 0 ? parsed : fallback;
   },
 
+  /**
+   * Decide whether this request may be served from cache.
+   *
+   * Only GET requests are cacheable, only when the instance opted in with
+   * `cache: true`, and never when the caller passes `force: true`.
+   *
+   * @param {Object} instance - Component instance making the request.
+   * @param {Object} [requestOptions={}] - Per-call options; `force` bypasses cache.
+   * @param {string} [method='GET'] - HTTP method of the request.
+   * @returns {boolean} - True when the cache may be read.
+   */
   shouldUseCache(instance, requestOptions = {}, method = 'GET') {
     if (requestOptions.force === true) {
       return false;
@@ -470,6 +515,12 @@ const ApiComponent = {
     return method === 'GET' && instance?.options?.cache === true;
   },
 
+  /**
+   * Read a cached response, dropping it if it has expired.
+   *
+   * @param {string} cacheKey - Key the response was stored under.
+   * @returns {*|null} - The cached response, or null when absent or stale.
+   */
   getCachedResponse(cacheKey) {
     const cached = this.state.cache.get(cacheKey);
     if (!cached) return null;
@@ -482,6 +533,14 @@ const ApiComponent = {
     return cached.response;
   },
 
+  /**
+   * Store a response with an expiry time.
+   *
+   * @param {string} cacheKey - Key to store under.
+   * @param {*} response - Response payload to keep.
+   * @param {*} cacheTime - Lifetime in ms; falls back to the component default.
+   * @returns {void}
+   */
   setCachedResponse(cacheKey, response, cacheTime) {
     this.state.cache.set(cacheKey, {
       response,
@@ -490,6 +549,18 @@ const ApiComponent = {
     });
   },
 
+  /**
+   * Assemble the options for one request.
+   *
+   * Merges the instance headers with per-call `requestOptions` and sets
+   * `throwOnError: false`, so a failed response is handled by the component
+   * rather than thrown at the caller.
+   *
+   * @param {Object} instance - Component instance making the request.
+   * @param {boolean} useCache - Whether this call may read from cache.
+   * @param {Object} [requestOptions={}] - Per-call overrides.
+   * @returns {Object} - Options ready to hand to the HTTP layer.
+   */
   buildRequestOptions(instance, useCache, requestOptions = {}) {
     const headers = {
       ...(instance.options.headers || {})
@@ -676,9 +747,14 @@ const ApiComponent = {
 
     // Create context for template processing - flatten data for direct field access
     const fieldData = instance.data?.data || instance.data;
+    // An inner component sees its own fields **plus** every ancestor component's —
+    // a page that wraps `/api/v2/users/{id}` in `/api/v2/session` writes conditions
+    // over both (`role === 'webadmin' && permissions['customer.manage']`), and
+    // without the merge whichever response landed last decided the answer
+    const scope = this.inheritedScope(instance, fieldData);
     const context = {
-      state: fieldData,
-      data: fieldData,
+      state: scope,
+      data: scope,
       computed: {}
     };
 
@@ -686,7 +762,11 @@ const ApiComponent = {
     // This provides full expression support (e.g., data-attr="href:'...' + product_id")
     if (window.TemplateManager) {
       if (typeof TemplateManager.processDataDirectives === 'function') {
-        TemplateManager.processDataDirectives(element, context);
+        // Everything inside a nested component belongs to that component —
+        // painting it from here would answer its `data-if` with data that does
+        // not describe it, and a `data-if` that comes out false removes the
+        // element for good, so nothing is left for the nested render to fix
+        TemplateManager.processDataDirectives(element, context, {skipNested: true});
       }
 
       // Run data-on-load hooks inside the component with the normalized data payload
@@ -805,9 +885,80 @@ const ApiComponent = {
       }
     });
 
+    // Directives inside a nested component were just processed with THIS
+    // component's data, which does not have the nested component's fields —
+    // render it again so its own (merged) scope always has the final say, no
+    // matter which of the two responses arrived first
+    this.renderNested(instance);
+
     // Dispatch content-rendered event
     this.dispatchEvent(instance, 'content-rendered', {
       data: instance.data
+    });
+  },
+
+  /**
+   * This component's fields laid over every ancestor component's
+   *
+   * Outermost first, so the nearest component wins a name collision — the same
+   * order a nested scope resolves in everywhere else.
+   *
+   * @param {Object} instance - Instance whose scope is being built
+   * @param {Object} fieldData - That instance's own already-flattened data
+   * @returns {Object} Merged scope
+   */
+  inheritedScope(instance, fieldData) {
+    const ancestors = [];
+    let element = instance.element?.parentElement?.closest('[data-component="api"]');
+
+    while (element) {
+      const ancestor = this.getInstance(element);
+      const data = ancestor?.data?.data || ancestor?.data;
+
+      if (data && typeof data === 'object' && !Array.isArray(data)) {
+        ancestors.unshift(data);
+      }
+
+      element = element.parentElement?.closest('[data-component="api"]');
+    }
+
+    if (ancestors.length === 0) {
+      return fieldData;
+    }
+
+    // An array payload has no field names to merge — hand it back untouched
+    if (!fieldData || typeof fieldData !== 'object' || Array.isArray(fieldData)) {
+      return fieldData;
+    }
+
+    return Object.assign({}, ...ancestors, fieldData);
+  },
+
+  /**
+   * Re-render the components nested inside this one that already hold data
+   *
+   * Only ever walks downward, so this cannot loop: an inner component's own
+   * render re-renders what is nested inside **it**, never its ancestors.
+   *
+   * @param {Object} instance - Instance that has just rendered
+   */
+  renderNested(instance) {
+    const nested = instance.element?.querySelectorAll?.('[data-component="api"]');
+
+    if (!nested || nested.length === 0) return;
+
+    nested.forEach(element => {
+      // Only the components directly inside this one — a deeper level is
+      // reached by that component's own renderNested, with its scope in place
+      if (element.parentElement?.closest('[data-component="api"]') !== instance.element) {
+        return;
+      }
+
+      const child = this.getInstance(element);
+
+      if (child && child.data) {
+        this.renderContent(child);
+      }
     });
   },
 
@@ -894,9 +1045,9 @@ const ApiComponent = {
     // Set interval
     const interval = parseInt(instance.options.pollingInterval) || 30000;
     instance.timer = setInterval(() => {
-      // Load data if not currently loading
+      // Load data if not currently loading (silently — no loading-state flash)
       if (!instance.loading) {
-        this.loadData(instance, false, {force: true});
+        this.loadData(instance, false, {force: true, silent: true});
       }
     }, interval);
 
@@ -1151,6 +1302,12 @@ const ApiComponent = {
     if (options.urlParamsRequired === undefined && dataset.urlParamsRequired !== undefined)
       options.urlParamsRequired = dataset.urlParamsRequired === 'true';
 
+    // Polling options (data-polling / data-polling-interval)
+    if (options.polling === undefined && dataset.polling !== undefined)
+      options.polling = dataset.polling === 'true';
+    if (!options.pollingInterval && dataset.pollingInterval)
+      options.pollingInterval = parseInt(dataset.pollingInterval);
+
     return options;
   },
 
@@ -1185,6 +1342,38 @@ const ApiComponent = {
     }
 
     return null;
+  },
+
+  /**
+   * Whether an instance is still a live, mounted part of the page
+   *
+   * A response can arrive after its element was already removed — most often a
+   * `data-if` that hid the element the moment the page rendered, well before the
+   * network round-trip finished. Nothing about that removal cancels the in-flight
+   * request, so the response handler must check for itself before doing anything
+   * with page-wide side effects (a global redirect, in particular): a widget the
+   * user was never even shown has no business hijacking navigation over its own
+   * failed request.
+   */
+  isAlive(instance) {
+    return !!instance
+      && this.state.instances.has(instance.id)
+      && !!instance.element
+      && document.body.contains(instance.element);
+  },
+
+  /**
+   * Where a 403 response should send the user
+   *
+   * Consults the same `auth.redirects.forbidden` config AuthGuard's route-level
+   * checks already use, so a 403 from a nested widget's own request lands on the
+   * same page a route-level permission failure would — one convention, not two.
+   * Falls back to `/forbidden`, the route every current app built on this
+   * framework actually registers (`/403` was never wired up anywhere and would
+   * itself 404).
+   */
+  getForbiddenTarget() {
+    return window.RouterManager?.config?.auth?.redirects?.forbidden || '/forbidden';
   },
 
   /**
@@ -1285,12 +1474,31 @@ if (window.ComponentManager) {
   const apiComponentDefinition = {
     template: null,
 
+    /**
+     * ComponentManager hook — whether this element is an api component.
+     *
+     * Recognised by the `api-component` class, `data-component="api"`, or the
+     * presence of `data-endpoint`.
+     *
+     * @param {HTMLElement} element - Candidate element.
+     * @returns {boolean} - True when this component should claim the element.
+     */
     validElement(element) {
       return element.classList.contains('api-component') ||
         element.dataset.component === 'api' ||
         element.dataset.endpoint;
     },
 
+    /**
+     * ComponentManager hook — create the component and attach it to the element.
+     *
+     * Options are read from the element's data attributes; the instance is kept
+     * on `element._apiComponent` so teardown can find it.
+     *
+     * @param {HTMLElement} element - Element being mounted.
+     * @param {Object} state - Component state supplied by ComponentManager.
+     * @returns {HTMLElement} - The same element.
+     */
     setupElement(element, state) {
       const options = ApiComponent.extractOptionsFromElement(element);
       const apiComponent = ApiComponent.create(element, options);
@@ -1299,6 +1507,11 @@ if (window.ComponentManager) {
       return element;
     },
 
+    /**
+     * ComponentManager hook — destroy the attached component on teardown.
+     *
+     * @returns {void}
+     */
     beforeDestroy() {
       if (this.element && this.element._apiComponent) {
         ApiComponent.destroy(this.element._apiComponent);

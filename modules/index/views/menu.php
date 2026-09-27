@@ -23,6 +23,18 @@ use Web\Login;
 class View
 {
     /**
+     * ชื่อเรียกอื่นของตำแหน่งเมนู
+     *
+     * TOPMENU เป็นชื่อที่ใช้ในเทมเพลตรุ่นใหม่ (คู่กับ SIDEMENU/BOTTOMMENU)
+     * ส่วน MAINMENU เป็นชื่อเดิมของตำแหน่งเดียวกัน ธีมเก่าจึงยังใช้ได้ต่อไป
+     *
+     * @var array
+     */
+    private static $aliases = [
+        'MAINMENU' => ['TOPMENU']
+    ];
+
+    /**
      * สร้างเมนูตามตำแหน่งของเมนู (parent)
      *
      * @param array $menus
@@ -36,7 +48,13 @@ class View
         $obj = new static();
         foreach ($menus as $parent => $items) {
             if ($parent != '') {
-                $result['/{'.$parent.'}/'] = $obj->draw($items, $select);
+                $html = $obj->draw($items, $select);
+                $result['/{'.$parent.'}/'] = $html;
+                if (isset(self::$aliases[$parent])) {
+                    foreach (self::$aliases[$parent] as $alias) {
+                        $result['/{'.$alias.'}/'] = $html;
+                    }
+                }
             }
         }
     }
@@ -125,7 +143,8 @@ class View
             if ($module && $module->index_id > 0) {
                 $a .= ' href="'.Gcms::createUrl($module->module).'"';
             } else {
-                $a .= ' href="'.$item->menu_url.'"';
+                // older sites stored links as {WEB_URL}... (Index\Menu\Model::get() expands it too)
+                $a .= ' href="'.str_replace('{WEB_URL}', WEB_URL, $item->menu_url).'"';
             }
         }
         // prefer menu_text but fall back to title if present

@@ -1,4 +1,19 @@
+/**
+ * TextareaElementFactory
+ *
+ * Builds `<textarea>` fields with optional auto-resize and a character counter.
+ * Always renders a real `<textarea>`, never `<input type="textarea">`.
+ */
 class TextareaElementFactory extends ElementFactory {
+  /**
+   * Build a textarea from a field definition.
+   *
+   * Forces `tagName`/`type` to `textarea` regardless of what the definition
+   * says, so this factory never accidentally renders an input.
+   *
+   * @param {Object} def - Field definition.
+   * @returns {HTMLTextAreaElement} - The created textarea.
+   */
   static create(def) {
     // Always render as a real <textarea>, not <input type="textarea">
     const cfg = Object.assign({}, def, {tagName: 'textarea', type: 'textarea'});
@@ -45,6 +60,17 @@ class TextareaElementFactory extends ElementFactory {
     }
   };
 
+  /**
+   * Read the textarea options a single element declares.
+   *
+   * Covers `data-auto-resize`, `data-min-rows`, `data-max-rows` and
+   * `data-char-count`; anything absent falls back to `def`.
+   *
+   * @param {HTMLElement} element - The textarea being set up.
+   * @param {Object} def - Default configuration for this element type.
+   * @param {DOMStringMap} dataset - The element's `data-*` attributes.
+   * @returns {Object} - Configuration for this element.
+   */
   static extractCustomConfig(element, def, dataset) {
     return {
       autoResize: dataset.autoResize !== undefined ? dataset.autoResize === 'true' : def.autoResize,
@@ -58,6 +84,16 @@ class TextareaElementFactory extends ElementFactory {
     };
   }
 
+  /**
+   * Prepare a textarea, clamping its size settings to sane values.
+   *
+   * `minRows` is at least 1, `maxRows` is at least `minRows`, and
+   * `debounceDelay` is at least 0 — any bad value from config or a data
+   * attribute is corrected rather than propagated.
+   *
+   * @param {Object} instance - Element instance carrying `element` and `config`.
+   * @returns {void}
+   */
   static setupElement(instance) {
     const {element, config} = instance;
 
@@ -109,6 +145,15 @@ class TextareaElementFactory extends ElementFactory {
     };
   }
 
+  /**
+   * Switch a textarea to grow with its content instead of being resizable.
+   *
+   * The original `resize` and `overflow-y` styles are stashed on the element so
+   * `cleanup` can restore them later.
+   *
+   * @param {Object} instance - Element instance to configure.
+   * @returns {void}
+   */
   static setupAutoResize(instance) {
     const {element, config} = instance;
     element._originalResize = element.style.resize || 'both';
@@ -120,6 +165,16 @@ class TextareaElementFactory extends ElementFactory {
     setTimeout(() => this.adjustHeight(element, config), 0);
   }
 
+  /**
+   * Resize a textarea to fit its content, within `minRows`/`maxRows`.
+   *
+   * Scroll position is captured and restored around the resize, since
+   * temporarily collapsing the height can otherwise jump the page.
+   *
+   * @param {HTMLTextAreaElement} element - Textarea to resize.
+   * @param {Object} config - Element config, read for row limits.
+   * @returns {void}
+   */
   static adjustHeight(element, config) {
     const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
     element.style.height = 'auto';
@@ -140,6 +195,12 @@ class TextareaElementFactory extends ElementFactory {
     element.style.overflowY = element.scrollHeight > newHeight ? 'auto' : 'hidden';
   }
 
+  /**
+   * Add the character-count display below the textarea.
+   *
+   * @param {Object} instance - Element instance to attach the counter to.
+   * @returns {void}
+   */
   static setupCounter(instance) {
     const {element, config, wrapper} = instance;
 
@@ -179,6 +240,12 @@ class TextareaElementFactory extends ElementFactory {
     this.updateCounters(instance);
   }
 
+  /**
+   * Refresh the character counter to match the current value.
+   *
+   * @param {Object} instance - Element instance to update.
+   * @returns {void}
+   */
   static updateCounters(instance) {
     const {element, config} = instance;
     const value = element.value;
@@ -196,6 +263,15 @@ class TextareaElementFactory extends ElementFactory {
     }
   }
 
+  /**
+   * Bind the input handler that drives auto-resize and the counter.
+   *
+   * Resizing is debounced so a fast typist does not trigger a layout pass on
+   * every keystroke.
+   *
+   * @param {Object} instance - Element instance to bind.
+   * @returns {void}
+   */
   static setupEventListeners(instance) {
     const {element, config} = instance;
 
@@ -244,6 +320,12 @@ class TextareaElementFactory extends ElementFactory {
     EventSystemManager.addHandler(element, 'keydown', handlers.keydown);
   }
 
+  /**
+   * Tear a textarea down: cancel any pending resize and restore its original styles.
+   *
+   * @param {Object} instance - Element instance being torn down.
+   * @returns {void}
+   */
   static cleanup(instance) {
     if (!instance) return;
     try {

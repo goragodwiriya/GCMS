@@ -1,3 +1,13 @@
+/**
+ * FileElementFactory
+ *
+ * Builds file upload fields with previews, drag & drop, progress reporting and
+ * optional reordering. Handles two kinds of file at once: newly picked ones,
+ * held in a Map on the element's private state, and **existing** files already
+ * stored on the server, declared through `data-files` and rendered from their
+ * URLs. Existing files can be removed through `config.actionUrl` rather than by
+ * clearing the input.
+ */
 class FileElementFactory extends ElementFactory {
   static propertyHandlers = {
     placeholder: {
@@ -32,6 +42,12 @@ class FileElementFactory extends ElementFactory {
     }
   };
 
+  /**
+   * Extensions of existing (server) files shown as an image thumbnail and
+   * opened in the gallery. Anything else renders as a download icon.
+   */
+  static imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'avif', 'bmp', 'svg', 'ico'];
+
   static config = {
     ...ElementFactory.config,
     debug: false,
@@ -53,6 +69,17 @@ class FileElementFactory extends ElementFactory {
     onError: null
   };
 
+  /**
+   * Read the upload options a single element declares.
+   *
+   * Covers preview, download, drag & drop and the `fileReference` key used to
+   * identify existing files (defaults to `id`).
+   *
+   * @param {HTMLElement} element - The file input being configured.
+   * @param {Object} def - Default configuration for this element type.
+   * @param {DOMStringMap} dataset - The element's `data-*` attributes.
+   * @returns {Object} - Configuration for this element.
+   */
   static extractCustomConfig(element, def, dataset) {
     return {
       multiple: element.multiple === true || def.preview === true,
@@ -86,6 +113,16 @@ class FileElementFactory extends ElementFactory {
     };
   }
 
+  /**
+   * Prepare a file field and its preview area.
+   *
+   * Picked files live in a Map on the element's private ElementFactory state,
+   * keyed by filename, so re-picking the same name replaces rather than
+   * duplicates it.
+   *
+   * @param {Object} instance - Element instance carrying `element` and `config`.
+   * @returns {void}
+   */
   static setupElement(instance) {
     const {element, config} = instance;
 
@@ -157,6 +194,12 @@ class FileElementFactory extends ElementFactory {
     return instance;
   }
 
+  /**
+   * Bind the change handler that validates and previews newly picked files.
+   *
+   * @param {Object} instance - Element instance to bind.
+   * @returns {void}
+   */
   static setupEventListeners(instance) {
     const {element, config} = instance;
 
@@ -213,6 +256,12 @@ class FileElementFactory extends ElementFactory {
     };
   }
 
+  /**
+   * Turn the field's wrapper into a drop zone.
+   *
+   * @param {Object} instance - Element instance to enable dropping on.
+   * @returns {void}
+   */
   static initDragDrop(instance) {
     const {element, config} = instance;
 
@@ -239,6 +288,12 @@ class FileElementFactory extends ElementFactory {
     return dropZone;
   }
 
+  /**
+   * Get or create the placeholder shown when no file is selected.
+   *
+   * @param {Object} instance - Element instance to attach it to.
+   * @returns {void}
+   */
   static initPlaceholder(instance) {
     const {element, config} = instance;
     let placeholderElement = element.parentElement?.querySelector('.placeholder');
@@ -256,6 +311,12 @@ class FileElementFactory extends ElementFactory {
     return placeholderElement;
   }
 
+  /**
+   * Show or hide the placeholder based on whether any file is selected.
+   *
+   * @param {Object} instance - Element instance to update.
+   * @returns {void}
+   */
   static updatePlaceholderVisibility(instance) {
     const {element, placeholderElement, config} = instance;
     if (!placeholderElement) return;
@@ -278,6 +339,16 @@ class FileElementFactory extends ElementFactory {
     }
   }
 
+  /**
+   * Read the existing-files list declared in `data-files`.
+   *
+   * JSON is tried first, with a fallback for the plainer formats the attribute
+   * also accepts.
+   *
+   * @param {HTMLElement} element - The file input.
+   * @param {Object} [contextData=null] - Surrounding data used to resolve the field.
+   * @returns {Array|null} - Existing file records, or null when none are declared.
+   */
   static parseExistingFiles(element, contextData = null) {
     try {
       const filesData = element.dataset.files;
@@ -307,6 +378,16 @@ class FileElementFactory extends ElementFactory {
     }
   }
 
+  /**
+   * Find a named field inside a possibly-nested data object.
+   *
+   * Looks at the object itself and at `data.data`, so an API response that
+   * wraps its payload one level deep still resolves.
+   *
+   * @param {Object} data - Data to search.
+   * @param {string} fieldName - Field to find.
+   * @returns {*} - The field value, or null.
+   */
   static resolveFieldData(data, fieldName) {
     if (!data || !fieldName) return null;
 
@@ -328,6 +409,15 @@ class FileElementFactory extends ElementFactory {
     return null;
   }
 
+  /**
+   * Populate existing files from surrounding context data.
+   *
+   * Used when `data-files` names a field rather than carrying the list inline.
+   *
+   * @param {Object} instance - Element instance to populate.
+   * @param {Object} contextData - Data to resolve the field from.
+   * @returns {void}
+   */
   static setExistingFilesFromContext(instance, contextData) {
     const {element, config} = instance;
     const filesData = element.dataset.files;
@@ -347,6 +437,17 @@ class FileElementFactory extends ElementFactory {
     }
   }
 
+  /**
+   * Move dropped files onto the input and fire a change event.
+   *
+   * Files are copied through a `DataTransfer` because `input.files` cannot be
+   * assigned a plain array; the synthetic change event then runs the normal
+   * pick path.
+   *
+   * @param {DragEvent} event - The drop event.
+   * @param {HTMLInputElement} element - The file input.
+   * @returns {void}
+   */
   static handleFileDrop(event, element) {
     const files = Array.from(event.dataTransfer.files);
     const dt = new DataTransfer();
@@ -355,6 +456,17 @@ class FileElementFactory extends ElementFactory {
     element.dispatchEvent(new Event('change'));
   }
 
+  /**
+   * Validate a batch of picked files and merge them into the selection.
+   *
+   * In multiple mode the new files are added to what was already picked; in
+   * single mode they replace it. Files that fail validation are collected and
+   * reported rather than aborting the whole batch.
+   *
+   * @param {Object} instance - Element instance receiving the files.
+   * @param {Array<File>} files - Files picked or dropped.
+   * @returns {Promise<void>}
+   */
   static async processFiles(instance, files) {
     const {element, config} = instance;
     const privateState = ElementFactory._privateState.get(element);
@@ -408,6 +520,14 @@ class FileElementFactory extends ElementFactory {
     }
   }
 
+  /**
+   * Check one file against the size and type limits.
+   *
+   * @param {File} file - File to check.
+   * @param {Object} config - Element config, read for `maxFileSize` and `accept`.
+   * @returns {Promise<void>}
+   * @throws {Error} - With a translated message when the file is rejected.
+   */
   static async validateFile(file, config) {
     if (file.size > config.maxFileSize) {
       const message = Now.translate('File size cannot exceed {maxsize}', {maxsize: this.formatFileSize(config.maxFileSize)});
@@ -432,6 +552,16 @@ class FileElementFactory extends ElementFactory {
     return true;
   }
 
+  /**
+   * Whether a file matches one of the accepted type patterns.
+   *
+   * Accepts both extension form (`.csv`) and MIME form, including wildcards
+   * such as `image/*`.
+   *
+   * @param {File} file - File to check.
+   * @param {Array<string>} acceptedTypes - Patterns from the `accept` config.
+   * @returns {boolean} - True when the file is an accepted type.
+   */
   static isValidFileType(file, acceptedTypes) {
     return acceptedTypes.some(rawType => {
       const type = (rawType || '').trim();
@@ -473,6 +603,14 @@ class FileElementFactory extends ElementFactory {
     });
   }
 
+  /**
+   * Render previews for the currently picked files.
+   *
+   * Does nothing when the element has no preview container configured.
+   *
+   * @param {Object} instance - Element instance to render for.
+   * @returns {void}
+   */
   static showPreviews(instance) {
     const {previewContainer, element} = instance;
     const privateState = ElementFactory._privateState.get(element);
@@ -531,6 +669,17 @@ class FileElementFactory extends ElementFactory {
     });
   }
 
+  /**
+   * Render previews for files already stored on the server.
+   *
+   * The remove control only appears when the field is enabled, not read-only,
+   * `allowRemoveExisting` is on **and** an `actionUrl` exists to delete
+   * through — otherwise removal would have nowhere to go.
+   *
+   * @param {Object} instance - Element instance to render for.
+   * @param {Array} files - Existing file records.
+   * @returns {void}
+   */
   static showExistingFiles(instance, files) {
     const {element, previewContainer, config} = instance;
     if (!previewContainer) return;
@@ -542,7 +691,7 @@ class FileElementFactory extends ElementFactory {
     const imageUrls = files
       .filter(f => {
         const fileInfo = this.getUrlFileInfo(f.url);
-        return fileInfo && ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(fileInfo.ext);
+        return fileInfo && this.imageExtensions.includes(fileInfo.ext);
       })
       .map(f => f.url);
 
@@ -568,7 +717,7 @@ class FileElementFactory extends ElementFactory {
       const fileInfo = this.getUrlFileInfo(file.url);
       if (!fileInfo) return;
 
-      if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(fileInfo.ext)) {
+      if (this.imageExtensions.includes(fileInfo.ext)) {
         // Find index of this image in the filtered imageUrls array
         const imageIndex = imageUrls.indexOf(file.url);
 
@@ -615,6 +764,15 @@ class FileElementFactory extends ElementFactory {
     });
   }
 
+  /**
+   * Remove one picked file and re-render the previews.
+   *
+   * Files are keyed by name, so this removes the entry matching `file.name`.
+   *
+   * @param {Object} instance - Element instance to remove from.
+   * @param {File} file - File to remove.
+   * @returns {void}
+   */
   static removeFile(instance, file) {
     const {element, config} = instance;
     const privateState = ElementFactory._privateState.get(element);
@@ -632,6 +790,14 @@ class FileElementFactory extends ElementFactory {
     }
   }
 
+  /**
+   * Clear every picked file and reset the input.
+   *
+   * Existing server-side files are not affected; use `deleteFile` for those.
+   *
+   * @param {Object} instance - Element instance to clear.
+   * @returns {void}
+   */
   static clearFiles(instance) {
     const {element, previewContainer} = instance;
     const privateState = ElementFactory._privateState.get(element);
@@ -651,6 +817,16 @@ class FileElementFactory extends ElementFactory {
     this.updatePlaceholderVisibility(instance);
   }
 
+  /**
+   * Enable drag-to-reorder on the preview list.
+   *
+   * Warns and does nothing when Sortable.js is not loaded, so the field still
+   * works without the optional dependency.
+   *
+   * @param {HTMLElement} container - Preview container.
+   * @param {Object} config - Element config.
+   * @returns {void}
+   */
   static initSortable(container, config) {
     if (typeof Sortable === 'undefined') {
       console.warn('Sortable.js is required for drag & drop sorting');
@@ -717,6 +893,17 @@ class FileElementFactory extends ElementFactory {
     });
   }
 
+  /**
+   * Put a dragged preview back where it started.
+   *
+   * Used when persisting the new order fails, so the UI does not show an order
+   * the server did not accept.
+   *
+   * @param {HTMLElement} container - Preview container.
+   * @param {number} oldIndex - Index the item came from.
+   * @param {number} newIndex - Index it was dropped at.
+   * @returns {void}
+   */
   static revertOrder(container, oldIndex, newIndex) {
     const items = Array.from(container.querySelectorAll('.preview-item[data-existing="true"]'));
     const item = items[newIndex];
@@ -729,6 +916,14 @@ class FileElementFactory extends ElementFactory {
     }
   }
 
+  /**
+   * Delete an existing server-side file, after asking the user to confirm.
+   *
+   * @param {Object} file - The existing file record.
+   * @param {HTMLElement} preview - Its preview element, removed on success.
+   * @param {Object} config - Element config, read for `actionUrl`.
+   * @returns {Promise<boolean>} - True when the file was deleted.
+   */
   static async deleteFile(file, preview, config) {
     try {
       const confirmed = await DialogManager.confirm(
@@ -791,6 +986,16 @@ class FileElementFactory extends ElementFactory {
     }
   }
 
+  /**
+   * Validate the field for form submission.
+   *
+   * A required field counts as filled when the picked-files Map has entries,
+   * not when `input.value` is set — the visible input is cleared once files are
+   * taken into the Map.
+   *
+   * @param {Object} instance - Element instance to validate.
+   * @returns {boolean|string} - True when valid, or the message to show.
+   */
   static validateFormField(instance) {
     const {element} = instance;
     const privateState = ElementFactory._privateState.get(element);
@@ -804,6 +1009,16 @@ class FileElementFactory extends ElementFactory {
     return true;
   }
 
+  /**
+   * Upload the selected files.
+   *
+   * Returns a failure result rather than throwing when nothing is selected, so
+   * a caller can treat "nothing to do" the same as any other outcome.
+   *
+   * @param {Object} instance - Element instance whose files to upload.
+   * @param {Object} [options={}] - Per-call upload options.
+   * @returns {Promise<Object>} - `{success, message, ...}` describing the result.
+   */
   static async upload(instance, options = {}) {
     const {element, config} = instance;
     const privateState = ElementFactory._privateState.get(element);
@@ -883,6 +1098,15 @@ class FileElementFactory extends ElementFactory {
     }
   }
 
+  /**
+   * Get or create the upload progress bar next to the field.
+   *
+   * Reuses an existing bar when one is already there, so repeated uploads do
+   * not stack progress elements.
+   *
+   * @param {HTMLElement} element - The file input.
+   * @returns {HTMLElement} - The progress container.
+   */
   static createProgressElement(element) {
     let progressContainer = element.parentElement.querySelector('.upload-progress');
     if (!progressContainer) {
@@ -899,6 +1123,13 @@ class FileElementFactory extends ElementFactory {
     return progressContainer;
   }
 
+  /**
+   * Set the progress bar's width and label.
+   *
+   * @param {HTMLElement} container - Progress container from `createProgressElement`.
+   * @param {number} percent - Completion percentage.
+   * @returns {void}
+   */
   static updateProgressBar(container, percent) {
     const bar = container.querySelector('.progress-bar');
     const text = container.querySelector('.progress-text');
@@ -906,10 +1137,24 @@ class FileElementFactory extends ElementFactory {
     if (text) text.textContent = percent + '%';
   }
 
+  /**
+   * Convert a dashed attribute name to its camelCase `dataset` key.
+   *
+   * @param {string} str - Dashed name, e.g. `preview-container`.
+   * @returns {string} - camelCase name, e.g. `previewContainer`.
+   */
   static camelCase(str) {
     return str.replace(/-([a-z])/g, (g) => g[1].toUpperCase());
   }
 
+  /**
+   * Derive a filename and extension from a URL.
+   *
+   * Query strings and fragments are stripped before parsing.
+   *
+   * @param {string} url - File URL.
+   * @returns {Object|null} - File info, or null when the URL is unusable.
+   */
   static getUrlFileInfo(url) {
     if (typeof url !== 'string' || url.trim() === '') {
       return null;
@@ -931,6 +1176,15 @@ class FileElementFactory extends ElementFactory {
     };
   }
 
+  /**
+   * Pick an icon class from a filename's extension.
+   *
+   * Query strings and fragments are stripped first, so a URL such as
+   * `doc.pdf?v=2` still resolves to the PDF icon.
+   *
+   * @param {string} file - Filename or URL.
+   * @returns {string} - Icon class name.
+   */
   static getFileIcon(file) {
     const ext = (typeof file === 'string' ? file : '').split('#')[0].split('?')[0].split('.').pop().toLowerCase();
     const icons = {
@@ -945,6 +1199,12 @@ class FileElementFactory extends ElementFactory {
     return icons[ext] || 'icon-file';
   }
 
+  /**
+   * Render a byte count as human-readable text.
+   *
+   * @param {number} bytes - Size in bytes.
+   * @returns {string} - e.g. `2 MB`; `0 Bytes` for zero.
+   */
   static formatFileSize(bytes) {
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
     if (bytes === 0) return '0 Bytes';
@@ -952,6 +1212,14 @@ class FileElementFactory extends ElementFactory {
     return `${Math.round(bytes / Math.pow(1024, i), 2)} ${sizes[i]}`;
   }
 
+  /**
+   * The shared MediaViewer used to preview images full-size.
+   *
+   * Created lazily and reused, so every file field on the page shares one
+   * viewer instance.
+   *
+   * @returns {Object} - The MediaViewer instance.
+   */
   static getImageModal() {
     if (!this._imageModal) {
       this._imageModal = new MediaViewer({
@@ -963,6 +1231,12 @@ class FileElementFactory extends ElementFactory {
     return this._imageModal;
   }
 
+  /**
+   * Tear the field down: unbind handlers and remove the drop zone.
+   *
+   * @param {Object} instance - Element instance being torn down.
+   * @returns {void}
+   */
   static cleanup(instance) {
     const {element, dropZone} = instance;
 

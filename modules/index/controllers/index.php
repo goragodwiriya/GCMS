@@ -56,7 +56,16 @@ class Controller extends \Web\Controller
         $page = null;
         // website administrator
         $this->isAdmin = Login::isAdmin();
-        if (!empty(self::$cfg->maintenance_mode) && !$this->isAdmin) {
+        // Tenant suspended (offline) or past its expire_date (unix timestamp,
+        // matches the legacy gcms241021-derived market_customer schema) — the
+        // public site is unavailable regardless of maintenance mode. Admins
+        // can still preview the live site while logged in, same exception the
+        // maintenance-mode check below already makes.
+        $offline = !empty(self::$cfg->offline) && self::$cfg->offline == '1';
+        $expired = !empty(self::$cfg->expire_date) && time() > (int) self::$cfg->expire_date;
+        if (($offline || $expired) && !$this->isAdmin) {
+            Gcms::$view = new \Index\Siteunavailable\View();
+        } elseif (!empty(self::$cfg->show_maintenance) && !$this->isAdmin) {
             Gcms::$view = new \Index\Maintenance\View();
         } elseif (!empty(self::$cfg->show_intro) && str_replace([BASE_PATH, '/'], '', $request->getUri()->getPath()) == '') {
             Gcms::$view = new \Index\Intro\View();
@@ -150,8 +159,9 @@ class Controller extends \Web\Controller
 
         // Social profiles (sameAs)
         $sameAs = [];
-        if (!empty(self::$cfg->facebook)) {
-            $sameAs[] = self::$cfg->facebook;
+        $facebookUrl = Gcms::facebookPageUrl(self::$cfg);
+        if ($facebookUrl !== '') {
+            $sameAs[] = $facebookUrl;
         }
         if (!empty(self::$cfg->line_id)) {
             $sameAs[] = 'https://line.me/ti/p/'.self::$cfg->line_id;
@@ -220,19 +230,17 @@ class Controller extends \Web\Controller
         $siteName = Text::htmlspecialchars(strip_tags(self::$cfg->web_title));
 
         // Favicon
-        $favicon = is_file(ROOT_PATH.DATA_FOLDER.'image/favicon.ico')
-        ? WEB_URL.DATA_FOLDER.'image/favicon.ico'
-        : WEB_URL.'favicon.ico';
+        $favicon = Gcms::favicon();
 
         // og:type — "website" for home/listing pages, "article" for content pages
         $ogType = (!empty($page->is_home) || empty($page->canonical) || $page->canonical === WEB_URL.'index.php')
-        ? 'website'
-        : 'article';
+            ? 'website'
+            : 'article';
 
         // robots — noindex for 404 or pages that explicitly request it
         $robotsContent = (!empty($page->status) && $page->status == 404) || !empty($page->noindex)
-        ? 'noindex, nofollow'
-        : 'index, follow';
+            ? 'noindex, nofollow'
+            : 'index, follow';
 
         // Locale — map language code to og:locale format
         $langMap = ['th' => 'th_TH', 'en' => 'en_US', 'zh' => 'zh_CN', 'ja' => 'ja_JP'];
@@ -248,14 +256,15 @@ class Controller extends \Web\Controller
             'og:title' => '<meta property="og:title" content="'.$topic.'">',
             'og:description' => '<meta property="og:description" content="'.$description.'">',
             'og:site_name' => '<meta property="og:site_name" content="'.$siteName.'">',
-            'icon' => '<link rel="icon" href="'.$favicon.'" type="image/x-icon">'
+            'icon' => '<link rel="icon" href="'.$favicon['url'].'" type="'.$favicon['type'].'">'
         ];
 
-        // Apple touch icon (PNG preferred, fallback to favicon)
-        $touchIcon = is_file(ROOT_PATH.DATA_FOLDER.'image/apple-touch-icon.png')
-        ? WEB_URL.DATA_FOLDER.'image/apple-touch-icon.png'
-        : $favicon;
-        $meta['apple-touch-icon'] = '<link rel="apple-touch-icon" href="'.$touchIcon.'">';
+        // Apple touch icon (PNG only — iOS ignores .ico; fallback to a PNG favicon)
+        if (is_file(ROOT_PATH.DATA_FOLDER.'image/apple-touch-icon.png')) {
+            $meta['apple-touch-icon'] = '<link rel="apple-touch-icon" href="'.WEB_URL.DATA_FOLDER.'image/apple-touch-icon.png">';
+        } elseif ($favicon['type'] === 'image/png') {
+            $meta['apple-touch-icon'] = '<link rel="apple-touch-icon" href="'.$favicon['url'].'">';
+        }
 
         // OG image — use page image, fallback to site logo
         if (empty($page->image_src) && isset(Gcms::$site['logo']['url'])) {
@@ -288,8 +297,8 @@ class Controller extends \Web\Controller
             $meta['twitter:url'] = '<meta name="twitter:url" content="'.$canonical.'">';
         }
 
-        // Facebook App ID
-        if (!empty(self::$cfg->facebook_appId)) {
+        // Facebook App ID (numeric only — skip a stray page URL saved by mistake)
+        if (preg_match('/^\d+$/', (string) self::$cfg->facebook_appId)) {
             $meta['og:app_id'] = '<meta property="fb:app_id" content="'.Text::htmlspecialchars(self::$cfg->facebook_appId).'">';
         }
 
@@ -320,12 +329,15 @@ class Controller extends \Web\Controller
         // Module scripts/styles — CSS in head, JS deferred to footer
         $footerScripts = [];
 
+        $themePath = ROOT_PATH.Template::get();
+        $themeUrl = Template::getUrl();
         foreach (Gcms::$module->getInstalledOwners() as $owner => $modules) {
             if (is_file(ROOT_PATH.'modules/'.$owner.'/script.js')) {
-                $meta['script_modules_'.$owner] = '<script src="'.WEB_URL.'modules/'.$owner.'/script.js"></script>';
+                // ?v = mtime: *.js is cached for a week, a changed script must reach returning visitors
+                $meta['script_modules_'.$owner] = '<script src="'.WEB_URL.'modules/'.$owner.'/script.js?v='.filemtime(ROOT_PATH.'modules/'.$owner.'/script.js').'"></script>';
             }
-            if (is_file(ROOT_PATH.'themes/'.self::$cfg->skin.'/'.$owner.'/style.css')) {
-                $meta['style_modules_'.$owner] = '<link rel="stylesheet" href="'.WEB_URL.'themes/'.self::$cfg->skin.'/'.$owner.'/style.css">';
+            if ($themePath !== ROOT_PATH && is_file($themePath.$owner.'/style.css')) {
+                $meta['style_modules_'.$owner] = '<link rel="stylesheet" href="'.$themeUrl.$owner.'/style.css">';
             }
         }
 
@@ -333,14 +345,23 @@ class Controller extends \Web\Controller
         if (is_dir($path)) {
             foreach (scandir($path) as $name) {
                 if ($name[0] !== '.') {
+                    // ?v = mtime, same as the module scripts above
                     if (is_file($path.'/'.$name.'/script.js')) {
-                        $meta['script_widgets_'.$name] = '<script src="'.WEB_URL.'widgets/'.$name.'/script.js"></script>';
+                        $meta['script_widgets_'.$name] = '<script src="'.WEB_URL.'widgets/'.$name.'/script.js?v='.filemtime($path.'/'.$name.'/script.js').'"></script>';
                     }
                     if (is_file($path.'/'.$name.'/style.css')) {
-                        $meta['style_widgets_'.$name] = '<link rel="stylesheet" href="'.WEB_URL.'widgets/'.$name.'/style.css">';
+                        $meta['style_widgets_'.$name] = '<link rel="stylesheet" href="'.WEB_URL.'widgets/'.$name.'/style.css?v='.filemtime($path.'/'.$name.'/style.css').'">';
                     }
                 }
             }
+        }
+
+        // B/W Mode — filter on <html>: the root element is exempt from the
+        // containing block a filter creates, so position:fixed stays intact.
+        // The Designer (body.gcms-home-edit-mode) needs true colours to edit.
+        $bw = max(0, min(100, (int) self::$cfg->bw_mode));
+        if ($bw > 0) {
+            $meta['bw_mode'] = '<style>html{filter:grayscale('.$bw.'%)}html:has(>body.gcms-home-edit-mode){filter:none}</style>';
         }
 
         // Remove empty entries

@@ -1,0 +1,145 @@
+<div class="homepage" data-gcms-page="home" data-editor-container="content" data-template-name="rw">
+  <!-- Hero Banner -->
+  <section class="hero-banner gcms-custom-block" data-block-type="hero-banner" data-editor-template="hero-banner" data-gcms-custom="1">
+    <div class="container">
+      <div class="hero__content">
+        <h1 data-editable="text" data-editor-field-name="hero_banner_title">ยินดีต้อนรับสู่โรงเรียนวิทยาศาสตร์แห่งอนาคต</h1>
+        <p data-editable="text" data-editor-field-name="hero_banner_subtitle">ศูนย์การเรียนรู้ที่มุ่งเน้นการพัฒนาทักษะด้านวิทยาศาสตร์ เทคโนโลยี วิศวกรรม และคณิตศาสตร์ (STEM)
+          สำหรับเยาวชนไทย เพื่อเตรียมความพร้อมสู่โลกอนาคต</p>
+        <div>
+          <div class="section-actions">
+            <a data-editable="text" data-editor-field-name="hero_banner_button" href="#" class="btn btn-orange large">สมัครเรียน</a>
+            <button data-editable="text" data-editor-field-name="hero_banner_next" class="btn">ลงทะเบียน</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+  <div class="container">
+    <div class="sidebar-right sidebar-top-mobile gap home-layout">
+      <aside class="sidebar home-sidebar" id="home-sidebar" data-editor-container="sidebar">
+        <!-- Personnel -->
+        <section class="section-bg widget-personnel" data-block-type="widget-personnel" data-editor-id="block-personnel" data-editor-label="Personnel">
+          <div class="container">
+            <div class="section__header">
+              <h2 data-editable="text" data-editor-field-name="personnel_title">{LNG_Personnel}</h2>
+            </div>
+            <div class="section__body">{WIDGET_PERSONNEL cat=1;menu=1}</div>
+          </div>
+        </section>
+        <!-- Image Menu -->
+        <section class="section-bg widget-image-menu" data-block-type="image-menu" data-gcms-custom="1" data-editor-id="image-menu">
+          <div class="container">
+            <div class="section__header">
+              <h2 data-editable="text" data-editor-field-name="image-menu_title">{LNG_Menu}</h2>
+            </div>
+            <div class="section__body">
+              <nav class="sidemenu">
+                <ul>
+                  <li><a href="#" data-editable="text" data-editor-field-name="image-menu_link_1"><img src="{WEBURL}images/kotchasan_long.webp"" alt=" Kotchasan"
+                           data-editable="image" data-editor-field-name="image-menu_link_1_image" loading="lazy"></a></li>
+                  <li><a href="#" data-editable="text" data-editor-field-name="image-menu_link_2"><img src="{WEBURL}images/gcms_long.webp" alt="GCMS" data-editable="image"
+                           data-editor-field-name="image-menu_link_2_image" loading="lazy"></a></li>
+                  <li><a href="#" data-editable="text" data-editor-field-name="image-menu_link_3"><img src="{WEBURL}images/goragod_long.webp" alt="Goragod.com"
+                           data-editable="image" data-editor-field-name="image-menu_link_3_image" loading="lazy"></a></li>
+                </ul>
+              </nav>
+            </div>
+          </div>
+        </section>
+        <!-- Facebook -->
+        <section class="section-bg widget-facebook" data-block-type="widget-facebook" data-editor-id="block-facebook" data-editor-label="Facebook">
+          <div class="container">
+            <div class="section__body">{WIDGET_FACEBOOK}</div>
+          </div>
+        </section>
+      </aside>
+      <div class="content home-content">
+        <!-- Slideshow -->
+        <section class="slideshow-block gcms-custom-block">
+          <div class="gallery-slideshow" data-slideshow data-height="auto" data-show-expand="false">
+            <div class="now-slide">
+              <img src="https://picsum.photos/1200/450?random=31" alt="">
+            </div>
+            <div class="now-slide">
+              <img src="https://picsum.photos/1200/450?random=32" alt="">
+            </div>
+            <div class="now-slide">
+              <img src="https://picsum.photos/1200/450?random=33" alt="">
+            </div>
+          </div>
+        </section>
+        <!-- Home details -->
+        <section class="section-bg home gcms-custom-block">
+          <div class="container">
+            <div class="section__body">
+              <div class="page-detail">{DETAIL}</div>
+            </div>
+          </div>
+        </section>
+        <!-- News -->
+        <section class="section-bg widget-document">
+          <div class="container">
+            <div class="section__header">
+              <h2 class="icon-news">{LNG_Press release}</h2>
+              <a href="/news" class="view-more">{LNG_View all}...</a>
+            </div>
+            <div class="section__body">{WIDGET_DOCUMENT module=news;layout=icon;cols=1;rows=5}</div>
+          </div>
+        </section>
+        <!-- Highlight News -->
+        <section class="section-bg widget-document">
+          <div class="container">
+            <div class="section__header">
+              <h2 class="icon-news">{LNG_Highlight News}</h2>
+              <a href="/news" class="view-more">{LNG_View all}...</a>
+            </div>
+            <div class="section__body">{WIDGET_DOCUMENT module=news;layout=highlight}</div>
+          </div>
+        </section>
+        <!-- Carousel News -->
+        <section class="section-bg widget-document">
+          <div class="container">
+            <div class="section__header">
+              <h2 class="icon-news">{LNG_Latest Articles}</h2>
+              <a href="/news" class="view-more">{LNG_View all}...</a>
+            </div>
+            <div class="section__body">{WIDGET_DOCUMENT module=news;layout=carousel;limit=6;mobile=1;tablet=2;desktop=3}</div>
+          </div>
+        </section>
+        <!-- Gallery -->
+        <section class="section-bg" data-block-type="widget-gallery" data-editor-id="block-gallery" data-editor-label="แกลเลอรี่">
+          <div class="container">
+            <div class="section__header">
+              <h2 class="icon-gallery">{LNG_Gallery}</h2>
+            </div>
+            <div class="section__body">
+              <div>{WIDGET_GALLERY}</div>
+            </div>
+          </div>
+        </section>
+        <!-- Video -->
+        <section class="section-bg">
+          <div class="container">
+            <div class="section__header">
+              <h2 class="icon-video">{LNG_Video}</h2>
+            </div>
+            <div class="section__body">
+              <div>{WIDGET_VIDEO}</div>
+            </div>
+          </div>
+        </section>
+        <!-- Forum -->
+        <section class="section-bg widget-document">
+          <div class="container">
+            <div class="section__header">
+              <h2 class="icon-board">{LNG_Forum}</h2>
+              <a href="/forum" class="view-more">{LNG_View all}...</a>
+            </div>
+            <div class="section__body">{WIDGET_BOARD module=forum;count=5}</div>
+          </div>
+        </section>
+      </div>
+    </div>
+  </div>
+</div>

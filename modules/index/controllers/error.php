@@ -33,7 +33,11 @@ class Controller extends \Web\Controller
     public function init($module, $status = 404, $message = '')
     {
         $template = Template::create($module, '', '404');
-        $message = Language::get($message == '' ? 'Sorry, cannot find a page called Please check the URL or try the call again.' : $message);
+        // A key of its own. The previous text was shared with the search view,
+        // which passes it with a fallback of its own and depends on it having
+        // no translation (modules/index/views/search.php) — translating it
+        // there would have replaced "Search failed." with this sentence.
+        $message = Language::get($message == '' ? 'The page you are looking for was not found.' : $message);
         $template->add([
             '/{TOPIC}/' => $message,
             '/{DETAIL}/' => $message
@@ -44,7 +48,9 @@ class Controller extends \Web\Controller
             'topic' => $topic,
             'detail' => $template->render(),
             'description' => $topic,
-            'keywords' => $topic,
+            // <meta name="keywords"> — a sentence belongs in the description,
+            // not here, and an error page has no keywords worth indexing.
+            'keywords' => '',
             'module' => $module
         ];
     }

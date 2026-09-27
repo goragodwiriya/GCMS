@@ -1,5 +1,4 @@
 <?php
-
 namespace Kotchasan;
 
 /**
@@ -271,8 +270,8 @@ class ArrayTool
         $result = [];
         foreach ($source as $value) {
             $result[] = (is_array($value) || is_object($value))
-            ? self::toString($glue, $value)
-            : $value;
+                ? self::toString($glue, $value)
+                : $value;
         }
 
         return implode($glue, $result);

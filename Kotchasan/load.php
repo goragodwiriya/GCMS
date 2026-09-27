@@ -253,10 +253,8 @@ function doShutdown()
 
 /**
  * Output debug information to the browser console.
- *
- * @param  mixed $data The variable to be displayed in the console
  */
-function debug($expression)
+function debug()
 {
     if (\Kotchasan::$debugger === null) {
         \Kotchasan::$debugger = [];
@@ -458,10 +456,10 @@ spl_autoload_register(function ($className) {
         'Kotchasan\Logger\QueryLoggerInterface' => 'Logger/QueryLoggerInterface.php',
         'Kotchasan\Logger\SqlFileLogger' => 'Logger/SqlFileLogger.php',
         'Kotchasan\Logger\SqlQueryLogger' => 'Logger/SqlQueryLogger.php',
+        'Kotchasan\Logger\RetentionFileLogger' => 'Logger/RetentionFileLogger.php',
         'Kotchasan\Logger\SystemLogger' => 'Logger/SystemLogger.php',
         'Kotchasan\Psr\Http\Message\UploadedFileInterface' => 'Psr/Http/Message/UploadedFileInterface.php',
         'Kotchasan\Psr\Http\Message\ResponseInterface' => 'Psr/Http/Message/ResponseInterface.php',
-        'Kotchasan\Psr\Http\Message\UploadedFileInterface' => 'Psr/Http/Message/UploadedFileInterface.php',
         'Kotchasan\QueryBuilder\DeleteBuilder' => 'QueryBuilder/DeleteBuilder.php',
         'Kotchasan\QueryBuilder\Factory\SqlBuilderFactory' => 'QueryBuilder/Factory/SqlBuilderFactory.php',
         'Kotchasan\QueryBuilder\Functions\AbstractSQLFunctionBuilder' => 'QueryBuilder/Functions/AbstractSQLFunctionBuilder.php',
@@ -493,14 +491,12 @@ spl_autoload_register(function ($className) {
         'Kotchasan\ApiException' => 'ApiException.php',
         'Kotchasan\ArrayTool' => 'ArrayTool.php',
         'Kotchasan\Barcode' => 'Barcode.php',
-        'Kotchasan\CKEditor' => 'CKEditor.php',
         'Kotchasan\Collection' => 'Collection.php',
         'Kotchasan\Country' => 'Country.php',
         'Kotchasan\Csv' => 'Csv.php',
         'Kotchasan\Curl' => 'Curl.php',
         'Kotchasan\Currency' => 'Currency.php',
         'Kotchasan\Database' => 'Database.php',
-        'Kotchasan\DataTable' => 'DataTable.php',
         'Kotchasan\Date' => 'Date.php',
         'Kotchasan\DOMNode' => 'DOMNode.php',
         'Kotchasan\DOMParser' => 'DOMParser.php',
@@ -510,7 +506,6 @@ spl_autoload_register(function ($className) {
         'Kotchasan\Form' => 'Form.php',
         'Kotchasan\Grid' => 'Grid.php',
         'Kotchasan\Htmldoc' => 'Htmldoc.php',
-        'Kotchasan\Html' => 'Html.php',
         'Kotchasan\HtmlTable' => 'HtmlTable.php',
         'Kotchasan\Image' => 'Image.php',
         'Kotchasan\Input' => 'Input.php',

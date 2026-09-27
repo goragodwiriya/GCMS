@@ -1,13 +1,4 @@
 <?php
-/**
- * @filesource Kotchasan/ApiException.php
- *
- * @copyright 2026 Goragod.com
- * @license https://www.kotchasan.com/license/
- *
- * API Exception for handling API-specific errors
- */
-
 namespace Kotchasan;
 
 /**

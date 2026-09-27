@@ -25,6 +25,11 @@ class Model extends \Kotchasan\KBase
     private $instance = null;
 
     /**
+     * @var int
+     */
+    private $sort = 0;
+
+    /**
      * Create a new instance with params
      *
      * @param object $index
@@ -53,6 +58,7 @@ class Model extends \Kotchasan\KBase
             ->cacheOn();
 
         $obj->instance = $query;
+        $obj->sort = isset($index->sort) ? (int) $index->sort : 0;
 
         return $obj;
     }
@@ -85,7 +91,7 @@ class Model extends \Kotchasan\KBase
         $offset = ($page - 1) * $limit;
 
         $query = clone $this->instance;
-        $items = $query
+        $query = $query
             ->select(
                 'I.id',
                 'D.topic',
@@ -96,8 +102,33 @@ class Model extends \Kotchasan\KBase
                 'I.created_at',
                 'I.visited',
                 'I.category_id'
-            )
-            ->orderBy('I.published_date', 'DESC')
+            );
+
+        switch ($this->sort) {
+        case 1:
+            // Article Date
+            $query->orderBy('I.created_at', 'DESC');
+            break;
+        case 2:
+            // Published date
+            $query->orderBy('I.published_date', 'DESC');
+            break;
+        case 3:
+            // ID
+            $query->orderBy('I.id', 'DESC');
+            break;
+        case 4:
+            // Random
+            $query->orderBy('RAND()');
+            break;
+        case 0:
+        default:
+            // Last updated
+            $query->orderBy('I.updated_at', 'DESC');
+            break;
+        }
+
+        $items = $query
             ->orderBy('I.id', 'DESC')
             ->limit($limit, $offset)
             ->fetchAll();

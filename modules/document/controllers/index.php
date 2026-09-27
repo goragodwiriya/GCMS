@@ -39,6 +39,21 @@ class Controller extends \Kotchasan\Controller
                 // normalize to array of ints and remove zeros
                 $index->category_id = $index->alias;
                 $index->alias = '';
+                // A lone number that is no category of this module is an
+                // article id. Articles saved before an alias became mandatory
+                // still have none, and Gcms::createUrl then has nothing to put
+                // in {document} and builds {module}/{id} for them — which the
+                // branch above reads back as a category, so the article
+                // rendered as an empty listing and could not be reached at all
+                // under the pretty-URL scheme. Categories keep priority, so a
+                // number that IS a category behaves exactly as before.
+                if ($index->id === 0
+                    && preg_match('/^[0-9]+$/', $index->category_id)
+                    && \Web\Category::create($index->module_id)->get('category', (int) $index->category_id) === null
+                ) {
+                    $index->id = (int) $index->category_id;
+                    $index->category_id = '';
+                }
             }
         }
 
@@ -54,10 +69,10 @@ class Controller extends \Kotchasan\Controller
             // Get categories
             $index->categories = \Web\Category::create($index->module_id);
 
-            if (!empty($index->category_id) || empty($index->categories) || empty($index->config->category_display)) {
+            if (!empty($index->category_id) || $index->categories->isEmpty() || empty($index->category_display)) {
                 // Select category or no category? or turn off category display Show a list of articles
                 $page = max(1, $request->get('page')->toInt());
-                $limit = $index->config->cols * $index->config->rows;
+                $limit = $index->cols * $index->rows;
                 $listModel = \Document\Stories\Model::create($index);
                 $pagination = $listModel->paginate($page, $limit);
                 $index = ArrayTool::replace($index, $pagination);
@@ -74,7 +89,7 @@ class Controller extends \Kotchasan\Controller
     }
 
     /**
-     * URL generation for document module
+     * URL generation function
      *
      * @param string $module Module name
      * @param string|array $aliasOrCategory  alias of the article or id of the category (Categories are numbers separated by commas.)
@@ -89,10 +104,19 @@ class Controller extends \Kotchasan\Controller
         if (is_array($aliasOrCategory)) {
             $aliasOrCategory = implode(',', $aliasOrCategory);
         }
-        if ($aliasOrCategory !== '') {
+
+        if (self::$cfg->module_url == 1) {
             return Gcms::createUrl($module, $aliasOrCategory, 0, 0, $query, $encode);
         } else {
             return Gcms::createUrl($module, '', 0, $id, $query, $encode);
+        }
+
+        if ($aliasOrCategory === '' || $aliasOrCategory === null) {
+            return Gcms::createUrl($module, '', 0, $id, $query, $encode);
+        } elseif (preg_match('/^[0-9,]+$/', $aliasOrCategory)) {
+            return Gcms::createUrl($module, '', $aliasOrCategory, 0, $query, $encode);
+        } else {
+            return Gcms::createUrl($module, $aliasOrCategory, 0, 0, $query, $encode);
         }
     }
 }

@@ -7,13 +7,20 @@
  */
 import EventBus from '../core/EventBus.js';
 import {cleanupHtmlFragment} from '../core/HtmlCleanup.js';
+import {EMBED_ATTR, EMBED_SELECTOR, toPlaceholders, fromPlaceholders} from '../core/EmbedPlaceholder.js';
+
+// Editor-only marker on an <img> whose src failed to load (see handleImageState)
+const BROKEN_IMAGE_ATTR = 'data-rte-broken';
+
+// Block wrappers that exist only to hold one embed (see selectImage)
+const EMBED_WRAPPER_SELECTOR = '.rte-iframe-wrapper, .rte-video-wrapper';
 
 class ContentArea {
   /**
    * @param {RichTextEditor} editor - Editor instance
    * @param {Object} options - Configuration options
    */
-  constructor (editor, options = {}) {
+  constructor(editor, options = {}) {
     this.editor = editor;
     this.options = {
       minHeight: 200,
@@ -33,6 +40,10 @@ class ContentArea {
     this.handlePaste = this.handlePaste.bind(this);
     this.handleDrop = this.handleDrop.bind(this);
     this.handleDragOver = this.handleDragOver.bind(this);
+    this.handleImageState = this.handleImageState.bind(this);
+    this.handleCopy = this.handleCopy.bind(this);
+    this.handleKeyDown = this.handleKeyDown.bind(this);
+    this.sanitizeEmbed = this.sanitizeEmbed.bind(this);
   }
 
   /**
@@ -83,17 +94,29 @@ class ContentArea {
     this.element.addEventListener('paste', this.handlePaste);
     this.element.addEventListener('drop', this.handleDrop);
     this.element.addEventListener('dragover', this.handleDragOver);
+    this.element.addEventListener('copy', this.handleCopy);
+    this.element.addEventListener('cut', this.handleCopy);
+    this.element.addEventListener('keydown', this.handleKeyDown);
+
+    // Safety net: an iframe that reaches the content some other way than
+    // setContent()/insertHtml() (drag and drop, execCommand, another plugin)
+    this.embedObserver = new MutationObserver(() => {
+      if (this.element.querySelector('iframe')) toPlaceholders(this.element);
+    });
+    this.embedObserver.observe(this.element, {childList: true, subtree: true});
 
     // Selection change on mouseup and keyup
     this.element.addEventListener('mouseup', () => {
       this.editor.events?.emit(EventBus.Events.SELECTION_CHANGE);
     });
 
-    // Image click / dblclick — open image edit dialog
+    // Image click / dblclick — open image edit dialog (iframe placeholders go to the iframe plugin)
     this.element.addEventListener('click', (e) => {
       const img = e.target.closest('img');
       if (img) {
-        this.editor.events?.emit(EventBus.Events.IMAGE_CLICK, {element: img, event: e});
+        this.selectImage(img);
+        const type = img.hasAttribute(EMBED_ATTR) ? 'EMBED_CLICK' : 'IMAGE_CLICK';
+        this.editor.events?.emit(EventBus.Events[type], {element: img, event: e});
       }
     });
 
@@ -101,9 +124,14 @@ class ContentArea {
       const img = e.target.closest('img');
       if (img) {
         e.preventDefault();
-        this.editor.events?.emit(EventBus.Events.IMAGE_DBLCLICK, {element: img, event: e});
+        const type = img.hasAttribute(EMBED_ATTR) ? 'EMBED_DBLCLICK' : 'IMAGE_DBLCLICK';
+        this.editor.events?.emit(EventBus.Events[type], {element: img, event: e});
       }
     });
+
+    // Image load state — load/error do not bubble, so listen in the capture phase
+    this.element.addEventListener('error', this.handleImageState, true);
+    this.element.addEventListener('load', this.handleImageState, true);
 
     this.element.addEventListener('keyup', (e) => {
       // Emit selection change for navigation keys
@@ -125,6 +153,116 @@ class ContentArea {
     this.element.removeEventListener('paste', this.handlePaste);
     this.element.removeEventListener('drop', this.handleDrop);
     this.element.removeEventListener('dragover', this.handleDragOver);
+    this.element.removeEventListener('error', this.handleImageState, true);
+    this.element.removeEventListener('load', this.handleImageState, true);
+    this.element.removeEventListener('copy', this.handleCopy);
+    this.element.removeEventListener('cut', this.handleCopy);
+    this.element.removeEventListener('keydown', this.handleKeyDown);
+    this.embedObserver?.disconnect();
+  }
+
+  /**
+   * Select a clicked image as a whole, so Delete/Backspace removes it.
+   * Chrome only moves the caret when an image is clicked, which leaves Delete
+   * erasing text elsewhere. A link or embed wrapper that holds nothing but the
+   * image is selected with it, so deleting does not leave an empty box behind.
+   * @param {HTMLImageElement} img
+   */
+  selectImage(img) {
+    if (!this.element.isContentEditable) return;
+
+    let node = img;
+    let parent = node.parentElement;
+    while (parent && parent !== this.element
+      && parent.matches(`a, ${EMBED_WRAPPER_SELECTOR}`)
+      && parent.children.length === 1 && parent.textContent.trim() === '') {
+      node = parent;
+      parent = node.parentElement;
+    }
+
+    const range = document.createRange();
+    range.selectNode(node);
+    const selection = window.getSelection();
+    selection.removeAllRanges();
+    selection.addRange(range);
+  }
+
+  /**
+   * Delete/Backspace on a selected embed wrapper removes the whole block.
+   * Chrome would delete only its content and leave the empty <div> (with its
+   * margins or 16:9 padding) behind.
+   * @param {KeyboardEvent} event
+   */
+  handleKeyDown(event) {
+    if (event.key !== 'Delete' && event.key !== 'Backspace') return;
+
+    const range = this.editor.selection?.getRange();
+    const node = range && range.startContainer === range.endContainer
+      && range.endOffset - range.startOffset === 1
+      ? range.startContainer.childNodes[range.startOffset]
+      : null;
+    if (!node?.matches?.(EMBED_WRAPPER_SELECTOR) || !this.element.contains(node)) return;
+
+    event.preventDefault();
+    const next = node.nextElementSibling;
+    const previous = node.previousElementSibling;
+    node.remove();
+    if (next) {
+      this.editor.selection.setCursorAtStart(next);
+    } else if (previous) {
+      this.editor.selection.setCursorAtEnd(previous);
+    }
+    this.handleInput();
+  }
+
+  /**
+   * Copy/cut the real iframes rather than their editor-only placeholders
+   * @param {ClipboardEvent} event
+   */
+  handleCopy(event) {
+    const range = this.editor.selection?.getRange();
+    if (!range || range.collapsed || !event.clipboardData) return;
+
+    const fragment = range.cloneContents();
+    if (!fragment.querySelector(EMBED_SELECTOR)) return;
+
+    const holder = document.implementation.createHTMLDocument('').createElement('div');
+    holder.appendChild(holder.ownerDocument.importNode(fragment, true));
+    fromPlaceholders(holder, this.sanitizeEmbed);
+
+    event.preventDefault();
+    event.clipboardData.setData('text/html', holder.innerHTML);
+    event.clipboardData.setData('text/plain', window.getSelection().toString());
+
+    if (event.type === 'cut' && this.element.isContentEditable) {
+      range.deleteContents();
+      this.handleInput();
+    }
+  }
+
+  /**
+   * Run restored iframe markup through the editor's sanitizer (when enabled)
+   * @param {string} html
+   * @returns {string}
+   */
+  sanitizeEmbed(html) {
+    return this.editor?.options?.sanitize && this.editor.sanitizeHtml
+      ? this.editor.sanitizeHtml(html)
+      : html;
+  }
+
+  /**
+   * Mark an <img> whose src failed to load so CSS can draw it as a clickable placeholder.
+   * Otherwise the browser renders only its alt text, which looks like ordinary text and
+   * cannot be recognised as an image to click, replace or delete. The <img> itself is
+   * never changed; the marker is editor-only and is stripped by getContent().
+   * @param {Event} event
+   */
+  handleImageState(event) {
+    const img = event.target;
+    if (img?.tagName === 'IMG') {
+      img.toggleAttribute(BROKEN_IMAGE_ATTR, event.type === 'error');
+    }
   }
 
   /**
@@ -301,7 +439,16 @@ class ContentArea {
     // Don't return placeholder content
     if (this.isEmpty()) return '';
 
-    return this.element.innerHTML;
+    if (!this.element.querySelector(`img[${BROKEN_IMAGE_ATTR}], ${EMBED_SELECTOR}`)) {
+      return this.element.innerHTML;
+    }
+
+    // Strip the broken-image marker and restore iframes on a copy in an inert
+    // document, so the copied <img>/<iframe> elements load nothing
+    const copy = document.implementation.createHTMLDocument('').importNode(this.element, true);
+    copy.querySelectorAll(`img[${BROKEN_IMAGE_ATTR}]`).forEach(img => img.removeAttribute(BROKEN_IMAGE_ATTR));
+    fromPlaceholders(copy, this.sanitizeEmbed);
+    return copy.innerHTML;
   }
 
   /**
@@ -312,7 +459,16 @@ class ContentArea {
   setContent(html, recordHistory = false) {
     if (!this.element) return;
 
-    this.element.innerHTML = html ?? '';
+    html = html ?? '';
+    if (/<iframe/i.test(html)) {
+      // Swap iframes for placeholders in an inert template, before they can load
+      const template = document.createElement('template');
+      template.innerHTML = html;
+      toPlaceholders(template.content);
+      this.element.replaceChildren(template.content);
+    } else {
+      this.element.innerHTML = html;
+    }
 
     if (recordHistory) {
       this.editor.history?.record(true);

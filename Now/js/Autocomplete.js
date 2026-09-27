@@ -1,3 +1,10 @@
+/**
+ * Autocomplete
+ *
+ * Turns a text input into a suggestion list: types into the field, waits for a
+ * pause, then either fetches matches from an endpoint or filters a bound
+ * `<datalist>`. One instance owns one field's state, DOM list and handlers.
+ */
 const Autocomplete = {
   config: {
     minLength: 2,
@@ -8,6 +15,13 @@ const Autocomplete = {
     loadingClass: 'loading'
   },
 
+  /**
+   * Turn an input into an autocomplete field.
+   *
+   * @param {HTMLElement} element - Input to attach to.
+   * @param {Object} [options={}] - Overrides merged into the module config.
+   * @returns {Object|null} - The instance, or null when `element` is missing.
+   */
   create(element, options = {}) {
     if (!element) return null;
 
@@ -40,6 +54,15 @@ const Autocomplete = {
     return instance;
   },
 
+  /**
+   * Bind the input's keyboard and typing handlers.
+   *
+   * Typing is debounced by `options.delay`, so a fetch is not started on every
+   * keystroke while the user is still typing.
+   *
+   * @param {Object} instance - Instance to bind.
+   * @returns {void}
+   */
   bindEvents(instance) {
     const {element, list, options} = instance;
     const handlers = {};
@@ -117,6 +140,16 @@ const Autocomplete = {
     return handlers;
   },
 
+  /**
+   * Fetch matches for the current input value.
+   *
+   * A fetch already in flight is not started again, and the loading class is
+   * applied to the element for the duration of the request.
+   *
+   * @param {Object} instance - Instance to fetch for.
+   * @param {string} value - Current input value.
+   * @returns {Promise<void>}
+   */
   async fetchSuggestions(instance, value) {
     const {element, options} = instance;
 
@@ -142,6 +175,16 @@ const Autocomplete = {
     }
   },
 
+  /**
+   * Filter the instance's bound `<datalist>` client-side.
+   *
+   * Used instead of `fetchSuggestions` when the field has no endpoint, only a
+   * fixed list of options. Matches are limited to `options.limit`.
+   *
+   * @param {Object} instance - Instance to filter for.
+   * @param {string} value - Current input value.
+   * @returns {Array<Object>} - Matching suggestions.
+   */
   filterDatalist(instance, value) {
     const options = Array.from(instance.datalist.options);
     return options
@@ -153,6 +196,15 @@ const Autocomplete = {
       }));
   },
 
+  /**
+   * Render a list of suggestions under the field.
+   *
+   * An empty or non-array list hides the dropdown instead of showing nothing.
+   *
+   * @param {Object} instance - Instance to render for.
+   * @param {Array<Object>} items - Suggestions to show.
+   * @returns {void}
+   */
   showSuggestions(instance, items) {
     const {list, options} = instance;
     list.innerHTML = '';
@@ -182,6 +234,12 @@ const Autocomplete = {
     list.style.display = 'block';
   },
 
+  /**
+   * Hide and empty the suggestion dropdown.
+   *
+   * @param {Object} instance - Instance to hide for.
+   * @returns {void}
+   */
   hideSuggestions(instance) {
     if (instance.list) {
       instance.list.style.display = 'none';
@@ -189,6 +247,16 @@ const Autocomplete = {
     }
   },
 
+  /**
+   * Apply a chosen suggestion to the field.
+   *
+   * Dispatches a `change` event afterwards, so listeners bound to the field see
+   * the update the same as if the user had typed it.
+   *
+   * @param {Object} instance - Instance the item was chosen for.
+   * @param {HTMLElement} item - The suggestion row, carrying the value in its dataset.
+   * @returns {void}
+   */
   selectItem(instance, item) {
     const {element} = instance;
     element.value = item.dataset.value;
@@ -197,6 +265,12 @@ const Autocomplete = {
     element.dispatchEvent(new Event('change', {bubbles: true}));
   },
 
+  /**
+   * Tear an instance down: unbind handlers and remove the suggestion list.
+   *
+   * @param {Object} instance - Instance to destroy.
+   * @returns {void}
+   */
   destroy(instance) {
     if (!instance) return;
 

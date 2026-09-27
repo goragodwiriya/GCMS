@@ -61,6 +61,17 @@ const ResponseHandler = {
   // Sanitize HTML content before it reaches innerHTML/insertAdjacentHTML.
   // A privileged endpoint may opt out with action.raw === true, but only when
   // the deployment has explicitly enabled allowEval (raw HTML is privileged).
+  /**
+   * Sanitise HTML coming back from the server before it is inserted.
+   *
+   * Skipped only when the action opts out with `raw: true` and `config.allowEval`
+   * permits it, or when `config.sanitizeHtml` is explicitly false. Otherwise
+   * SecurityManager sanitises the markup.
+   *
+   * @param {string} content - HTML from the response.
+   * @param {Object} action - The action being handled; `raw` opts out.
+   * @returns {string} - Markup safe to insert.
+   */
   sanitizeContent(content, action) {
     if (action && action.raw === true && this.config.allowEval) {
       return content;
@@ -81,12 +92,32 @@ const ResponseHandler = {
   },
 
   // Reject event-handler attributes and srcdoc outright.
+  /**
+   * Whether an attribute name may never be set from a server response.
+   *
+   * Rejects every `on*` event handler attribute and `srcdoc`, since either would
+   * let a response run script in the page.
+   *
+   * @param {string} name - Attribute name.
+   * @returns {boolean} - True when the attribute must be dropped.
+   */
   isUnsafeAttrName(name) {
     const n = String(name || '').toLowerCase();
     return n.startsWith('on') || n === 'srcdoc';
   },
 
   // Clean dangerous schemes out of URL-bearing attributes.
+  /**
+   * Clean a value destined for a URL-bearing attribute.
+   *
+   * Applies to href, src, action, formaction, poster, xlink:href and background.
+   * SecurityManager does the work when available; otherwise dangerous schemes
+   * are stripped here.
+   *
+   * @param {string} name - Attribute name.
+   * @param {*} value - Proposed value.
+   * @returns {*} - The value, cleaned or emptied when unsafe.
+   */
   sanitizeAttrValue(name, value) {
     const n = String(name || '').toLowerCase();
     const urlAttrs = ['href', 'src', 'action', 'formaction', 'poster', 'xlink:href', 'background'];
@@ -586,6 +617,17 @@ const ResponseHandler = {
 
   },
 
+  /**
+   * Handle an action that asks for a component or table to reload.
+   *
+   * Recognised when `scope`/`mode` is `component` or `table`, or the target names
+   * a component. Returns false when the action is not a reload, letting the
+   * caller try the next handler.
+   *
+   * @param {Object} [action={}] - The action being handled.
+   * @param {Object|string} [context={}] - Context for resolving the target.
+   * @returns {Promise<boolean>} - True when this handler dealt with the action.
+   */
   async tryHandleReload(action = {}, context = {}) {
     const target = action.target || action.component;
     const targetName = typeof target === 'string' ? target.toLowerCase() : '';
@@ -621,6 +663,17 @@ const ResponseHandler = {
     return false;
   },
 
+  /**
+   * Work out which table an action is about.
+   *
+   * Looks at the action, then the context — which may itself be a table id
+   * string — and finally the fallback target.
+   *
+   * @param {Object} [action={}] - The action being handled.
+   * @param {Object|string} [context={}] - Context, or a table id.
+   * @param {string} [fallbackTarget=null] - Last resort target name.
+   * @returns {string} - Table id, empty when none could be determined.
+   */
   resolveTableId(action = {}, context = {}, fallbackTarget = null) {
     const contextObject = context && typeof context === 'object' ? context : {};
     const contextString = typeof context === 'string'
@@ -652,6 +705,15 @@ const ResponseHandler = {
     return tableId ? String(tableId).trim() : '';
   },
 
+  /**
+   * Reload one table by id through TableManager.
+   *
+   * Returns false rather than throwing when the id is blank or TableManager is
+   * not available, so a response handler can fall through to other strategies.
+   *
+   * @param {string} tableId - Id of the table to reload.
+   * @returns {Promise<boolean>} - True when a reload was actually started.
+   */
   async reloadTableById(tableId) {
     const resolvedTableId = String(tableId || '').trim();
     if (resolvedTableId === '') {
@@ -671,6 +733,16 @@ const ResponseHandler = {
     return true;
   },
 
+  /**
+   * Reload whichever table the action and context point at.
+   *
+   * A context given as a plain string is tried as a table id first, then the id
+   * is resolved from the action.
+   *
+   * @param {Object} [action={}] - The action being handled.
+   * @param {Object|string} [context={}] - Context, or a table id.
+   * @returns {Promise<boolean>} - True when a reload was started.
+   */
   async reloadTableFromContext(action = {}, context = {}) {
     if (typeof context === 'string' && await this.reloadTableById(context)) {
       return true;
@@ -684,6 +756,16 @@ const ResponseHandler = {
     return this.reloadTableById(tableId);
   },
 
+  /**
+   * Find the form instance an action applies to.
+   *
+   * Uses `action.formId` when given, otherwise falls back to the context. Returns
+   * null when FormManager is not loaded.
+   *
+   * @param {Object} [action={}] - The action being handled.
+   * @param {Object} [context={}] - Context for resolving the form.
+   * @returns {Promise<Object|null>} - The form instance, or null.
+   */
   async resolveFormInstance(action = {}, context = {}) {
     const formManager = window.FormManager || (window.Now?.getManager ? Now.getManager('form') : null);
     if (!formManager) {
@@ -757,6 +839,17 @@ const ResponseHandler = {
     return null;
   },
 
+  /**
+   * Apply a response's changes to a live form.
+   *
+   * Updates select options and other field options in place, so the form reflects
+   * the server without a full reload. Does nothing when FormManager is missing or
+   * the instance has no element.
+   *
+   * @param {Object} instance - Form instance to patch.
+   * @param {Object} [action={}] - The action carrying `options` to apply.
+   * @returns {Promise<void>}
+   */
   async patchFormInstance(instance, action = {}) {
     const formManager = window.FormManager || (window.Now?.getManager ? Now.getManager('form') : null);
     if (!formManager || !instance?.element) {
@@ -797,6 +890,18 @@ const ResponseHandler = {
     }
   },
 
+  /**
+   * Work out the new option set for each patched field.
+   *
+   * Starts from the form's current `state.formOptions` and applies each entry in
+   * `optionsPatch`. `optionModes` decides per field whether the incoming list
+   * replaces the existing one or merges into it.
+   *
+   * @param {Object} instance - Form instance being patched.
+   * @param {Object} [optionsPatch={}] - Field name to incoming options.
+   * @param {Object} [optionModes={}] - Field name to merge strategy.
+   * @returns {Object} - The option set to store back on the instance.
+   */
   buildFormOptions(instance, optionsPatch = {}, optionModes = {}) {
     const currentOptions = instance?.state?.formOptions && typeof instance.state.formOptions === 'object'
       ? instance.state.formOptions
@@ -835,6 +940,16 @@ const ResponseHandler = {
     return nextOptions;
   },
 
+  /**
+   * Merge two lists of select options, keyed by value.
+   *
+   * Incoming entries replace existing ones with the same value; entries that are
+   * not objects are ignored. Order follows first appearance.
+   *
+   * @param {Array} [existingOptions=[]] - Options already on the field.
+   * @param {Array} [incomingOptions=[]] - Options from the response.
+   * @returns {Array} - The merged list.
+   */
   mergeOptionItems(existingOptions = [], incomingOptions = []) {
     const merged = new Map();
 
@@ -854,6 +969,16 @@ const ResponseHandler = {
     return Array.from(merged.values());
   },
 
+  /**
+   * Work out which elements an action refers to.
+   *
+   * Accepts an Element directly, or a selector resolved against the context.
+   * An empty target yields an empty list rather than matching everything.
+   *
+   * @param {Element|string} target - Element or selector from the action.
+   * @param {Object} [context={}] - Context the selector is resolved against.
+   * @returns {Array<Element>} - Matching elements, possibly empty.
+   */
   resolveActionElements(target, context = {}) {
     if (!target) {
       return [];
@@ -926,6 +1051,13 @@ const ResponseHandler = {
     }
   },
 
+  /**
+   * The first element an action refers to.
+   *
+   * @param {Element|string} target - Element or selector from the action.
+   * @param {Object} [context={}] - Context the selector is resolved against.
+   * @returns {Element|null} - First match, or null.
+   */
   resolveActionElement(target, context = {}) {
     return this.resolveActionElements(target, context)[0] || null;
   },
@@ -940,6 +1072,39 @@ const ResponseHandler = {
     }
 
     this.state.actionHandlers.set(type, handler);
+  },
+
+  /**
+   * Pick the level of an HTTP response that actually carries `actions`.
+   *
+   * Callers receive the HttpClient wrapper (`{data, status, success, ...}`) whose `data`
+   * is the JSON body. Bodies come in two shapes: actions at the top level next to a
+   * `data` record (`{ok, data, actions}`), or actions inside `data`. Unwrapping blindly
+   * to `response.data.data` drops the first shape's actions on the floor, which makes
+   * every server-driven modal, redirect and reload do nothing at all — with no error,
+   * because an payload without `actions` is perfectly valid.
+   *
+   * @param {object} response - HttpClient wrapper, JSON body, or bare payload
+   * @returns {*} The payload to hand to process()
+   */
+  payloadOf(response) {
+    const body = response?.data ?? response;
+
+    if (!body || typeof body !== 'object' || Array.isArray(body)) {
+      return body;
+    }
+
+    if (body.actions) {
+      return body;
+    }
+
+    const inner = body.data;
+
+    if (inner && typeof inner === 'object' && !Array.isArray(inner) && inner.actions) {
+      return inner;
+    }
+
+    return body;
   },
 
   /**

@@ -40,7 +40,8 @@ class Model extends \Kotchasan\Model
                 'can_reply' => 1,
                 'created_at' => date('Y-m-d H:i:s'),
                 'visited' => 0,
-                'comments' => 0
+                'comments' => 0,
+                'picture' => null
             ];
         }
 
@@ -57,7 +58,8 @@ class Model extends \Kotchasan\Model
                 'Q.member_id',
                 'Q.created_at',
                 'Q.visited',
-                'Q.comments'
+                'Q.comments',
+                'Q.picture'
             )
             ->from('board_q Q')
             ->where(['Q.id', $id])

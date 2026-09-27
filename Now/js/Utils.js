@@ -1,11 +1,39 @@
 const Utils = {
   string: {
+    /**
+     * Generates a random hex string from the crypto random source.
+     *
+     * @param {number} [length=8] - Number of random bytes; the string is twice as long
+     * @returns {string} Hex string
+     */
     random(length = 8) {
       return Array.from(crypto.getRandomValues(new Uint8Array(length)))
         .map(b => b.toString(16).padStart(2, '0'))
         .join('');
     },
 
+    /**
+     * Reads an API/form value as a boolean the way a PHP/MySQL backend means it:
+     * '0', 'false', 'off', 'no', '' and the JS falsy values are false, anything
+     * else is true. Plain Boolean() would turn the string '0' (enum('1','0')
+     * columns) into true.
+     *
+     * @param {*} value - Value to read
+     * @returns {boolean} Boolean meaning of the value
+     */
+    toBoolean(value) {
+      if (typeof value === 'string') {
+        return !['', '0', 'false', 'off', 'no', 'null', 'undefined'].includes(value.trim().toLowerCase());
+      }
+      return Boolean(value);
+    },
+
+    /**
+     * Entity-encodes a value for safe insertion as HTML text.
+     *
+     * @param {*} value - Value to encode; null and undefined become an empty string
+     * @returns {string} Encoded text
+     */
     escape(value) {
       const s = value == null ? '' : String(value);
       return s
@@ -16,10 +44,23 @@ const Utils = {
         .replace(/'/g, "&#039;");
     },
 
+    /**
+     * Replaces everything outside letters, digits, dots and hyphens with an
+     * underscore, so the name is safe to use as a file name.
+     *
+     * @param {string} filename - Name to clean
+     * @returns {string} Cleaned name
+     */
     sanitizeFilename(filename) {
       return filename.replace(/[^a-z0-9.-]/gi, '_');
     },
 
+    /**
+     * Upper-cases the first character and leaves the rest as it is.
+     *
+     * @param {string} str - Text to capitalize
+     * @returns {string} Capitalized text
+     */
     capitalize(str) {
       return str.charAt(0).toUpperCase() + str.slice(1);
     },
@@ -54,6 +95,15 @@ const Utils = {
       }
     },
 
+    /**
+     * Shortens text to a maximum length, with the ending counted inside the
+     * limit so the result never exceeds it.
+     *
+     * @param {string} str - Text to shorten
+     * @param {number} [length=100] - Maximum length of the result
+     * @param {string} [ending='...'] - Suffix marking the cut
+     * @returns {string} Shortened text, or the original when it already fits
+     */
     truncate(str, length = 100, ending = '...') {
       if (str.length > length) {
         return str.substring(0, length - ending.length) + ending;
@@ -61,6 +111,13 @@ const Utils = {
       return str;
     },
 
+    /**
+     * Turns text into a URL slug: normalized, lower-cased, punctuation dropped
+     * and spaces turned into single hyphens.
+     *
+     * @param {string} str - Text to convert
+     * @returns {string} Slug
+     */
     slugify(str) {
       return str.normalize("NFKD")
         .toLowerCase()
@@ -70,12 +127,31 @@ const Utils = {
         .replace(/^-+|-+$/g, '');
     },
 
+    /**
+     * Returns the text content of markup, with the tags removed.
+     *
+     * @param {string} html - Markup to strip
+     * @returns {string} Plain text
+     */
     stripTags(html) {
       const div = document.createElement('div');
       div.innerHTML = html;
       return div.textContent || div.innerText || '';
     },
 
+    /**
+     * Runs a value through a chain of named formatters, each taking its
+     * arguments after a colon, as in 'date:D MMM YYYY'.
+     *
+     * A name is looked up in the context filters, then in the built-in
+     * formatters, then in window.formatters; an unknown one is warned about and
+     * the value passes through unchanged.
+     *
+     * @param {*} value - Value to format
+     * @param {string[]} formatters - Formatter expressions in order
+     * @param {Object} context - Context whose filters take priority
+     * @returns {*} Formatted value
+     */
     applyFormatters(value, formatters, context) {
       return formatters.reduce((val, formatter) => {
         const [name, ...args] = formatter.split(':');
@@ -138,6 +214,17 @@ const Utils = {
   },
 
   options: {
+    /**
+     * Normalizes any option source into a list of {value, text} entries, with
+     * groups kept as {label, options}.
+     *
+     * Accepts an array of pairs, objects or scalars, a Map, a plain object, a
+     * {success, data} response envelope, and the name of a global variable
+     * holding any of those. A URL is rejected: it must be fetched first.
+     *
+     * @param {Array|Map|Object|string} source - Option source
+     * @returns {Object[]|null} Normalized options, or null when unusable
+     */
     normalizeSource(source) {
       if (!source) return null;
 
@@ -253,6 +340,12 @@ const Utils = {
       return null;
     },
 
+    /**
+     * Flattens grouped options into a single list of entries.
+     *
+     * @param {Object[]} options - Options, possibly containing groups
+     * @returns {Object[]} Entries with the groups unwrapped
+     */
     flattenGroups(options) {
       if (!Array.isArray(options)) return [];
 
@@ -266,6 +359,13 @@ const Utils = {
   },
 
   number: {
+    /**
+     * Formats a number with thousands separators, in the locale of the browser.
+     *
+     * @param {number} num - Number to format
+     * @param {number} [decimals=0] - Decimal places, fixed
+     * @returns {string} Formatted number
+     */
     format(num, decimals = 0) {
       return Number(num).toLocaleString(undefined, {
         minimumFractionDigits: decimals,
@@ -295,32 +395,80 @@ const Utils = {
       return formatter.format(amount) + (currency ? ' ' + Now.translate(currency) : '');
     },
 
+    /**
+     * Formats a ratio as a percentage, so 0.25 becomes '25%'.
+     *
+     * @param {number} num - Ratio, where 1 is 100%
+     * @param {number} [decimals=0] - Decimal places
+     * @returns {string} Formatted percentage
+     */
     percentage(num, decimals = 0) {
       return (num * 100).toFixed(decimals) + '%';
     },
 
+    /**
+     * Formats a byte count with the largest unit that fits, keeping two decimal
+     * places.
+     *
+     * @param {number} bytes - Size in bytes
+     * @returns {string} Size with its unit
+     */
     fileSize(bytes) {
       const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
-      if (bytes === 0) return '0 Byte';
-      const i = parseInt(Math.floor(Math.log(bytes) / Math.log(1024)));
-      return Math.round(bytes / Math.pow(1024, i), 2) + ' ' + sizes[i];
+      const value = Number(bytes);
+      if (!Number.isFinite(value) || value <= 0) return '0 Byte';
+
+      const i = Math.min(
+        Math.floor(Math.log(value) / Math.log(1024)),
+        sizes.length - 1
+      );
+
+      return this.round(value / Math.pow(1024, i), 2) + ' ' + sizes[i];
     },
 
+    /**
+     * Rounds to a number of decimal places.
+     *
+     * @param {number} val - Value to round
+     * @param {number} [precision=2] - Decimal places
+     * @returns {number} Rounded value
+     */
     round(val, precision = 2) {
       const factor = Math.pow(10, precision);
       return Math.round(val * factor) / factor;
     },
 
+    /**
+     * Rounds up to a number of decimal places.
+     *
+     * @param {number} val - Value to round
+     * @param {number} [precision=2] - Decimal places
+     * @returns {number} Rounded value
+     */
     ceil(val, precision = 2) {
       const factor = Math.pow(10, precision);
       return Math.ceil(val * factor) / factor;
     },
 
+    /**
+     * Rounds down to a number of decimal places.
+     *
+     * @param {number} val - Value to round
+     * @param {number} [precision=2] - Decimal places
+     * @returns {number} Rounded value
+     */
     floor(val, precision = 2) {
       const factor = Math.pow(10, precision);
       return Math.floor(val * factor) / factor;
     },
 
+    /**
+     * Drops the digits past a number of decimal places, without rounding.
+     *
+     * @param {number} val - Value to truncate
+     * @param {number} [precision=2] - Decimal places to keep
+     * @returns {number} Truncated value
+     */
     truncate(val, precision = 2) {
       const factor = Math.pow(10, precision);
       return Math.trunc(val * factor) / factor;
@@ -375,12 +523,56 @@ const Utils = {
      *   - 'th-CE' = Thai with CE year
      *   - 'en' or others = English with CE year
      * @returns {string} Formatted date string
+     *
+     * Normalise a value before handing it to `new Date()`.
+     *
+     * REST APIs commonly send unix timestamps in **seconds** while `new Date()`
+     * expects **milliseconds**, so a raw `1801573993` renders as 22 Jan 1970
+     * instead of 2027. The date is wrong but still a valid date, so nothing
+     * throws and nothing warns — it only shows up when a human reads the screen.
+     *
+     * Anything below 1e11 is treated as seconds. That threshold is 1973 in
+     * milliseconds and the year 5138 in seconds, so real millisecond timestamps
+     * from this era are never misread.
+     *
+     * @param {*} value
+     * @returns {*} value ready for `new Date()`
+     */
+    /**
+     * Normalizes a date input for the Date constructor, converting a Unix
+     * timestamp in seconds to milliseconds.
+     *
+     * A number small enough to be seconds is multiplied by 1000; anything else
+     * passes through untouched.
+     *
+     * @param {number|string|Date} value - Value to normalize
+     * @returns {number|string|Date} Value the Date constructor can take
+     */
+    toDateInput(value) {
+      const n = typeof value === 'string' && value.trim() !== '' && !isNaN(Number(value))
+        ? Number(value)
+        : value;
+
+      return (typeof n === 'number' && isFinite(n) && Math.abs(n) < 1e11) ? n * 1000 : n;
+    },
+
+    /**
+     * Formats a date with a pattern of YYYY, MM, DD, HH, mm, ss and the month
+     * and day name tokens.
+     *
+     * The locale comes from I18nManager when none is given. Empty and
+     * unparseable values return an empty string rather than 'Invalid Date'.
+     *
+     * @param {Date|number|string} date - Date to format
+     * @param {string} [format='YYYY-MM-DD'] - Pattern
+     * @param {string} [locale=null] - Locale override
+     * @returns {string} Formatted date, empty when there is no usable date
      */
     format(date, format = 'YYYY-MM-DD', locale = null) {
       // Treat null/undefined/empty-string as no value -> return empty string
       if (date == null || date === '') return '';
 
-      const d = new Date(date);
+      const d = new Date(Utils.date.toDateInput(date));
       if (isNaN(d.getTime())) return '';
 
       // Auto-detect locale if not provided
@@ -511,14 +703,34 @@ const Utils = {
       return Number.isNaN(fallback.getTime()) ? null : fallback;
     },
 
+    /**
+     * Builds a Date from a Unix timestamp in seconds.
+     *
+     * @param {number} timestamp - Seconds since the epoch
+     * @returns {Date} The date
+     */
     fromTimestamp(timestamp) {
       return new Date(timestamp * 1000);
     },
 
+    /**
+     * Converts a date to a Unix timestamp in seconds.
+     *
+     * @param {Date|number|string} date - Date to convert
+     * @returns {number} Seconds since the epoch
+     */
     toTimestamp(date) {
       return Math.floor(new Date(date).getTime() / 1000);
     },
 
+    /**
+     * Returns a new date shifted by an amount of a unit.
+     *
+     * @param {Date|number|string} date - Starting date
+     * @param {number} amount - Amount to add; negative subtracts
+     * @param {string} unit - 'years', 'months', 'days', 'hours', 'minutes' or 'seconds'
+     * @returns {Date} The shifted date
+     */
     add(date, amount, unit) {
       const d = new Date(date);
       switch (unit) {
@@ -532,42 +744,97 @@ const Utils = {
       return d;
     },
 
+    /**
+     * Returns a new date shifted by a number of days.
+     *
+     * @param {Date|number|string} date - Starting date
+     * @param {number} days - Days to add; negative subtracts
+     * @returns {Date} The shifted date
+     */
     moveDate(date, days) {
       const d = new Date(date);
       d.setDate(d.getDate() + days);
       return d;
     },
 
+    /**
+     * Returns a new date shifted by a number of months.
+     *
+     * @param {Date|number|string} date - Starting date
+     * @param {number} months - Months to add; negative subtracts
+     * @returns {Date} The shifted date
+     */
     moveMonth(date, months) {
       const d = new Date(date);
       d.setMonth(d.getMonth() + months);
       return d;
     },
 
+    /**
+     * Returns a new date shifted by a number of years.
+     *
+     * @param {Date|number|string} date - Starting date
+     * @param {number} years - Years to add; negative subtracts
+     * @returns {Date} The shifted date
+     */
     moveYear(date, years) {
       const d = new Date(date);
       d.setFullYear(d.getFullYear() + years);
       return d;
     },
 
+    /**
+     * Converts a HH:mm string to minutes since midnight.
+     *
+     * @param {string} timeStr - Time as HH:mm
+     * @returns {number} Minutes since midnight
+     */
     timeToMinute(timeStr) {
       const [hours, minutes] = timeStr.split(':').map(Number);
       return hours * 60 + minutes;
     },
 
+    /**
+     * Converts a HH:mm:ss string to seconds since midnight, treating a missing
+     * seconds part as zero.
+     *
+     * @param {string} timeStr - Time as HH:mm or HH:mm:ss
+     * @returns {number} Seconds since midnight
+     */
     timeToSecond(timeStr) {
       const [hours, minutes, seconds] = timeStr.split(':').map(Number);
       return hours * 3600 + minutes * 60 + (seconds || 0);
     },
 
+    /**
+     * Reports whether a year is a leap year.
+     *
+     * @param {number} year - Year to test
+     * @returns {boolean} True for a leap year
+     */
     isLeapYear(year) {
       return (year % 4 === 0 && year % 100 !== 0) || (year % 400 === 0);
     },
 
+    /**
+     * Returns the number of days in a month.
+     *
+     * @param {number} year - Year
+     * @param {number} month - Month, 1 for January
+     * @returns {number} Days in that month
+     */
     daysInMonth(year, month) {
       return new Date(year, month, 0).getDate();
     },
 
+    /**
+     * Returns the distance from the second date to the first, in days, months
+     * and years.
+     *
+     * @param {Date|number|string} date1 - Later date
+     * @param {Date|number|string} date2 - Earlier date
+     * @returns {Object} {days, months, years}, negative when date1 comes first
+     */
     compare(date1, date2) {
       const d1 = new Date(date1);
       const d2 = new Date(date2);
@@ -666,11 +933,24 @@ const Utils = {
   },
 
   object: {
-    // Prototype-pollution guard for merge/clone/set operations.
+    /**
+     * Reports whether a key must never be written by a merge, clone or set
+     * operation, which is what keeps them free of prototype pollution.
+     *
+     * @param {string} key - Key about to be written
+     * @returns {boolean} True when the key is unsafe
+     */
     isUnsafeKey(key) {
       return key === '__proto__' || key === 'constructor' || key === 'prototype';
     },
 
+    /**
+     * Clones a value deeply, skipping inherited properties and the keys
+     * isUnsafeKey() rejects.
+     *
+     * @param {*} obj - Value to clone
+     * @returns {*} The clone
+     */
     deepClone(obj) {
       if (obj === null || typeof obj !== 'object') return obj;
       if (Array.isArray(obj)) return obj.map(item => this.deepClone(item));
@@ -682,6 +962,14 @@ const Utils = {
       return clone;
     },
 
+    /**
+     * Merges each source into the target recursively, skipping the keys
+     * isUnsafeKey() rejects.
+     *
+     * @param {Object} target - Object to merge into; mutated
+     * @param {...Object} sources - Objects to merge from, in order
+     * @returns {Object} The merged target
+     */
     merge(target, ...sources) {
       if (!sources.length) return target;
       const source = sources.shift();
@@ -701,10 +989,24 @@ const Utils = {
       return this.merge(target, ...sources);
     },
 
+    /**
+     * Reports whether a value is a plain object rather than an array or null.
+     *
+     * @param {*} item - Value to test
+     * @returns {boolean} True for an object
+     */
     isObject(item) {
       return item && typeof item === 'object' && !Array.isArray(item);
     },
 
+    /**
+     * Reads a nested value by path, accepting both dot and bracket notation.
+     *
+     * @param {Object} obj - Object to read from
+     * @param {string} path - Path such as 'user.roles[0]'
+     * @param {*} [defaultValue=null] - Value when the path resolves to nothing
+     * @returns {*} The value, or the default
+     */
     get(obj, path, defaultValue = null) {
       if (!obj || !path) {
         console.warn('[Utils.object.get] Invalid parameters');
@@ -721,6 +1023,15 @@ const Utils = {
   },
 
   array: {
+    /**
+     * Splits an array into runs of a fixed size, the last one shorter when the
+     * length does not divide evenly.
+     *
+     * @param {Array} arr - Array to split
+     * @param {number} size - Items per chunk
+     * @returns {Array[]} The chunks
+     * @throws {Error} When the input is not an array or the size is not positive
+     */
     chunk(arr, size) {
       if (!Array.isArray(arr)) throw new Error('[Utils.array.chunk] Input must be an array');
       if (typeof size !== 'number' || size <= 0) throw new Error('[Utils.array.chunk] Size must be a positive number');
@@ -730,6 +1041,14 @@ const Utils = {
       );
     },
 
+    /**
+     * Removes duplicates, comparing whole items or the value at a key.
+     *
+     * @param {Array} arr - Array to deduplicate
+     * @param {string} [key=null] - Property to compare instead of the item
+     * @returns {Array} Array without duplicates
+     * @throws {Error} When the input is not an array
+     */
     unique(arr, key = null) {
       if (!Array.isArray(arr)) throw new Error('[Utils.array.unique] Input must be an array');
       if (!key) return [...new Set(arr)];
@@ -740,6 +1059,13 @@ const Utils = {
       });
     },
 
+    /**
+     * Returns a shuffled copy, leaving the original alone.
+     *
+     * @param {Array} arr - Array to shuffle
+     * @returns {Array} Shuffled copy
+     * @throws {Error} When the input is not an array
+     */
     shuffle(arr) {
       if (!Array.isArray(arr)) throw new Error('[Utils.array.shuffle] Input must be an array');
       const result = [...arr];
@@ -750,6 +1076,13 @@ const Utils = {
       return result;
     },
 
+    /**
+     * Groups items by the value at a key.
+     *
+     * @param {Object[]} arr - Items to group
+     * @param {string} key - Property to group by
+     * @returns {Object} Items keyed by that value
+     */
     groupBy(arr, key) {
       return arr.reduce((grouped, item) => ({
         ...grouped,
@@ -757,12 +1090,29 @@ const Utils = {
       }), {});
     },
 
+    /**
+     * Flattens nested arrays to a depth.
+     *
+     * @param {Array} arr - Array to flatten
+     * @param {number} [depth=1] - Levels to flatten
+     * @returns {Array} Flattened array
+     * @throws {Error} When the input is not an array
+     */
     flatten(arr, depth = 1) {
       if (!Array.isArray(arr)) throw new Error('[Utils.array.flatten] Input must be an array');
       return arr.reduce((flat, item) =>
         flat.concat(depth > 0 && Array.isArray(item) ? this.flatten(item, depth - 1) : item), []);
     },
 
+    /**
+     * Finds the first item whose key holds a value.
+     *
+     * @param {Object[]} arr - Items to search
+     * @param {string} key - Property to compare
+     * @param {*} value - Value to look for
+     * @returns {Object|undefined} The item, or undefined
+     * @throws {Error} When the input is not an array
+     */
     findBy(arr, key, value) {
       if (!Array.isArray(arr)) throw new Error('[Utils.array.findBy] Input must be an array');
       return arr.find(item => item[key] === value);
@@ -770,10 +1120,22 @@ const Utils = {
   },
 
   validate: {
+    /**
+     * Reports whether text looks like an email address.
+     *
+     * @param {string} email - Text to check
+     * @returns {boolean} True when the shape is right
+     */
     email(email) {
       return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
     },
 
+    /**
+     * Reports whether text parses as a URL.
+     *
+     * @param {string} url - Text to check
+     * @returns {boolean} True when it parses
+     */
     url(url) {
       try {
         new URL(url);
@@ -783,6 +1145,13 @@ const Utils = {
       }
     },
 
+    /**
+     * Reports whether text looks like a phone number: 9 to 15 digits, with the
+     * usual separators and an optional leading plus.
+     *
+     * @param {string} phone - Text to check
+     * @returns {boolean} True when the shape is right
+     */
     phone(phone) {
       if (typeof phone !== 'string') return false;
       const digitsOnly = phone.replace(/[^\d]/g, '');
@@ -790,6 +1159,12 @@ const Utils = {
       return /^\+?[\d\s().-]{10,}$/.test(phone);
     },
 
+    /**
+     * Scores a password on length, mixed case, digits and symbols.
+     *
+     * @param {string} password - Password to score
+     * @returns {Object} {score, label, isStrong}, with a score of 0 to 4
+     */
     password(password) {
       const strength = {
         0: "Too weak",
@@ -813,6 +1188,73 @@ const Utils = {
   },
 
   dom: {
+    _resourcePromises: new Map(),
+
+    /**
+     * Load an external script (.js) or stylesheet (.css) once.
+     * Repeat calls with the same url reuse the same promise instead of
+     * inserting the tag again.
+     * @param {string} url
+     * @returns {Promise<void>}
+     */
+    loadResource(url) {
+      if (this._resourcePromises.has(url)) {
+        return this._resourcePromises.get(url);
+      }
+
+      const ext = url.split('?')[0].split('.').pop().toLowerCase();
+      const selector = ext === 'css' ? `link[href="${url}"]` : `script[src="${url}"]`;
+
+      if (document.querySelector(selector)) {
+        const loaded = Promise.resolve();
+        this._resourcePromises.set(url, loaded);
+        return loaded;
+      }
+
+      const promise = new Promise((resolve, reject) => {
+        let element;
+        if (ext === 'css') {
+          element = document.createElement('link');
+          element.rel = 'stylesheet';
+          element.href = url;
+        } else {
+          element = document.createElement('script');
+          element.src = url;
+          element.async = true;
+        }
+        element.onload = () => resolve();
+        element.onerror = () => {
+          element.remove();
+          this._resourcePromises.delete(url);
+          reject(new Error(`Failed to load: ${url}`));
+        };
+        document.head.appendChild(element);
+      });
+
+      this._resourcePromises.set(url, promise);
+      return promise;
+    },
+
+    /**
+     * Load multiple scripts/stylesheets in parallel, skipping any already loaded.
+     * @param {string[]} urls
+     * @returns {Promise<void[]>}
+     */
+    loadResources(urls) {
+      return Promise.all(urls.map(url => this.loadResource(url)));
+    },
+
+    /**
+     * Builds an element with attributes and children in one call.
+     *
+     * className and dataset are handled as properties; everything else is set
+     * as an attribute. String children become text nodes.
+     *
+     * @param {string} tag - Tag name
+     * @param {Object} [attributes={}] - Attributes, plus className and dataset
+     * @param {Array<Node|string>} [children=[]] - Children to append
+     * @returns {HTMLElement} The new element
+     */
     create(tag, attributes = {}, children = []) {
       const element = document.createElement(tag);
       Object.entries(attributes).forEach(([key, value]) => {
@@ -836,16 +1278,37 @@ const Utils = {
       return element;
     },
 
+    /**
+     * Toggles one or more classes on an element.
+     *
+     * @param {HTMLElement} element - Element to change
+     * @param {...string} classNames - Classes to toggle
+     * @returns {void}
+     */
     toggleClass(element, ...classNames) {
       classNames.forEach(className =>
         element.classList.toggle(className)
       );
     },
 
+    /**
+     * Returns the closest ancestor matching a selector, the element itself
+     * included.
+     *
+     * @param {Element} element - Element to start from
+     * @param {string} selector - CSS selector
+     * @returns {Element|null} The match, or null
+     */
     closest(element, selector) {
       return element.closest(selector);
     },
 
+    /**
+     * Reports whether an element takes up space on the page.
+     *
+     * @param {HTMLElement} element - Element to test
+     * @returns {boolean} True when it is rendered
+     */
     isVisible(element) {
       return !!(element.offsetWidth || element.offsetHeight || element.getClientRects().length);
     },
@@ -903,6 +1366,11 @@ const Utils = {
   },
 
   browser: {
+    /**
+     * Identifies the browser from the user agent.
+     *
+     * @returns {Object} {name, version}
+     */
     info() {
       const ua = navigator.userAgent;
       let tem;
@@ -931,16 +1399,34 @@ const Utils = {
       };
     },
 
+    /**
+     * Reports whether the user agent names a mobile device.
+     *
+     * @returns {boolean} True on mobile
+     */
     isMobile() {
       return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
     },
 
+    /**
+     * Reports the orientation of the viewport.
+     *
+     * @returns {string} 'portrait' or 'landscape'
+     */
     orientation() {
       return window.innerHeight > window.innerWidth ? 'portrait' : 'landscape';
     }
   },
 
   session: {
+    /**
+     * Stores a value in session storage, optionally with a lifetime.
+     *
+     * @param {string} key - Storage key
+     * @param {*} value - Value to store; JSON-encoded
+     * @param {number} [ttl=null] - Lifetime in seconds
+     * @returns {void}
+     */
     set(key, value, ttl = null) {
       const item = {
         value: value,
@@ -958,6 +1444,14 @@ const Utils = {
       }
     },
 
+    /**
+     * Reads a value from session storage, dropping it when its lifetime has
+     * passed.
+     *
+     * @param {string} key - Storage key
+     * @param {*} [defaultValue=null] - Value when the key is missing or expired
+     * @returns {*} Stored value, or the default
+     */
     get(key, defaultValue = null) {
       try {
         const item = sessionStorage.getItem(key);
@@ -977,6 +1471,12 @@ const Utils = {
       }
     },
 
+    /**
+     * Removes a key from session storage.
+     *
+     * @param {string} key - Storage key
+     * @returns {void}
+     */
     remove(key) {
       try {
         sessionStorage.removeItem(key);
@@ -985,6 +1485,11 @@ const Utils = {
       }
     },
 
+    /**
+     * Empties session storage.
+     *
+     * @returns {void}
+     */
     clear() {
       try {
         sessionStorage.clear();
@@ -993,19 +1498,42 @@ const Utils = {
       }
     },
 
+    /**
+     * Reports whether a key exists in session storage, without checking whether
+     * it has expired.
+     *
+     * @param {string} key - Storage key
+     * @returns {boolean} True when the key is present
+     */
     has(key) {
       return sessionStorage.getItem(key) !== null;
     },
 
+    /**
+     * Returns how many keys session storage holds.
+     *
+     * @returns {number} Number of keys
+     */
     size() {
       return sessionStorage.length;
     },
 
+    /**
+     * Lists the keys in session storage.
+     *
+     * @returns {string[]} The keys
+     */
     keys() {
       return Object.keys(sessionStorage);
     }
   },
 
+  /**
+   * Generates a UUID, from crypto.randomUUID() where available and from a
+   * random fallback otherwise.
+   *
+   * @returns {string} UUID
+   */
   generateUUID() {
     if (crypto && crypto.randomUUID) {
       return crypto.randomUUID();
@@ -1019,6 +1547,14 @@ const Utils = {
   },
 
   function: {
+    /**
+     * Wraps a function so it runs only after the calls stop for the wait
+     * period.
+     *
+     * @param {Function} func - Function to defer
+     * @param {number} [wait=300] - Quiet period in milliseconds
+     * @returns {Function} The debounced function
+     */
     debounce(func, wait = 300) {
       let timeout;
       return function executedFunction(...args) {
@@ -1031,6 +1567,14 @@ const Utils = {
       };
     },
 
+    /**
+     * Wraps a function so it runs at most once per interval, on the leading
+     * edge.
+     *
+     * @param {Function} func - Function to rate-limit
+     * @param {number} [limit=300] - Interval in milliseconds
+     * @returns {Function} The throttled function
+     */
     throttle(func, limit = 300) {
       let inThrottle;
       return function executedFunction(...args) {
@@ -1042,6 +1586,14 @@ const Utils = {
       };
     },
 
+    /**
+     * Debounces an async function, returning a promise that settles with the
+     * result of the call that actually ran.
+     *
+     * @param {Function} func - Async function to defer
+     * @param {number} [wait=300] - Quiet period in milliseconds
+     * @returns {Function} The debounced function, returning a promise
+     */
     debounceAsync(func, wait = 300) {
       let timeout;
       return function executedFunction(...args) {
@@ -1063,6 +1615,20 @@ const Utils = {
   },
 
   cookie: {
+    /**
+     * Writes a cookie, secure and SameSite=Strict by default.
+     *
+     * @param {string} name - Cookie name
+     * @param {string} value - Value to store
+     * @param {Object} [options={}] - Cookie options
+     * @param {number} [options.days=7] - Lifetime in days; 0 for a session cookie
+     * @param {string} [options.path='/'] - Path
+     * @param {string} [options.domain=''] - Domain
+     * @param {boolean} [options.secure=true] - Send over HTTPS only
+     * @param {string} [options.sameSite='Strict'] - SameSite policy
+     * @returns {void}
+     * @throws {Error} When the name or value is not a string
+     */
     set: function(name, value, options = {}) {
       if (typeof name !== 'string' || typeof value !== 'string') {
         throw new Error('[Utils.cookie.set] Name and value must be strings');
@@ -1096,6 +1662,13 @@ const Utils = {
       }
     },
 
+    /**
+     * Reads a cookie by name.
+     *
+     * @param {string} name - Cookie name
+     * @returns {string|null} Value, or null when not set
+     * @throws {Error} When the name is not a string
+     */
     get: function(name) {
       if (typeof name !== 'string') {
         throw new Error('[Utils.cookie.get] Name must be a string');
@@ -1107,6 +1680,17 @@ const Utils = {
       return match ? decodeURIComponent(match[1]) : null;
     },
 
+    /**
+     * Removes a cookie by expiring it.
+     *
+     * The path and domain must match the ones it was written with, or the
+     * browser keeps it.
+     *
+     * @param {string} name - Cookie name
+     * @param {Object} [options={}] - Path and domain of the cookie
+     * @returns {void}
+     * @throws {Error} When the name is not a string
+     */
     remove: function(name, options = {}) {
       if (typeof name !== 'string') {
         throw new Error('[Utils.cookie.remove] Name must be a string');
@@ -1120,6 +1704,12 @@ const Utils = {
       this.set(name, '', removeOptions);
     },
 
+    /**
+     * Reports whether the browser accepts cookies, by writing a test cookie and
+     * reading it back.
+     *
+     * @returns {boolean} True when cookies work
+     */
     isEnabled() {
       try {
         document.cookie = 'cookietest=1';
@@ -1133,6 +1723,12 @@ const Utils = {
   },
 
   url: {
+    /**
+     * Reads the query parameters of a URL as an object.
+     *
+     * @param {string} url - URL to read
+     * @returns {Object} Parameters keyed by name
+     */
     getQueryParams(url) {
       const params = {};
       new URL(url).searchParams.forEach((value, key) => {
@@ -1141,6 +1737,16 @@ const Utils = {
       return params;
     },
 
+    /**
+     * Appends query parameters to a URL.
+     *
+     * Parameters are appended, so a name already present gains a second value
+     * rather than replacing the first.
+     *
+     * @param {string} url - URL to extend
+     * @param {Object} params - Parameters to add
+     * @returns {string} The extended URL
+     */
     addQueryParams(url, params) {
       const urlObj = new URL(url);
       Object.entries(params).forEach(([key, value]) => {
@@ -1151,6 +1757,12 @@ const Utils = {
   },
 
   path: {
+    /**
+     * Joins path segments with single slashes, dropping the empty ones.
+     *
+     * @param {...string} parts - Segments to join
+     * @returns {string} Joined path, without leading or trailing slashes
+     */
     join(...parts) {
       return parts
         .map(part => part.replace(/^\/+|\/+$/g, ''))
@@ -1158,18 +1770,42 @@ const Utils = {
         .join('/');
     },
 
+    /**
+     * Collapses runs of slashes into one.
+     *
+     * @param {string} path - Path to normalize
+     * @returns {string} Normalized path
+     */
     normalize(path) {
       return path.replace(/\/+/g, '/');
     },
 
+    /**
+     * Returns the last segment of a path.
+     *
+     * @param {string} path - Path to read
+     * @returns {string} Last segment
+     */
     basename(path) {
       return path.split('/').pop();
     },
 
+    /**
+     * Returns a path without its last segment.
+     *
+     * @param {string} path - Path to read
+     * @returns {string} Parent path
+     */
     dirname(path) {
       return path.split('/').slice(0, -1).join('/');
     },
 
+    /**
+     * Returns the extension of a path, including the dot.
+     *
+     * @param {string} path - Path to read
+     * @returns {string} Extension, empty when there is none
+     */
     extname(path) {
       const basename = this.basename(path);
       const lastDotIndex = basename.lastIndexOf('.');
@@ -1178,6 +1814,17 @@ const Utils = {
   },
 
   keyboard: {
+    /**
+     * Reports whether a key event matches a key and a set of modifier states.
+     *
+     * A modifier left out is not checked; one set to false requires it to be
+     * up.
+     *
+     * @param {KeyboardEvent} event - Event to test
+     * @param {string} key - Expected event.key
+     * @param {Object} [modifiers={}] - {shift, ctrl, alt, meta} states to require
+     * @returns {boolean} True when the event matches
+     */
     isKey(event, key, modifiers = {}) {
       if (event.key !== key) return false;
 

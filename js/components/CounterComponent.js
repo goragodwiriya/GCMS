@@ -685,8 +685,8 @@ const CounterComponent = {
   setupScrollTrigger(instance) {
     const {element, options} = instance;
 
-    // If ScrollManager is available
-    if (window.ScrollManager) {
+    // If ScrollManager is available and actually initialized (not disabled via config)
+    if (window.ScrollManager && window.ScrollManager.state?.initialized && !window.ScrollManager.state?.disabled) {
       const scrollManager = window.ScrollManager; // Use global ScrollManager object
 
       try {

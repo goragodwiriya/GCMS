@@ -153,7 +153,10 @@ const SyntaxHighlighterComponent = {
       markedLines: new Set()
     };
 
-    this.setup(instance);
+    const setupOk = this.setup(instance);
+    if (!setupOk) {
+      return null;
+    }
 
     this.state.instances.set(instance.id, instance);
     element.dataset.syntaxComponentId = instance.id;
@@ -170,10 +173,14 @@ const SyntaxHighlighterComponent = {
     try {
       if (instance.element.tagName === 'CODE') {
         instance.codeElement = instance.element;
-        instance.preElement = instance.element.parentNode.tagName === 'PRE' ?
-          instance.element.parentNode : null;
+        const parentElement = instance.element.parentElement;
+        instance.preElement = parentElement && parentElement.tagName === 'PRE' ?
+          parentElement : null;
 
         if (!instance.preElement) {
+          if (!instance.element.parentNode) {
+            return false;
+          }
           instance.preElement = document.createElement('pre');
           instance.element.parentNode.insertBefore(instance.preElement, instance.element);
           instance.preElement.appendChild(instance.element);
@@ -197,13 +204,19 @@ const SyntaxHighlighterComponent = {
         instance.element.appendChild(instance.preElement);
       }
 
+      if (!instance.preElement || !instance.codeElement) {
+        return false;
+      }
+
       instance.originalContent = instance.codeElement.textContent;
 
       instance.element.classList.add('syntax-highlighter-component');
 
       instance.language = this.detectLanguage(instance);
 
-      this.highlight(instance);
+      if (!this.highlight(instance)) {
+        return false;
+      }
 
       instance.refresh = () => {
         this.refresh(instance);
@@ -236,10 +249,13 @@ const SyntaxHighlighterComponent = {
       this.dispatchEvent(instance, 'init', {
         instance
       });
+
+      return true;
     } catch (error) {
       console.error('SyntaxHighlighterComponent setup error:', error);
       instance.error = error.message;
       this.renderError(instance);
+      return false;
     }
   },
 
@@ -288,6 +304,10 @@ const SyntaxHighlighterComponent = {
         throw new Error('Language not detected');
       }
 
+      if (!instance.preElement || !instance.preElement.parentNode) {
+        return false;
+      }
+
       const processedCode = this.preprocessCode(instance.originalContent, instance.language, instance.options);
 
       instance.tokens = this.tokenize(processedCode, instance.language);
@@ -317,6 +337,8 @@ const SyntaxHighlighterComponent = {
 
       this.applyTheme(instance);
 
+      return true;
+
     } catch (error) {
       console.error('SyntaxHighlighterComponent highlight error:', error);
       instance.error = error.message;
@@ -329,6 +351,8 @@ const SyntaxHighlighterComponent = {
       if (typeof instance.options.onError === 'function') {
         instance.options.onError.call(instance, error);
       }
+
+      return false;
     }
   },
 
@@ -830,10 +854,10 @@ const SyntaxHighlighterComponent = {
     errorDiv.textContent = Now.translate('Error') + ': ' + instance.error;
     errorDiv.style.cssText = 'color: #e74c3c; background-color: #fceae9; padding: 10px; border: 1px solid #e74c3c; border-radius: 4px; margin: 10px 0;';
 
-    if (instance.wrapper) {
+    if (instance.wrapper && instance.wrapper.parentNode) {
       instance.wrapper.parentNode.replaceChild(errorDiv, instance.wrapper);
       instance.wrapper = errorDiv;
-    } else {
+    } else if (instance.preElement && instance.preElement.parentNode) {
       instance.preElement.style.display = 'none';
       instance.preElement.parentNode.insertBefore(errorDiv, instance.preElement.nextSibling);
       instance.wrapper = errorDiv;
@@ -1097,20 +1121,30 @@ const SyntaxHighlighterComponent = {
     this.state.observer = new MutationObserver(mutations => {
       mutations.forEach(mutation => {
         mutation.addedNodes.forEach(node => {
-          if (node.nodeType === 1) {
-            if (node.tagName === 'CODE' && node.parentNode.tagName === 'PRE') {
+          if (node.nodeType === 1 && node.isConnected) {
+            const parentTag = node.parentElement ? node.parentElement.tagName : '';
+
+            if (node.tagName === 'CODE' && parentTag === 'PRE') {
               this.create(node);
             } else if (node.tagName === 'PRE') {
               const codeElement = node.querySelector('code');
-              if (codeElement) {
+              if (codeElement && codeElement.isConnected) {
                 this.create(codeElement);
               }
             } else {
               const codeElements = node.querySelectorAll('pre > code');
-              codeElements.forEach(code => this.create(code));
+              codeElements.forEach(code => {
+                if (code.isConnected) {
+                  this.create(code);
+                }
+              });
 
               const syntaxElements = node.querySelectorAll('[data-component="syntaxhighlighter"]');
-              syntaxElements.forEach(el => this.create(el));
+              syntaxElements.forEach(el => {
+                if (el.isConnected) {
+                  this.create(el);
+                }
+              });
             }
           }
         });
@@ -1201,9 +1235,11 @@ if (window.ComponentManager) {
     template: null,
 
     validElement(element) {
+      const parentTag = element.parentElement ? element.parentElement.tagName : '';
+
       return element.classList.contains('syntax-highlighter-component') ||
         element.dataset.component === 'syntaxhighlighter' ||
-        (element.tagName === 'CODE' && element.parentNode.tagName === 'PRE');
+        (element.tagName === 'CODE' && parentTag === 'PRE');
     },
 
     setupElement(element, state) {

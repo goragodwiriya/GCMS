@@ -672,15 +672,40 @@ const LineItemsManager = {
     }
   },
 
+  /**
+   * Coerce a cache lifetime into a usable number of milliseconds.
+   *
+   * Anything that is not a finite, non-negative integer falls back to `fallback`,
+   * so a malformed `data-cache-time` cannot disable caching by accident.
+   *
+   * @param {*} value - Raw value, typically from a data attribute.
+   * @param {number} [fallback=60000] - Used when `value` is unusable.
+   * @returns {number} - Lifetime in milliseconds.
+   */
   normalizeCacheTime(value, fallback = 60000) {
     const parsed = parseInt(value, 10);
     return Number.isFinite(parsed) && parsed >= 0 ? parsed : fallback;
   },
 
+  /**
+   * Build the cache key for a request.
+   *
+   * The URL is the whole key, so query parameters and pagination are already
+   * part of it and two different pages never share an entry.
+   *
+   * @param {string} url - Request URL.
+   * @returns {string} - Cache key.
+   */
   createCacheKey(url) {
     return String(url || '');
   },
 
+  /**
+   * Read a cached response, dropping it if it has expired.
+   *
+   * @param {string} cacheKey - Key from `createCacheKey`.
+   * @returns {*|null} - The cached data, or null when absent or stale.
+   */
   getCachedResponse(cacheKey) {
     const cached = this.state.cache.get(cacheKey);
     if (!cached) return null;
@@ -691,6 +716,14 @@ const LineItemsManager = {
     return cached.data;
   },
 
+  /**
+   * Store a response with an expiry time.
+   *
+   * @param {string} cacheKey - Key from `createCacheKey`.
+   * @param {*} data - Response payload to keep.
+   * @param {*} cacheTime - Lifetime in ms; falls back to `config.cacheTime`.
+   * @returns {void}
+   */
   setCachedResponse(cacheKey, data, cacheTime) {
     this.state.cache.set(cacheKey, {
       data,
@@ -1042,7 +1075,8 @@ const LineItemsManager = {
     let inputType = 'text';
     if (col.type === 'number' || col.type === 'currency') {
       inputType = 'number';
-    } else if (col.type === 'checkbox') {
+    } else if (col.type === 'checkbox' || col.type === 'switch') {
+      // `switch` is a checkbox wearing the switch class — same input, same value
       inputType = 'checkbox';
     }
 
@@ -1050,9 +1084,9 @@ const LineItemsManager = {
     input.name = `${config.fieldName}[${rowIndex}][${col.field}]`;
     input.id = `${config.fieldName}_${col.field}_${rowIndex}`;
     input.dataset.field = col.field;
-    input.className = 'form-input';
+    input.className = col.className || 'form-input';
 
-    if (col.type === 'checkbox') {
+    if (inputType === 'checkbox') {
       input.checked = value === true || value === 'true' || value === '1' || value === 1;
       input.value = '1';
     } else {
@@ -1133,6 +1167,7 @@ const LineItemsManager = {
         break;
 
       case 'checkbox':
+      case 'switch':
         // For checkbox, value determines checked state
         elementConfig.checked = value === true || value === 'true' || value === '1' || value === 1;
         elementConfig.value = '1'; // Value when checked

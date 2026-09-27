@@ -1,3 +1,10 @@
+/**
+ * SelectElementFactory
+ *
+ * Builds `<select>` fields, including ones whose options are fetched from an
+ * endpoint. Handles option groups, a placeholder option, type-to-filter, and an
+ * optional response cache keyed by URL plus query parameters.
+ */
 class SelectElementFactory extends ElementFactory {
   static config = {
     ...ElementFactory.config,
@@ -101,6 +108,53 @@ class SelectElementFactory extends ElementFactory {
 
   static responseCache = new Map();
 
+  /**
+   * Read the select options a single element declares.
+   *
+   * `size` is resolved in a fixed order — the definition wins, then
+   * `data-size`, then the element's own `size` attribute, then the default.
+   *
+   * @param {HTMLElement} element - The select being set up.
+   * @param {Object} def - Default configuration for this element type.
+   * @param {DOMStringMap} dataset - The element's `data-*` attributes.
+   * @returns {Object} - Configuration for this element.
+   */
+  static extractCustomConfig(element, def, dataset) {
+    const result = {};
+
+    // Explicitly read size attribute from HTML
+    // Priority: def.size > data-size > element.size > default
+    if (def?.size !== undefined) {
+      result.size = def.size;
+    } else if (dataset.size !== undefined) {
+      result.size = parseInt(dataset.size, 10) || undefined;
+    } else if (element.size && element.size > 1) {
+      // Only read from element if it's > 1 (browser default is often 0 or 1)
+      result.size = element.size;
+    }
+
+    // Explicitly read multiple attribute
+    if (def?.multiple !== undefined) {
+      result.multiple = def.multiple;
+    } else if (dataset.multiple !== undefined) {
+      result.multiple = dataset.multiple === 'true';
+    } else if (element.multiple !== undefined) {
+      result.multiple = element.multiple;
+    }
+
+    return result;
+  }
+
+  /**
+   * Prepare a select, remembering the value it started with.
+   *
+   * The initial value is taken from `element.value`, then `data-value`, then
+   * empty — captured before options are replaced so a value loaded from the
+   * server can be re-selected once its option exists.
+   *
+   * @param {Object} instance - Element instance carrying `element` and `config`.
+   * @returns {void}
+   */
   static setupElement(instance) {
     const {element, config} = instance;
 
@@ -238,6 +292,16 @@ class SelectElementFactory extends ElementFactory {
     return instance;
   }
 
+  /**
+   * Let the user jump to an option by typing.
+   *
+   * Keystrokes accumulate into a search term that resets after a pause, so
+   * typing several letters quickly matches a whole word rather than only the
+   * last character.
+   *
+   * @param {Object} instance - Element instance to bind.
+   * @returns {void}
+   */
   static setupTypeToFilter(instance) {
     const {element, config} = instance;
 
@@ -344,16 +408,39 @@ class SelectElementFactory extends ElementFactory {
     instance._typeToFilterHandler = handleSearch;
   }
 
+  /**
+   * Coerce a cache lifetime into a usable number of milliseconds.
+   *
+   * @param {*} value - Raw value, typically from a data attribute.
+   * @param {number} [fallback=60000] - Used when `value` is unusable.
+   * @returns {number} - Lifetime in milliseconds.
+   */
   static normalizeCacheTime(value, fallback = 60000) {
     const parsed = parseInt(value, 10);
     return Number.isFinite(parsed) && parsed >= 0 ? parsed : fallback;
   }
 
+  /**
+   * Build the cache key for an options request.
+   *
+   * Query parameters are folded into the key, so the same endpoint called with
+   * different filters does not share a cached list.
+   *
+   * @param {string} url - Endpoint URL.
+   * @param {Object} [params={}] - Query parameters.
+   * @returns {string} - Cache key.
+   */
   static createCacheKey(url, params = {}) {
     const queryString = new URLSearchParams(params).toString();
     return `${url}${queryString ? '?' + queryString : ''}`;
   }
 
+  /**
+   * Read a cached options response, dropping it if it has expired.
+   *
+   * @param {string} cacheKey - Key from `createCacheKey`.
+   * @returns {*|null} - Cached data, or null when absent or stale.
+   */
   static getCachedResponse(cacheKey) {
     const cached = this.responseCache.get(cacheKey);
     if (!cached) return null;
@@ -364,6 +451,14 @@ class SelectElementFactory extends ElementFactory {
     return cached.data;
   }
 
+  /**
+   * Store an options response with an expiry time.
+   *
+   * @param {string} cacheKey - Key from `createCacheKey`.
+   * @param {*} data - Options payload to keep.
+   * @param {*} cacheTime - Lifetime in ms; falls back to the element default.
+   * @returns {void}
+   */
   static setCachedResponse(cacheKey, data, cacheTime) {
     this.responseCache.set(cacheKey, {
       data,
@@ -372,6 +467,18 @@ class SelectElementFactory extends ElementFactory {
     });
   }
 
+  /**
+   * Fetch options from an endpoint and render them.
+   *
+   * The cache is consulted only when `config.cache` is on and the caller did not
+   * pass `force: true`.
+   *
+   * @param {Object} instance - Element instance to fill.
+   * @param {string} url - Endpoint returning the options.
+   * @param {Object} [params={}] - Query parameters.
+   * @param {Object} [requestOptions={}] - Per-call options; `force` bypasses cache.
+   * @returns {Promise<void>}
+   */
   static async loadOptions(instance, url, params = {}, requestOptions = {}) {
     const {element, config} = instance;
 
@@ -520,6 +627,19 @@ class SelectElementFactory extends ElementFactory {
     }
   }
 
+  /**
+   * Replace a select's options, preserving the current selection.
+   *
+   * The value is captured from `value`, the `value` attribute or `data-value`
+   * before the rebuild and re-applied afterwards, handling both single and
+   * multiple selects.
+   *
+   * @param {HTMLSelectElement} element - Select to fill.
+   * @param {Array} options - Option records, flat or grouped.
+   * @param {boolean} [useOptGroups=false] - Render as `<optgroup>`.
+   * @param {Object} [placeholder=null] - Placeholder option to keep on top.
+   * @returns {void}
+   */
   static updateOptions(element, options, useOptGroups = false, placeholder = null) {
     // Store current value - for multiple select, get array of selected values
     const isMultiple = element.multiple;
@@ -627,6 +747,17 @@ class SelectElementFactory extends ElementFactory {
     }));
   }
 
+  /**
+   * Remove a select's options.
+   *
+   * The placeholder is identified by `data-placeholder="true"` and kept by
+   * default, so reloading options does not leave the field with nothing to show
+   * while the request is in flight.
+   *
+   * @param {HTMLSelectElement} element - Select to clear.
+   * @param {boolean} [keepPlaceholder=true] - Keep the placeholder option.
+   * @returns {void}
+   */
   static clearOptions(element, keepPlaceholder = true) {
     if (keepPlaceholder) {
       // Use data-placeholder attribute to identify placeholder option
@@ -643,10 +774,26 @@ class SelectElementFactory extends ElementFactory {
     }));
   }
 
+  /**
+   * Whether an option list is grouped.
+   *
+   * @param {Array} options - Option records.
+   * @returns {boolean} - True when any entry carries a nested `options` array.
+   */
   static hasOptGroups(options) {
     return options.some(opt => typeof opt === 'object' && opt.options);
   }
 
+  /**
+   * Render grouped options as `<optgroup>` elements.
+   *
+   * Beyond 50 groups the nodes are built in a DocumentFragment first, so the
+   * select is touched once instead of per group.
+   *
+   * @param {HTMLSelectElement} element - Select to fill.
+   * @param {Array} groups - Group records, each with a label and options.
+   * @returns {void}
+   */
   static createOptGroups(element, groups) {
     let fragment;
 
@@ -691,6 +838,16 @@ class SelectElementFactory extends ElementFactory {
     }
   }
 
+  /**
+   * Create one `<option>` and append it.
+   *
+   * The label falls back through `text`, `label`, `name` and finally the value,
+   * so option records from different APIs all render sensibly.
+   *
+   * @param {HTMLElement} parent - Select or optgroup to append to.
+   * @param {Object|string} opt - Option record, or a plain value.
+   * @returns {HTMLOptionElement} - The created option.
+   */
   static createOption(parent, opt) {
     const option = document.createElement('option');
 
@@ -730,6 +887,12 @@ class SelectElementFactory extends ElementFactory {
     parent.appendChild(option);
   }
 
+  /**
+   * Bind the select's event handlers.
+   *
+   * @param {Object} instance - Element instance to bind.
+   * @returns {void}
+   */
   static setupEventListeners(instance) {
     const {element, config} = instance;
 
@@ -762,6 +925,15 @@ class SelectElementFactory extends ElementFactory {
   }
 
   // Ensure onChange config is invoked when the select value changes
+  /**
+   * Bind the change handler through EventSystemManager.
+   *
+   * Registering centrally rather than with `addEventListener` means teardown
+   * removes the handler along with the element's other listeners.
+   *
+   * @param {Object} instance - Element instance to bind.
+   * @returns {void}
+   */
   static setupChangeHandler(instance) {
     const {element, config} = instance;
     try {
@@ -780,6 +952,16 @@ class SelectElementFactory extends ElementFactory {
     }
   }
 
+  /**
+   * Validate the selection, accounting for multiple selects.
+   *
+   * A multiple select is judged on how many options are chosen rather than on a
+   * single value string.
+   *
+   * @param {*} value - Current value.
+   * @param {*} valueChange - Change payload from the validation layer.
+   * @returns {boolean|string} - True when valid, or the message to show.
+   */
   static customValidateValue(value, valueChange) {
     const element = this.element;
 
@@ -805,6 +987,12 @@ class SelectElementFactory extends ElementFactory {
     };
   }
 
+  /**
+   * Build a select element from a field definition.
+   *
+   * @param {Object} def - Field definition.
+   * @returns {HTMLSelectElement} - The created select.
+   */
   static create(def) {
     def.tagName = 'select';
 
@@ -848,6 +1036,12 @@ class SelectElementFactory extends ElementFactory {
     return instance;
   }
 
+  /**
+   * Tear the select down and release its handlers.
+   *
+   * @param {Object} instance - Element instance being torn down.
+   * @returns {void}
+   */
   static cleanup(instance) {
     if (!instance) return;
 

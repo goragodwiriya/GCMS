@@ -166,10 +166,25 @@ const ServiceWorkerManager = {
   },
 
   /**
-   * Check if Service Workers and Push Notifications are supported in the current browser
+   * Check if Service Workers are supported in the current browser.
+   *
+   * Push support is checked separately by isPushSupported(): the two are not
+   * the same capability. iOS Safari has shipped service workers since 11.3 but
+   * exposes PushManager only inside an installed (home-screen) web app, so a
+   * combined check silently disabled offline caching for every iPhone visitor
+   * browsing normally - the exact users an offline-first app is built for.
+   *
    * @returns {Boolean}
    */
   isSupported() {
+    return 'serviceWorker' in navigator;
+  },
+
+  /**
+   * Check if Push Notifications are supported in the current browser
+   * @returns {Boolean}
+   */
+  isPushSupported() {
     return 'serviceWorker' in navigator && 'PushManager' in window;
   },
 

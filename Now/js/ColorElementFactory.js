@@ -1,6 +1,10 @@
 /**
- * Custom Color Picker Component - No Native Input Dependencies
- * Creates a complete color picker UI with dropdown functionality
+ * EmbeddedColorPicker
+ *
+ * A hand-built color picker that replaces the native `<input type="color">`
+ * with a palette-based dropdown UI. Instantiated once per element by
+ * `ColorElementFactory`; the original input is hidden but kept so the form
+ * still submits its value.
  */
 
 // Predefined color palette
@@ -16,6 +20,46 @@ const COLOR_PALETTE = [
   '#7B68EE', '#708090', '#FFFFFF', '#000000'
 ];
 
+/**
+ * Values CSS accepts where a color belongs but that are not an actual color.
+ *
+ * They must clear the picker (empty value) rather than resolve to a color:
+ * `transparent` computes to `rgba(0, 0, 0, 0)`, which used to normalise to
+ * `#000000` and show up as black.
+ */
+const NON_COLOR_KEYWORDS = new Set([
+  'transparent', 'none', 'inherit', 'initial', 'unset', 'revert', 'revert-layer',
+  'auto', 'currentcolor'
+]);
+
+/**
+ * Read the alpha channel of a color string.
+ *
+ * @param {string} [raw] - Alpha as a number, a percentage, or `none`.
+ * @returns {number} - 0-1; 1 when absent or unparsable (fully opaque).
+ */
+const parseColorAlpha = (raw) => {
+  const alpha = String(raw ?? '').trim();
+  if (alpha === '' || alpha === 'none') {
+    return 1;
+  }
+
+  const num = parseFloat(alpha);
+  if (!Number.isFinite(num)) {
+    return 1;
+  }
+
+  return alpha.endsWith('%') ? num / 100 : num;
+};
+
+/**
+ * Coerce any CSS color into `#RRGGBB`.
+ *
+ * @param {*} value - Value read from an element, an attribute, or the hex box.
+ * @returns {string|null} - `#RRGGBB`, `''` when the value carries no color
+ *   (empty, a non-color keyword, or fully transparent), or `null` when the
+ *   value is not a color at all.
+ */
 const normalizeColorValue = (value) => {
   if (value == null) {
     return '';
@@ -23,6 +67,10 @@ const normalizeColorValue = (value) => {
 
   let color = typeof value === 'string' ? value.trim() : String(value).trim();
   if (color === '') {
+    return '';
+  }
+
+  if (NON_COLOR_KEYWORDS.has(color.toLowerCase())) {
     return '';
   }
 
@@ -34,6 +82,9 @@ const normalizeColorValue = (value) => {
 
   const hex4 = color.match(/^#?([A-Fa-f0-9]{4})$/);
   if (hex4) {
+    if (parseInt(hex4[1][3].repeat(2), 16) === 0) {
+      return '';
+    }
     const [r, g, b] = hex4[1].slice(0, 3).split('');
     return `#${r}${r}${g}${g}${b}${b}`.toUpperCase();
   }
@@ -45,6 +96,9 @@ const normalizeColorValue = (value) => {
 
   const hex8 = color.match(/^#?([A-Fa-f0-9]{8})$/);
   if (hex8) {
+    if (parseInt(hex8[1].slice(6, 8), 16) === 0) {
+      return '';
+    }
     return `#${hex8[1].slice(0, 6)}`.toUpperCase();
   }
 
@@ -66,9 +120,15 @@ const normalizeColorValue = (value) => {
   const computed = window.getComputedStyle(probe).color;
   probe.remove();
 
-  const rgb = computed.match(/rgba?\((\d+)\s*,\s*(\d+)\s*,\s*(\d+)/i);
+  // Both the legacy `r, g, b, a` form and the modern `r g b / a` form; the alpha
+  // matters because a fully transparent color is "no color", not black.
+  const rgb = computed.match(/^rgba?\(\s*(\d+)[\s,]+(\d+)[\s,]+(\d+)\s*(?:[,/]\s*([^\s,/)]+)\s*)?\)$/i);
   if (!rgb) {
     return null;
+  }
+
+  if (parseColorAlpha(rgb[4]) <= 0) {
+    return '';
   }
 
   const toHex = (part) => Number(part).toString(16).padStart(2, '0').toUpperCase();
@@ -377,6 +437,14 @@ class EmbeddedColorPicker {
     }
   }
 
+  /**
+   * Coerce a color value into the picker's canonical hex form.
+   *
+   * @param {string} color - Color in any format the picker recognises.
+   * @returns {string|null} - Normalised hex color, `''` when the value carries
+   *   no color (empty, `transparent`, `inherit`, or any fully transparent
+   *   color), or null when unrecognisable.
+   */
   normalizeColor(color) {
     return normalizeColorValue(color);
   }
@@ -393,7 +461,13 @@ class EmbeddedColorPicker {
     return luminance > 0.5 ? '#000000' : '#FFFFFF';
   }
 
-  // Public methods
+  /**
+   * Open the picker dropdown.
+   *
+   * Ignored while the field is disabled, read-only, or already open.
+   *
+   * @returns {void}
+   */
   open() {
     if (this.disabled || this.readonly || this.isOpen) return;
 
@@ -435,6 +509,14 @@ class EmbeddedColorPicker {
     }));
   }
 
+  /**
+   * Close the picker dropdown.
+   *
+   * Delegates to the shared DropdownPanel, which triggers the picker's own
+   * close callback.
+   *
+   * @returns {void}
+   */
   close() {
     if (!this.isOpen) return;
 
@@ -442,6 +524,11 @@ class EmbeddedColorPicker {
     this.dropdownPanel.hide();
   }
 
+  /**
+   * Open the picker if closed, close it if open.
+   *
+   * @returns {void}
+   */
   toggle() {
     if (this.isOpen) {
       this.close();
@@ -450,6 +537,13 @@ class EmbeddedColorPicker {
     }
   }
 
+  /**
+   * Choose a color and update the display, the hidden input and the swatch.
+   *
+   * @param {string} color - Color to select.
+   * @param {Object} [options={}] - `dispatchChange` fires a change event; `shouldFocus` defaults to whether the picker is open.
+   * @returns {boolean} - True when the color was accepted.
+   */
   selectColor(color, options = {}) {
     const normalized = this.normalizeColor(color);
     if (normalized === null) {
@@ -519,6 +613,18 @@ class EmbeddedColorPicker {
     } : null;
   }
 
+  /**
+   * Set the picker's color programmatically.
+   *
+   * A color that fails normalisation is silently ignored rather than clearing
+   * the current selection. A value that carries no color (`''`, `transparent`,
+   * `inherit`, a fully transparent color) does clear it — the picker goes empty
+   * instead of falling back to black.
+   *
+   * @param {string} color - Color to set.
+   * @param {Object} [options={}] - `dispatchChange` fires a change event; `shouldFocus` moves focus to the picker.
+   * @returns {void}
+   */
   setColor(color, options = {}) {
     const normalized = this.normalizeColor(color);
     if (normalized !== null) {
@@ -529,6 +635,15 @@ class EmbeddedColorPicker {
     }
   }
 
+  /**
+   * Apply a color that was set directly on the original element's `value`.
+   *
+   * Called from the intercepted `value` setter in `setupProperties`, so
+   * `element.value = '#fff'` keeps the visible picker in sync.
+   *
+   * @param {string} color - Color read from the element.
+   * @returns {boolean} - True when the color was accepted.
+   */
   syncFromElementValue(color) {
     const normalized = this.normalizeColor(color);
     if (normalized === null) {
@@ -541,10 +656,21 @@ class EmbeddedColorPicker {
     });
   }
 
+  /**
+   * The color currently stored for form submission.
+   *
+   * @returns {string|null} - The hex color, or null when nothing is selected.
+   */
   getColor() {
     return this.hiddenInput.value || null;
   }
 
+  /**
+   * Enable or disable the picker, closing it first when disabling.
+   *
+   * @param {boolean} disabled - Whether the picker is disabled.
+   * @returns {void}
+   */
   setDisabled(disabled) {
     this.disabled = disabled;
     this.wrapper.classList.toggle('disabled', disabled);
@@ -554,6 +680,12 @@ class EmbeddedColorPicker {
     }
   }
 
+  /**
+   * Toggle read-only presentation, closing the picker first when turning it on.
+   *
+   * @param {boolean} readonly - Whether the picker is read-only.
+   * @returns {void}
+   */
   setReadonly(readonly) {
     this.readonly = readonly;
     this.wrapper.classList.toggle('readonly', readonly);
@@ -562,12 +694,22 @@ class EmbeddedColorPicker {
     }
   }
 
+  /**
+   * Tear the picker down and remove its wrapper from the DOM.
+   *
+   * @returns {void}
+   */
   destroy() {
     if (this.wrapper && this.wrapper.parentNode) {
       this.wrapper.parentNode.removeChild(this.wrapper);
     }
   }
 
+  /**
+   * The wrapper element this picker rendered into.
+   *
+   * @returns {HTMLElement} - The wrapper.
+   */
   getElement() {
     return this.wrapper;
   }
@@ -621,11 +763,28 @@ class ColorElementFactory extends ElementFactory {
     }
   };
 
+  /**
+   * Get or create the element's instance state, same as the base ElementFactory.
+   *
+   * @param {HTMLElement} element - Element the state belongs to.
+   * @param {Object} [config={}] - Config merged in when first created.
+   * @returns {Object} - The element's state object.
+   */
   static createInstance(element, config = {}) {
     const instance = super.createInstance(element, config);
     return instance;
   }
 
+  /**
+   * Intercept the element's `value` property so setting it updates the picker.
+   *
+   * Only installed when the platform's own `value` descriptor is configurable.
+   * A recursion guard (`_syncingHiddenValue`) lets the picker write back to the
+   * hidden input without triggering itself again.
+   *
+   * @param {Object} instance - Element instance to instrument.
+   * @returns {void}
+   */
   static setupProperties(instance) {
     super.setupProperties(instance);
 
@@ -663,6 +822,12 @@ class ColorElementFactory extends ElementFactory {
     });
   }
 
+  /**
+   * Replace the native color input with an EmbeddedColorPicker.
+   *
+   * @param {Object} instance - Element instance carrying `element` and `config`.
+   * @returns {void}
+   */
   static setupElement(instance) {
     const {element} = instance;
 

@@ -1,0 +1,249 @@
+<aside data-component="sidebar"></aside>
+<div class="main-content">
+  <div>
+    <header data-component="topbar"></header>
+    <main class="content">
+      <form data-form="documentWrite" data-validate="true" data-reset="false" action="../api/document/write/save" method="post" data-ajax-submit="true"
+            data-load-query-params="true" data-load-api="../api/document/write/get" data-on-load="initDocumentWriteAi" autocomplete="off">
+        <div class="card-groups">
+          <header>
+            <div>
+              <h1 class="icon-file" data-text="id ? '{LNG_Edit} {LNG_Article}' : '{LNG_New} {LNG_Article}'"></h1>
+              <p data-i18n>Manage article details</p>
+            </div>
+            <div class="header-actions">
+              <a class="btn icon-arrow-left" href="/documents" data-params="module_id" data-i18n>Back</a>
+              <button type="submit" class="btn btn-primary icon-save" data-i18n>Save</button>
+            </div>
+          </header>
+          <div class="content-body" data-component="tabs" data-hash="false">
+            <div class="tab-buttons" role="tablist">
+              <div data-for="lng in languages">
+                <template>
+                  <label for="tab_{{lng}}" class="tab-button" role="tab" data-i18n>{LNG_Detail} [{{lng}}]</label>
+                </template>
+              </div>
+              <label for="tab_info" class="tab-button" role="tab" data-i18n>Other</label>
+              <label for="tab_ai" class="tab-button" role="tab" data-i18n>AI Writing Assistant</label>
+            </div>
+            <div class="tab-panels">
+              <!-- Language Detail Tabs -->
+              <div data-for="lng in languages">
+                <template>
+                  <input type="radio" id="tab_{{lng}}" name="tab" data-tab-radio="true" data-attr="checked:tab === lng">
+                  <fieldset class="tab-pane" role="tabpanel">
+                    <legend class="icon-file" data-i18n>{LNG_Detail} [{{lng}}]</legend>
+                    <div>
+                      <label for="topic_{{lng}}" data-i18n>Topic</label>
+                      <span class="form-control icon-edit">
+                        <input type="text" id="topic_{{lng}}" name="topic[{{lng}}]" maxlength="255" data-attr="value:topic[{{lng}}]">
+                      </span>
+                      <div class="comment" id="result_topic_{{lng}}" data-i18n> Text displayed on the Title Bar of the browser (3 - 255 characters) </div>
+                    </div>
+                    <div>
+                      <label for="keywords_{{lng}}" data-i18n>Keywords</label>
+                      <span class="form-control icon-tags">
+                        <input type="text" id="keywords_{{lng}}" name="keywords[{{lng}}]" data-attr="value:keywords[{{lng}}]" maxlength="255">
+                      </span>
+                      <div class="comment" id="result_keywords_{{lng}}" data-i18n> Text keywords for SEO or Search Engine to search </div>
+                    </div>
+                    <div>
+                      <label for="description_{{lng}}" data-i18n>Description</label>
+                      <span class="form-control icon-file">
+                        <textarea id="description_{{lng}}" name="description[{{lng}}]" maxlength="255" data-text="description[{{lng}}]"></textarea>
+                      </span>
+                      <div class="comment" id="result_description_{{lng}}" data-i18n> Text short summary of your story. Which can be used to show in your theme. (If not, Program
+                        will fill in the contents of the first paragraph) </div>
+                    </div>
+                    <div>
+                      <label for="detail_{{lng}}" data-i18n>Detail</label>
+                      <textarea id="detail_{{lng}}" name="detail[{{lng}}]" data-element="richtext" data-attr="value:detail[{{lng}}]" data-rte-profile="basic"
+                                data-rte-min-height="250"></textarea>
+                    </div>
+                  </fieldset>
+                </template>
+              </div>
+              <!-- Basic Info -->
+              <input type="radio" id="tab_info" name="tab" data-tab-radio="true" data-checked="tab === 'info'">
+              <fieldset class="tab-pane" role="tabpanel">
+                <legend class="icon-info" data-i18n>Other</legend>
+                <div>
+                  <input type="checkbox" class="switch" id="published" name="published" value="1" data-checked="published">
+                  <label for="published" data-i18n>Published</label>
+                </div>
+                <div>
+                  <input type="checkbox" class="switch" id="show_news" name="show_news" value="1" data-checked="show_news">
+                  <label for="show_news" data-i18n>Display in the widget</label>
+                </div>
+                <div>
+                  <label for="alias" data-i18n>Alias</label>
+                  <span class="form-control icon-edit">
+                    <input type="text" id="alias" name="alias" data-attr="value:alias">
+                  </span>
+                  <div class="comment" id="result_alias" data-i18n> Used for the URL of the web page (SEO) can use letters, numbers and _ only can not have duplicate names. </div>
+                </div>
+                <div>
+                  <label for="tags" data-i18n>{LNG_Related}/ {LNG_Tags}</label>
+                  <span class="form-control icon-tags">
+                    <input type="tags" data-element="tags" id="tags" name="tags" data-attr="value:tags" maxlength="64" data-autocomplete="true" data-options-key="tags"
+                           data-min-length="1" data-max-results="15">
+                  </span>
+                  <div class="comment" id="result_tags" data-i18n> Used to group similar contents </div>
+                </div>
+                <div>
+                  <label for="published_date" data-i18n>Article Date</label>
+                  <span class="form-control icon-calendar">
+                    <input type="date" id="published_date" name="published_date" data-attr="value:published_date">
+                  </span>
+                </div>
+                <div>
+                  <label for="category_id" data-i18n>Category</label>
+                  <span class="form-control icon-documents">
+                    <select id="category_id" name="category_id" data-attr="value:category_id" data-options-key="category_id">
+                      <option value="" data-i18n>Uncategorized</option>
+                    </select>
+                  </span>
+                </div>
+                <div>
+                  <label for="picture" data-i18n>Thumbnail</label>
+                  <span class="form-control icon-portfolio">
+                    <input type="file" id="picture" name="picture" data-files="picture" data-preview="true" data-allow-remove-existing="true"
+                           data-action-url="../api/document/write/remove-image" data-file-reference="url" data-action-params="module_id,id" accept="image/*"
+                           data-attr="placeholder:'{LNG_Browse image uploaded, type} ' + img_typies">
+                  </span>
+                  <div class="comment" id="result_picture" data-text="'{LNG_Browse image uploaded, type} ' + img_typies"></div>
+                </div>
+              </fieldset>
+              <input type="radio" id="tab_ai" name="tab" data-tab-radio="true" data-checked="tab === 'ai'">
+              <fieldset class="tab-pane" role="tabpanel">
+                <legend class="icon-support" data-i18n>AI Writing Assistant</legend>
+                <div>
+                  <label for="ai_mode" data-i18n>Mode</label>
+                  <span class="form-control icon-edit">
+                    <select id="ai_mode">
+                      <option value="rewrite" data-i18n>Rewrite</option>
+                      <option value="translate" data-i18n>Translate</option>
+                    </select>
+                  </span>
+                </div>
+                <div>
+                  <label for="ai_source_lng" data-i18n>Source language</label>
+                  <span class="form-control icon-language">
+                    <select id="ai_source_lng"></select>
+                  </span>
+                </div>
+                <div>
+                  <label for="ai_target_lng" data-i18n>Target language</label>
+                  <span class="form-control icon-language">
+                    <select id="ai_target_lng"></select>
+                  </span>
+                </div>
+                <div>
+                  <label for="ai_tone" data-i18n>Tone</label>
+                  <span class="form-control icon-edit">
+                    <select id="ai_tone">
+                      <option value="" data-i18n>Automatic</option>
+                      <option value="professional" data-i18n>Professional</option>
+                      <option value="friendly" data-i18n>Friendly</option>
+                      <option value="formal" data-i18n>Formal</option>
+                      <option value="persuasive" data-i18n>Persuasive</option>
+                      <option value="expert" data-i18n>Expert</option>
+                    </select>
+                  </span>
+                </div>
+                <div>
+                  <label for="ai_mood" data-i18n>Mood</label>
+                  <span class="form-control icon-edit">
+                    <select id="ai_mood">
+                      <option value="" data-i18n>Automatic</option>
+                      <option value="calm" data-i18n>Calm</option>
+                      <option value="confident" data-i18n>Confident</option>
+                      <option value="inspiring" data-i18n>Inspiring</option>
+                      <option value="warm" data-i18n>Warm</option>
+                      <option value="urgent" data-i18n>Urgent</option>
+                    </select>
+                  </span>
+                </div>
+                <div>
+                  <label for="ai_audience" data-i18n>Audience</label>
+                  <span class="form-control icon-user">
+                    <select id="ai_audience">
+                      <option value="" data-i18n>General</option>
+                      <option value="general" data-i18n>General readers</option>
+                      <option value="beginner" data-i18n>Beginners</option>
+                      <option value="business" data-i18n>Business audience</option>
+                      <option value="technical" data-i18n>Technical audience</option>
+                      <option value="buyers" data-i18n>Buyers/Customers</option>
+                    </select>
+                  </span>
+                </div>
+                <div>
+                  <label for="ai_instruction" data-i18n>Additional instructions</label>
+                  <span class="form-control icon-file">
+                    <textarea id="ai_instruction" rows="3" placeholder="Special requirements, key points, CTA"
+                              data-i18n-placeholder="Special requirements, key points, CTA"></textarea>
+                  </span>
+                </div>
+                <div>
+                  <input type="checkbox" class="switch" id="ai_seo_focus" checked>
+                  <label for="ai_seo_focus" data-i18n>Prioritize SEO results</label>
+                </div>
+                <div>
+                  <input type="checkbox" class="switch" id="ai_apply_title" checked>
+                  <label for="ai_apply_title" data-i18n>Generate title</label>
+                </div>
+                <div>
+                  <input type="checkbox" class="switch" id="ai_apply_keywords" checked>
+                  <label for="ai_apply_keywords" data-i18n>Generate keywords</label>
+                </div>
+                <div>
+                  <input type="checkbox" class="switch" id="ai_apply_description" checked>
+                  <label for="ai_apply_description" data-i18n>Generate short description</label>
+                </div>
+                <div>
+                  <input type="checkbox" class="switch" id="ai_apply_slug" checked>
+                  <label for="ai_apply_slug" data-i18n>Generate URL slug</label>
+                </div>
+                <div>
+                  <input type="checkbox" class="switch" id="ai_generate_image">
+                  <label for="ai_generate_image" data-i18n>Generate article image (if provider supports it)</label>
+                </div>
+                <div>
+                  <label for="ai_image_prompt" data-i18n>Image prompt</label>
+                  <span class="form-control icon-image">
+                    <input type="text" id="ai_image_prompt" placeholder="Leave blank to use the AI-recommended prompt"
+                           data-i18n-placeholder="Leave blank to use the AI-recommended prompt">
+                  </span>
+                </div>
+                <div>
+                  <label for="ai_image_size" data-i18n>Image size</label>
+                  <span class="form-control icon-image">
+                    <select id="ai_image_size">
+                      <option value="1024x1024">Square 1024 x 1024</option>
+                      <option value="1536x1024">Landscape 1536 x 1024</option>
+                      <option value="1024x1536">Portrait 1024 x 1536</option>
+                    </select>
+                  </span>
+                </div>
+                <div class="header-actions">
+                  <button type="button" class="btn icon-edit" id="ai_apply_write" data-i18n>Rewrite/Translate + SEO</button>
+                  <button type="button" class="btn icon-tags" id="ai_apply_meta" data-i18n>Generate SEO only</button>
+                </div>
+                <div class="comment" id="ai_document_status" data-i18n> Ready. Select mode and options, then click a button to start. </div>
+              </fieldset>
+            </div>
+            <!-- Submit Button -->
+            <fieldset class="submit">
+              <button type="submit" class="btn btn-primary icon-save" data-i18n>Save</button>
+              <input type="hidden" name="id" data-attr="value:id">
+              <input type="hidden" name="module_id" data-attr="value:module_id">
+            </fieldset>
+          </div>
+        </div>
+      </form>
+    </main>
+  </div>
+  <footer class="footer">
+    <p class="center">&copy; 2026 Document - Powered by <a href="https://nowjs.net">Now.js</a></p>
+  </footer>
+</div>

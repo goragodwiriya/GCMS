@@ -1,6 +1,11 @@
 /**
- * Custom Date Picker Component - No Native Input Dependencies
- * Creates a complete calendar UI with dropdown functionality
+ * EmbeddedDateTime
+ *
+ * A hand-built date/time picker that replaces the native `<input type="date">`
+ * and friends, so the calendar UI looks and behaves the same across browsers.
+ * Supports date, time and datetime-local modes. Instantiated once per element
+ * by `DateElementFactory`; the original input is hidden but kept so the form
+ * still submits its value.
  */
 
 // Helper functions
@@ -894,7 +899,15 @@ class EmbeddedDateTime {
     return false;
   }
 
-  // Public methods
+  /**
+   * Open the picker dropdown.
+   *
+   * Ignored while the field is disabled, read-only, or already open. For a
+   * time-only picker the calendar grid is hidden and only the time controls
+   * show.
+   *
+   * @returns {void}
+   */
   open() {
     if (this.disabled || this.readonly || this.isOpen) return;
 
@@ -942,6 +955,14 @@ class EmbeddedDateTime {
     }));
   }
 
+  /**
+   * Close the picker dropdown.
+   *
+   * Delegates to the shared DropdownPanel, which triggers the picker's own
+   * close callback.
+   *
+   * @returns {void}
+   */
   close() {
     if (!this.isOpen) return;
 
@@ -949,6 +970,11 @@ class EmbeddedDateTime {
     this.dropdownPanel.hide();
   }
 
+  /**
+   * Open the picker if closed, close it if open.
+   *
+   * @returns {void}
+   */
   toggle() {
     if (this.isOpen) {
       this.close();
@@ -957,6 +983,12 @@ class EmbeddedDateTime {
     }
   }
 
+  /**
+   * Choose a date, combining it with the current time for datetime-local mode.
+   *
+   * @param {Date|string} date - Date to select.
+   * @returns {void}
+   */
   selectDate(date) {
     this.selectedDate = new Date(date);
 
@@ -1028,6 +1060,11 @@ class EmbeddedDateTime {
     }));
   }
 
+  /**
+   * Step the visible calendar back one month, rolling over into the previous year.
+   *
+   * @returns {void}
+   */
   previousMonth() {
     this.currentMonth--;
     if (this.currentMonth < 0) {
@@ -1037,6 +1074,11 @@ class EmbeddedDateTime {
     this._renderCurrentView();
   }
 
+  /**
+   * Advance the visible calendar by one month, rolling over into the next year.
+   *
+   * @returns {void}
+   */
   nextMonth() {
     this.currentMonth++;
     if (this.currentMonth > 11) {
@@ -1046,6 +1088,14 @@ class EmbeddedDateTime {
     this._renderCurrentView();
   }
 
+  /**
+   * Set the picker's value programmatically.
+   *
+   * An empty value clears both the date and time state, not just the display.
+   *
+   * @param {string|Date|null} value - Value to set, or a falsy value to clear.
+   * @returns {void}
+   */
   setValue(value) {
     if (!value || value === '') {
       this.selectedDate = null;
@@ -1130,14 +1180,29 @@ class EmbeddedDateTime {
     }
   }
 
+  /**
+   * The value currently stored for form submission.
+   *
+   * @returns {string|null} - The formatted value, or null when nothing is selected.
+   */
   getValue() {
     return this.hiddenInput.value || null;
   }
 
+  /**
+   * The currently selected date.
+   *
+   * @returns {Date|null} - The selected date, or null when nothing is selected.
+   */
   getDate() {
     return this.selectedDate;
   }
 
+  /**
+   * Tear the picker down: close it if open and remove its locale listener.
+   *
+   * @returns {void}
+   */
   destroy() {
     // Close dropdown if open
     if (this.isOpen) {
@@ -1154,6 +1219,11 @@ class EmbeddedDateTime {
     }
   }
 
+  /**
+   * The wrapper element this picker rendered into.
+   *
+   * @returns {HTMLElement} - The wrapper.
+   */
   getElement() {
     return this.wrapper;
   }
@@ -1224,11 +1294,24 @@ class DateElementFactory extends ElementFactory {
     }
   };
 
+  /**
+   * Get or create the element's instance state, same as the base ElementFactory.
+   *
+   * @param {HTMLElement} element - Element the state belongs to.
+   * @param {Object} [config={}] - Config merged in when first created.
+   * @returns {Object} - The element's state object.
+   */
   static createInstance(element, config = {}) {
     const instance = super.createInstance(element, config);
     return instance;
   }
 
+  /**
+   * Replace the native date input with an EmbeddedDateTime picker.
+   *
+   * @param {Object} instance - Element instance carrying `element` and `config`.
+   * @returns {void}
+   */
   static setupElement(instance) {
     const {element} = instance;
 

@@ -119,6 +119,17 @@ class TagsElementFactory extends ElementFactory {
     }
   };
 
+  /**
+   * Read the tag options a single element declares through its data attributes.
+   *
+   * Covers `data-separator`, `data-max-tags`, `data-duplicates` and the
+   * autocomplete settings; anything absent falls back to `def`.
+   *
+   * @param {HTMLElement} element - The input being converted.
+   * @param {Object} def - Default configuration for this element type.
+   * @param {DOMStringMap} dataset - The element's `data-*` attributes.
+   * @returns {Object} - Configuration for this element.
+   */
   static extractCustomConfig(element, def, dataset) {
     return {
       separator: dataset.separator || def.separator,
@@ -134,6 +145,16 @@ class TagsElementFactory extends ElementFactory {
     };
   }
 
+  /**
+   * Turn a plain text input into a tags input.
+   *
+   * The original `name` is stashed on the instance first, because the visible
+   * input stops carrying the value — hidden inputs created per tag do, so the
+   * form still submits every tag.
+   *
+   * @param {Object} instance - Element instance carrying `element` and `config`.
+   * @returns {void}
+   */
   static setupElement(instance) {
     const {element, config} = instance;
 
@@ -288,6 +309,15 @@ class TagsElementFactory extends ElementFactory {
     return instance;
   }
 
+  /**
+   * Attach the suggestion dropdown to the tags input.
+   *
+   * Uses the shared DropdownPanel singleton rather than creating a panel per
+   * field, so only one suggestion list is ever open on the page.
+   *
+   * @param {Object} instance - Element instance to attach to.
+   * @returns {void}
+   */
   static setupAutocomplete(instance) {
     const {input, config} = instance;
     const acConfig = config.autocomplete;
@@ -380,6 +410,18 @@ class TagsElementFactory extends ElementFactory {
     };
   }
 
+  /**
+   * Build one suggestion row for the dropdown.
+   *
+   * The label goes through i18n when available, and the part matching `search`
+   * is highlighted.
+   *
+   * @param {Object} instance - Element instance the row belongs to.
+   * @param {string} key - Value the row would add.
+   * @param {string} value - Text shown for the row.
+   * @param {string} search - Current query, highlighted in the label.
+   * @returns {HTMLLIElement} - The row element.
+   */
   static createListItem(instance, key, value, search) {
     const li = document.createElement('li');
     li.dataset.key = key;
@@ -423,6 +465,12 @@ class TagsElementFactory extends ElementFactory {
     return li;
   }
 
+  /**
+   * Read suggestions from the `<datalist>` an input points at.
+   *
+   * @param {HTMLElement} element - Input carrying a `list` attribute.
+   * @returns {Array|null} - Option records, or null when there is no datalist.
+   */
   static readFromDatalist(element) {
     const listId = element.getAttribute('list');
     if (!listId) return null;
@@ -443,10 +491,28 @@ class TagsElementFactory extends ElementFactory {
     return data.length > 0 ? data : null;
   }
 
+  /**
+   * Escape a string for safe use inside a regular expression.
+   *
+   * Used when highlighting the query inside suggestion labels, so a query
+   * containing regex characters cannot break the match.
+   *
+   * @param {string} str - Raw string.
+   * @returns {string} - Escaped string.
+   */
   static escapeRegExp(str) {
     return str.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&');
   }
 
+  /**
+   * Bind the keyboard and click behaviour of the tags input.
+   *
+   * Guarded by an internal flag so calling it twice does not register duplicate
+   * listeners on the same input.
+   *
+   * @param {Object} instance - Element instance to bind.
+   * @returns {void}
+   */
   static setupEventHandlers(instance) {
     const {input, tagsContainer, config} = instance;
     const acConfig = config.autocomplete;
@@ -584,6 +650,17 @@ class TagsElementFactory extends ElementFactory {
     return super.setupEventListeners?.(instance) || {};
   }
 
+  /**
+   * Add one tag, creating its chip and hidden input.
+   *
+   * Refused when `config.maxTags` is already reached, and the user is told
+   * through NotificationManager rather than the tag silently vanishing.
+   *
+   * @param {Object} instance - Element instance to add to.
+   * @param {string} key - Stored value submitted with the form.
+   * @param {string} value - Text shown on the chip.
+   * @returns {boolean} - True when the tag was added.
+   */
   static addTag(instance, key, value) {
     const {config, tags, tagElements, tagsContainer, inputLi, hiddenInputsContainer, originalName} = instance;
 
@@ -699,6 +776,15 @@ class TagsElementFactory extends ElementFactory {
     return true;
   }
 
+  /**
+   * Remove one tag and its hidden input.
+   *
+   * Refused while the input is readonly or disabled.
+   *
+   * @param {Object} instance - Element instance to remove from.
+   * @param {string} key - Key of the tag to remove.
+   * @returns {boolean} - True when the tag was removed.
+   */
   static removeTag(instance, key) {
     const {tags, tagElements, hiddenInputsContainer, input} = instance;
 
@@ -731,16 +817,42 @@ class TagsElementFactory extends ElementFactory {
     return true;
   }
 
+  /**
+   * Remove every tag.
+   *
+   * Works through `removeTag`, so the readonly and disabled checks still apply.
+   *
+   * @param {Object} instance - Element instance to clear.
+   * @returns {void}
+   */
   static clearTags(instance) {
     const {tags} = instance;
     const keys = tags.map(tag => tag.key);
     keys.forEach(key => this.removeTag(instance, key));
   }
 
+  /**
+   * The current tags, as copies.
+   *
+   * Each entry is cloned so callers cannot mutate the instance's own state.
+   *
+   * @param {Object} instance - Element instance to read.
+   * @returns {Array<Object>} - Tag records with `key` and `value`.
+   */
   static getTags(instance) {
     return instance.tags.map(tag => ({...tag}));
   }
 
+  /**
+   * Replace the current tags with a new list.
+   *
+   * Entries may be plain strings, where the same text is used as both key and
+   * label, or objects carrying `key` and `value`.
+   *
+   * @param {Object} instance - Element instance to fill.
+   * @param {Array<string|Object>} tags - Tags to set.
+   * @returns {void}
+   */
   static setTags(instance, tags) {
     this.clearTags(instance);
     if (Array.isArray(tags)) {
@@ -754,6 +866,16 @@ class TagsElementFactory extends ElementFactory {
     }
   }
 
+  /**
+   * Replace the suggestion list.
+   *
+   * Grouped sources are flattened first, so a grouped option list still yields a
+   * flat set of suggestions.
+   *
+   * @param {Object} instance - Element instance to update.
+   * @param {Array|Object} options - New options, grouped or flat.
+   * @returns {void}
+   */
   static updateOptions(instance, options) {
     const {config} = instance;
     const normalizedOptions = Utils.options?.flattenGroups
@@ -858,6 +980,15 @@ class TagsElementFactory extends ElementFactory {
     });
   }
 
+  /**
+   * Tear the tags input down.
+   *
+   * Closes the shared dropdown only when this input is the one currently using
+   * it, so tearing down one field cannot close another field's suggestions.
+   *
+   * @param {Object} instance - Element instance being torn down.
+   * @returns {void}
+   */
   static cleanup(instance) {
     if (!instance) return;
 

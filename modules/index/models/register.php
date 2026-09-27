@@ -326,9 +326,9 @@ class Model extends \Kotchasan\Model
         // 5. Permissions: Set user permissions
         $save['permission'] = self::preparePermissions($permission);
 
-        // 6. Metadata: Merge any additional fields
+        // 6. Metadata: Keep meta fields in their source shape for repository persistence
         if (!empty($user_meta)) {
-            $save = array_merge($save, $user_meta);
+            $save['metas'] = $user_meta;
         }
 
         return $save;
@@ -343,13 +343,12 @@ class Model extends \Kotchasan\Model
      */
     private static function hashPassword($password)
     {
-        $salt = \Kotchasan\Password::uniqid();
-        $passwordKey = self::$cfg->password_key ?? '';
-        $hashed = sha1($passwordKey.$password.$salt);
+        // one algorithm for the whole system (bcrypt, see Kotchasan\Password::hash)
+        $data = \Index\Auth\Model::hashPassword($password);
 
         return [
-            'hashed' => $hashed,
-            'salt' => $salt
+            'hashed' => $data['hash'],
+            'salt' => $data['salt']
         ];
     }
 

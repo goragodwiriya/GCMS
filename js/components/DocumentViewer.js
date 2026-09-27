@@ -229,7 +229,7 @@ class DocumentViewer {
             <div class="sidebar-panel participants-panel">
               <div class="panel-header">
                 <h3>Participants</h3>
-                <button class="btn-icon icon-add" data-action="add-participant" title="Add Participant"></button>
+                <button class="btn-icon icon-new" data-action="add-participant" title="Add Participant"></button>
               </div>
               <div class="participants-list"></div>
             </div>
@@ -411,11 +411,21 @@ class DocumentViewer {
    * @private
    */
   async loadPdfJs() {
+    // The library ships with the app instead of coming from a CDN, so document
+    // viewing keeps working with no internet access and the app never asks a
+    // third party who is reading which document. Update the files under
+    // js/vendor/pdfjs/ to change the version.
+    if (window.pdfjsLib) {
+      return;
+    }
+
+    const base = (window.Now && Now.config && Now.config.baseUrl) || '';
+
     return new Promise((resolve, reject) => {
       const script = document.createElement('script');
-      script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+      script.src = base + 'js/vendor/pdfjs/pdf.min.js';
       script.onload = () => {
-        window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        window.pdfjsLib.GlobalWorkerOptions.workerSrc = base + 'js/vendor/pdfjs/pdf.worker.min.js';
         resolve();
       };
       script.onerror = reject;

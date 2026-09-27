@@ -126,8 +126,9 @@ class View extends \Kotchasan\KBase
 
         // Social profiles
         $sameAs = [];
-        if (!empty(self::$cfg->facebook)) {
-            $sameAs[] = self::$cfg->facebook;
+        $facebookUrl = Gcms::facebookPageUrl(self::$cfg);
+        if ($facebookUrl !== '') {
+            $sameAs[] = $facebookUrl;
         }
         if (!empty(self::$cfg->line_id)) {
             $sameAs[] = 'https://line.me/ti/p/'.self::$cfg->line_id;

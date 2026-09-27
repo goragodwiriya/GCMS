@@ -46,6 +46,7 @@ class Model extends \Kotchasan\Model
             ->select(
                 'I.id',
                 'I.module_id',
+                'I.member_id',
                 'D.language',
                 'I.alias',
                 'I.picture',
@@ -59,6 +60,7 @@ class Model extends \Kotchasan\Model
                 'I.published_date',
                 'I.created_at',
                 'I.visited',
+                'I.comments',
                 Sql::GROUP_CONCAT('T.tag', 'tags')
             )
             ->from('index I')
@@ -70,7 +72,14 @@ class Model extends \Kotchasan\Model
             ->cacheOn(false);
         $result = $query->first();
 
-        if (!$result) {
+        // GROUP_CONCAT above makes this an aggregate query while there is no
+        // GROUP BY, and an aggregate always returns exactly one row — a row of
+        // NULLs when nothing matched. So first() never reports "no such
+        // article" on its own, and every unknown id or alias rendered an empty
+        // article page (HTTP 200, blank <title>) instead of the 404 page.
+        // Adding GROUP BY is not the fix here: an article has one index_detail
+        // row per language and the ORDER BY below is what picks the right one.
+        if (!$result || empty($result->id)) {
             return null;
         }
 
@@ -88,6 +97,26 @@ class Model extends \Kotchasan\Model
 
         // Increment view counter atomically to avoid race conditions
         \Kotchasan\DB::create()->increment('index', ['id', $result->id], ['visited', 'visited_today']);
+
+        // Get all comments
+        $comments = static::createQuery()
+            ->select(
+                'R.id',
+                'R.member_id',
+                'R.sender',
+                'R.detail',
+                'R.updated_at'
+            )
+            ->from('comment R')
+            ->where(['R.index_id', $result->id])
+            ->orderBy('R.updated_at', 'ASC')
+            ->fetchAll();
+
+        foreach ($comments as $comment) {
+            $comment->detail = str_replace('{WEBURL}', WEB_URL, $comment->detail);
+        }
+
+        $index->comments = $comments;
 
         // Copy meta to index object
         $index->topic = $result->topic;

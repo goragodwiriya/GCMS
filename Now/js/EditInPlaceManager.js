@@ -30,6 +30,14 @@ const EditInPlaceManager = {
     initialized: false
   },
 
+  /**
+   * Set up every `[data-component="editinplace"]` element on the page.
+   *
+   * Runs once; a second call returns immediately.
+   *
+   * @param {Object} [options={}] - Overrides merged into the module config.
+   * @returns {Object} - The manager itself, so calls can be chained.
+   */
   init(options = {}) {
     if (this.state.initialized) return this;
 
@@ -44,6 +52,16 @@ const EditInPlaceManager = {
     return this;
   },
 
+  /**
+   * Make one element editable in place.
+   *
+   * An element already turned into an instance is returned as-is rather than
+   * being set up twice.
+   *
+   * @param {HTMLElement|string} element - The element, or its id.
+   * @param {Object} [options={}] - Overrides for this instance.
+   * @returns {Object} - The instance, stored on `element.editInPlace`.
+   */
   create(element, options = {}) {
     if (typeof element === 'string') {
       element = document.getElementById(element);
@@ -89,6 +107,12 @@ const EditInPlaceManager = {
     return instance;
   },
 
+  /**
+   * Make an element clickable and keyboard-focusable to start editing.
+   *
+   * @param {Object} instance - Instance to set up.
+   * @returns {void}
+   */
   setupElement(instance) {
     const {element, config} = instance;
 
@@ -118,6 +142,15 @@ const EditInPlaceManager = {
     element.setAttribute('role', 'button');
   },
 
+  /**
+   * Enter edit mode for one instance.
+   *
+   * Only one editor is active at a time, so starting a new edit ends whichever
+   * one was open before it, discarding unsaved changes there.
+   *
+   * @param {Object} instance - Instance to start editing.
+   * @returns {void}
+   */
   startEdit(instance) {
     if (instance.isEditing) return;
 
@@ -204,6 +237,15 @@ const EditInPlaceManager = {
     this.emitEvent('edit:start', {instance, element, editor});
   },
 
+  /**
+   * Commit the edited value.
+   *
+   * Saves only when the trimmed value actually differs from the original, so
+   * clicking in and out without changing anything does not trigger a save.
+   *
+   * @param {Object} instance - Instance being edited.
+   * @returns {Promise<void>}
+   */
   async finishEdit(instance) {
     if (!instance.isEditing) return;
 
@@ -336,6 +378,14 @@ const EditInPlaceManager = {
     }
   },
 
+  /**
+   * Leave edit mode.
+   *
+   * @param {Object} instance - Instance to end editing for.
+   * @param {Object} [options={}] - `restore` puts the original value back;
+   *   `emitCancel` fires the cancel event.
+   * @returns {void}
+   */
   endEdit(instance, options = {}) {
     if (!instance.isEditing) return;
 
@@ -384,6 +434,13 @@ const EditInPlaceManager = {
     element.focus();
   },
 
+  /**
+   * Check a value against the instance's validation rules.
+   *
+   * @param {string} value - Value to validate.
+   * @param {Object} rules - Validation rules, e.g. `{required: true}`.
+   * @returns {string|null} - An error message, or null when valid.
+   */
   validateValue(value, rules) {
     if (!rules) return null;
 
@@ -407,14 +464,33 @@ const EditInPlaceManager = {
     return null; // No validation errors
   },
 
+  /**
+   * Discard the edit and restore the original value.
+   *
+   * @param {Object} instance - Instance being edited.
+   * @returns {void}
+   */
   cancelEdit(instance) {
     this.endEdit(instance, {restore: true, emitCancel: true});
   },
 
+  /**
+   * Announce an edit-in-place event through EventManager.
+   *
+   * @param {string} eventName - Event name to emit.
+   * @param {Object} data - Payload handed to listeners.
+   * @returns {void}
+   */
   emitEvent(eventName, data) {
     EventManager.emit(eventName, data);
   },
 
+  /**
+   * Look up the instance attached to an element.
+   *
+   * @param {HTMLElement|string} element - The element, or its id.
+   * @returns {Object|null} - The instance, or null when not editable.
+   */
   getInstance(element) {
     if (typeof element === 'string') {
       element = document.getElementById(element);
@@ -422,6 +498,12 @@ const EditInPlaceManager = {
     return element?.editInPlace || null;
   },
 
+  /**
+   * Tear an instance down and remove its editable behaviour.
+   *
+   * @param {Object|string} instance - The instance, or an element id.
+   * @returns {void}
+   */
   destroy(instance) {
     if (typeof instance === 'string') {
       instance = this.getInstance(instance);

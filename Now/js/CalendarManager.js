@@ -41,6 +41,14 @@ const CalendarManager = {
     initialized: false
   },
 
+  /**
+   * Set up the manager and pick the initial date and view.
+   *
+   * Runs once; later calls return immediately.
+   *
+   * @param {Object} [options={}] - Values merged over the config
+   * @returns {Object} - The manager itself, for chaining
+   */
   init(options = {}) {
     if (this.state.initialized) return this;
 
@@ -66,6 +74,13 @@ const CalendarManager = {
     return this;
   },
 
+  /**
+   * Create a calendar on the specified element.
+   *
+   * @param {HTMLElement|string} element - The element, or its id
+   * @param {Object} [options={}] - Options for this calendar only
+   * @returns {Object|null} - The instance, or null when the element is not found
+   */
   create(element, options = {}) {
     if (typeof element === 'string') {
       element = document.getElementById(element);
@@ -98,6 +113,12 @@ const CalendarManager = {
     return instance;
   },
 
+  /**
+   * Extract options from data attributes on the element.
+   *
+   * @param {HTMLElement} element - The calendar element.
+   * @returns {Object} - Extracted options.
+   */
   extractDataOptions(element) {
     const options = {};
     const dataset = element.dataset;
@@ -125,6 +146,15 @@ const CalendarManager = {
     return options;
   },
 
+  /**
+   * Create the basic DOM structure for the calendar,
+   * including navigation, view switcher, and content area.
+   *
+   * Clears the existing content of the element first.
+   *
+   * @param {Object} instance - Calendar instance.
+   * @returns {void}
+   */
   setupCalendar(instance) {
     const {element, config} = instance;
 
@@ -153,6 +183,13 @@ const CalendarManager = {
     instance.contentElement = content;
   },
 
+  /**
+   * Create the navigation bar with previous, next, and today buttons.
+   *
+   * @param {Object} instance - Calendar instance.
+   * @param {HTMLElement} container - Container to append navigation to.
+   * @returns {void}
+   */
   createNavigation(instance, container) {
     const nav = document.createElement('div');
     nav.className = 'calendar-nav';
@@ -192,6 +229,13 @@ const CalendarManager = {
     container.appendChild(nav);
   },
 
+  /**
+   * Create the view switcher buttons.
+   *
+   * @param {Object} instance - Calendar instance.
+   * @param {HTMLElement} container - Container to append switcher to.
+   * @returns {void}
+   */
   createViewSwitcher(instance, container) {
     const switcher = document.createElement('div');
     switcher.className = 'view-switcher';
@@ -215,6 +259,15 @@ const CalendarManager = {
     instance.viewSwitcherElement = switcher;
   },
 
+  /**
+   * Render the calendar again according to the current view and date.
+   *
+   * Includes `isRendering` flag to prevent overlapping renders.
+   * Calls made while rendering is in progress will be skipped.
+   *
+   * @param {Object} instance - Calendar instance.
+   * @returns {void}
+   */
   render(instance) {
     if (instance.isRendering) return;
     instance.isRendering = true;
@@ -244,6 +297,12 @@ const CalendarManager = {
     }
   },
 
+  /**
+   * Render the month view as a table.
+   *
+   * @param {Object} instance - Calendar instance.
+   * @returns {void}
+   */
   renderMonthView(instance) {
     const {contentElement, currentDate, config} = instance;
     contentElement.innerHTML = '';
@@ -314,6 +373,12 @@ const CalendarManager = {
     contentElement.appendChild(table);
   },
 
+  /**
+   * Render the week view.
+   *
+   * @param {Object} instance - Calendar instance.
+   * @returns {void}
+   */
   renderWeekView(instance) {
     const {contentElement, currentDate, config} = instance;
     contentElement.innerHTML = '';
@@ -384,6 +449,12 @@ const CalendarManager = {
     contentElement.appendChild(timeGrid);
   },
 
+  /**
+   * Render the day view.
+   *
+   * @param {Object} instance - Calendar instance.
+   * @returns {void}
+   */
   renderDayView(instance) {
     const {contentElement, currentDate, config} = instance;
     contentElement.innerHTML = '';
@@ -423,6 +494,12 @@ const CalendarManager = {
     contentElement.appendChild(timeGrid);
   },
 
+  /**
+   * Render the timeline view as a continuous bar.
+   *
+   * @param {Object} instance - Calendar instance.
+   * @returns {void}
+   */
   renderTimelineView(instance) {
     const {contentElement, currentDate, config} = instance;
     contentElement.innerHTML = '';
@@ -487,6 +564,12 @@ const CalendarManager = {
     }, 100);
   },
 
+  /**
+   * Render all events onto the current view.
+   *
+   * @param {Object} instance - Calendar instance.
+   * @returns {void}
+   */
   renderEvents(instance) {
     const {events, currentView, contentElement} = instance;
 
@@ -495,6 +578,13 @@ const CalendarManager = {
     });
   },
 
+  /**
+   * Render a single event into the appropriate date cell.
+   *
+   * @param {Object} instance - Calendar instance.
+   * @param {Object} event - Event data.
+   * @returns {void}
+   */
   renderEvent(instance, event) {
     const {currentView, contentElement} = instance;
     const eventDate = new Date(event.date);
@@ -532,6 +622,13 @@ const CalendarManager = {
     }
   },
 
+  /**
+   * Create an event element with appropriate classes based on event type and view.
+   *
+   * @param {Object} event - Event data.
+   * @param {string} viewType - The current view type.
+   * @returns {HTMLElement} - The event element.
+   */
   createEventElement(event, viewType) {
     const eventEl = document.createElement('div');
     eventEl.className = `calendar-event ${event.type || ''} ${viewType}-event`;
@@ -565,7 +662,17 @@ const CalendarManager = {
     return eventEl;
   },
 
-  // Navigation methods
+  /**
+   * Navigate to the next or previous period based on the current view.
+   *
+   * Days advance by 1 day,
+   * weeks advance by 1 week,
+   * and months advance by 1 month.
+   *
+   * @param {Object} instance - Calendar instance.
+   * @param {number} direction - -1 for backward, 1 for forward.
+   * @returns {void}
+   */
   navigate(instance, direction) {
     const {currentView, currentDate} = instance;
 
@@ -588,19 +695,39 @@ const CalendarManager = {
     this.emitEvent('calendar:dateChange', {instance, date: new Date(currentDate)});
   },
 
+  /**
+   * Return to the current date and fire `calendar:dateChange`.
+   *
+   * @param {Object} instance - Calendar instance.
+   * @returns {void}
+   */
   goToToday(instance) {
     instance.currentDate = new Date();
     this.render(instance);
     this.emitEvent('calendar:dateChange', {instance, date: new Date(instance.currentDate)});
   },
 
+  /**
+   * Switch the view and redraw, firing `calendar:viewChange`.
+   *
+   * @param {Object} instance - Calendar instance.
+   * @param {string} view - The new view (month, week, day, or timeline).
+   * @returns {void}
+   */
   changeView(instance, view) {
     instance.currentView = view;
     this.render(instance);
     this.emitEvent('calendar:viewChange', {instance, view});
   },
 
-  // Utility methods
+  /**
+   * Combine classes for a date cell, such as today, outside month, or holiday.
+   *
+   * @param {Date} date - The date of the cell.
+   * @param {Date} currentDate - The reference date for the view.
+   * @param {Object} config - Calendar configuration.
+   * @returns {Array<string>} - List of class names.
+   */
   getCellClasses(date, currentDate, config) {
     const classes = [];
     const today = new Date();
@@ -624,6 +751,14 @@ const CalendarManager = {
     return classes.join(' ');
   },
 
+  /**
+   * Day names for the configured locale.
+   *
+   * Uses `Utils.date.getDayNames` when available, and computes them otherwise.
+   *
+   * @param {Object} config - Calendar configuration
+   * @returns {Array<string>} - Day names in week order
+   */
   getDayNames(config) {
     const locale = this.getLocale(config);
     // Use Utils.date if available
@@ -640,6 +775,15 @@ const CalendarManager = {
     return names;
   },
 
+  /**
+   * Find the start of the week for a given date.
+   *
+   * Supports custom start of week. Some locales start on Sunday, others on Monday.
+   *
+   * @param {Date} date - The reference date.
+   * @param {number} firstDayOfWeek - The start of the week, where 0 is Sunday.
+   * @returns {Date} - Start of the week.
+   */
   getWeekStart(date, firstDayOfWeek) {
     const start = new Date(date);
     const day = start.getDay();
@@ -648,6 +792,13 @@ const CalendarManager = {
     return start;
   },
 
+  /**
+   * Check if two dates are the same day, ignoring time.
+   *
+   * @param {Date} date1 - The first date.
+   * @param {Date} date2 - The second date.
+   * @returns {boolean} - true if they are the same day.
+   */
   isSameDay(date1, date2) {
     return date1.getFullYear() === date2.getFullYear() &&
       date1.getMonth() === date2.getMonth() &&
@@ -695,6 +846,14 @@ const CalendarManager = {
     });
   },
 
+  /**
+   * Update the header text to match the current period and view.
+   *
+   * Date formats come from `config.dateFormats`, localized by the current locale.
+   *
+   * @param {Object} instance - Calendar instance.
+   * @returns {void}
+   */
   updateCurrentPeriod(instance) {
     const {currentDate, currentView, config} = instance;
     const locale = this.getLocale(config);
@@ -725,6 +884,12 @@ const CalendarManager = {
     }
   },
 
+  /**
+   * Highlight the button of the view that is currently displayed.
+   *
+   * @param {Object} instance - Calendar instance.
+   * @returns {void}
+   */
   updateViewSwitcher(instance) {
     if (!instance.viewSwitcherElement) return;
 
@@ -734,7 +899,16 @@ const CalendarManager = {
     });
   },
 
-  // Event handlers
+  /**
+   * Invoke the `onDateClick` callback when a date cell is clicked.
+   *
+   * The callback is invoked with `this` bound to the calendar element.
+   *
+   * @param {Object} instance - Calendar instance.
+   * @param {Date} date - The date that was clicked.
+   * @param {MouseEvent} event - Mouse event from the click.
+   * @returns {void}
+   */
   handleDateClick(instance, date, event) {
     if (instance.config.callbacks.onDateClick) {
       instance.config.callbacks.onDateClick.call(instance.element, date, event);
@@ -743,6 +917,13 @@ const CalendarManager = {
     this.emitEvent('calendar:dateClick', {instance, date, event});
   },
 
+  /**
+   * Invoke the `onEventClick` callback when an event is clicked.
+   *
+   * @param {Object} eventData - The event data that was clicked.
+   * @param {MouseEvent} event - Mouse event from the click.
+   * @returns {void}
+   */
   handleEventClick(eventData, event) {
     if (this.config.callbacks.onEventClick) {
       this.config.callbacks.onEventClick.call(null, eventData, event);
@@ -751,7 +932,13 @@ const CalendarManager = {
     this.emitEvent('calendar:eventClick', {event: eventData, domEvent: event});
   },
 
-  // Public API
+  /**
+   * Add an event to the calendar and redraw.
+   *
+   * @param {Object|string} elementOrInstance - The calendar instance or element ID.
+   * @param {Object} event - The event data.
+   * @returns {void}
+   */
   addEvent(elementOrInstance, event) {
     const instance = typeof elementOrInstance === 'string' ?
       this.getInstance(elementOrInstance) : elementOrInstance;
@@ -762,6 +949,13 @@ const CalendarManager = {
     }
   },
 
+  /**
+   * Remove an event from the calendar and redraw.
+   *
+   * @param {Object|string} elementOrInstance - The calendar instance or element ID.
+   * @param {string} eventId - The ID of the event to remove.
+   * @returns {void}
+   */
   removeEvent(elementOrInstance, eventId) {
     const instance = typeof elementOrInstance === 'string' ?
       this.getInstance(elementOrInstance) : elementOrInstance;
@@ -772,6 +966,12 @@ const CalendarManager = {
     }
   },
 
+  /**
+   * Find the calendar instance from an element or ID.
+   *
+   * @param {HTMLElement|string} element - The element or ID.
+   * @returns {Object|null} - The instance or null.
+   */
   getInstance(element) {
     if (typeof element === 'string') {
       element = document.getElementById(element);
@@ -779,10 +979,23 @@ const CalendarManager = {
     return element ? this.state.calendars.get(element) : null;
   },
 
+  /**
+   * Emit calendar events through EventManager.
+   *
+   * @param {string} eventName - The event name.
+   * @param {Object} data - Data associated with the event.
+   * @returns {void}
+   */
   emitEvent(eventName, data) {
     EventManager.emit(eventName, data);
   },
 
+  /**
+   * Destroy the calendar and remove all handlers.
+   *
+   * @param {Object|string} instance - The calendar instance or element ID.
+   * @returns {void}
+   */
   destroy(instance) {
     if (typeof instance === 'string') {
       instance = this.getInstance(instance);

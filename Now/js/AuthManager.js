@@ -63,6 +63,15 @@ const AuthManager = {
 
   tokenService: null,
 
+  /**
+   * Returns the TokenService, creating it on first use with the cookie options
+   * this manager is configured with.
+   *
+   * secure is off on localhost so development over http still works.
+   *
+   * @param {boolean} [force=false] - Rebuild the service even if one exists
+   * @returns {Object} The token service
+   */
   ensureTokenService(force = false) {
     if (!this.config?.token) {
       this.config.token = {
@@ -90,6 +99,13 @@ const AuthManager = {
     return this.tokenService;
   },
 
+  /**
+   * Builds the cookie options for storing a token, deriving maxAge from the
+   * configured value or, failing that, from the expiry inside the token.
+   *
+   * @param {string} token - Token whose expiry may set the lifetime
+   * @returns {Object} Cookie options, with maxAge omitted when unknown
+   */
   buildTokenCookieOptions(token) {
     const cookieOptions = {
       path: '/',
@@ -125,6 +141,15 @@ const AuthManager = {
     return cookieOptions;
   },
 
+  /**
+   * Clears any access token ApiService still holds in memory.
+   *
+   * There is nothing to restore under cookie-based auth: the access token is an
+   * httpOnly cookie JavaScript cannot read, so the session is recovered from
+   * the server through checkAuthStatus() instead.
+   *
+   * @returns {null} Always null
+   */
   rehydrateAccessToken() {
     // No-op under cookie-based auth: the access token is an httpOnly cookie that
     // JavaScript cannot (and must not) read. Session state is restored from the
@@ -139,7 +164,14 @@ const AuthManager = {
     return null;
   },
 
-  // --- Token helpers ----------------------------------------------------
+  /**
+   * Resolves the auth strategy in force, from ApiService, then this config,
+   * then the configured type.
+   *
+   * Unknown values and the legacy 'jwt-httponly' both map to 'hybrid'.
+   *
+   * @returns {string} 'hybrid', 'storage' or 'cookie'
+   */
   getAuthStrategy() {
     const strategy = ApiService?.config?.security?.authStrategy
       || this.config?.security?.authStrategy
@@ -157,6 +189,13 @@ const AuthManager = {
     return 'hybrid';
   },
 
+  /**
+   * Pulls the access token out of a response body, accepting it at data.token
+   * or data.data.token.
+   *
+   * @param {Object} data - Response body
+   * @returns {string|null} Token, or null when the body carries none
+   */
   resolveTokenFromData(data) {
     if (!data || typeof data !== 'object') {
       return null;
@@ -175,6 +214,13 @@ const AuthManager = {
     return null;
   },
 
+  /**
+   * Pulls the user object out of a response body, accepting data.user,
+   * data.data.user, or a data.data that carries the user fields itself.
+   *
+   * @param {Object} data - Response body
+   * @returns {Object|null} User, or null when the body carries none
+   */
   resolveUserFromData(data) {
     if (!data || typeof data !== 'object') {
       return null;
@@ -200,6 +246,13 @@ const AuthManager = {
     return null;
   },
 
+  /**
+   * Reads an access token from response headers: the Authorization header with
+   * or without the Bearer prefix, or one of the x-access-token variants.
+   *
+   * @param {Object} [headers={}] - Response headers
+   * @returns {string|null} Token, or null when no header carries one
+   */
   extractTokenFromHeaders(headers = {}) {
     if (!headers || typeof headers !== 'object') {
       return null;
@@ -256,6 +309,12 @@ const AuthManager = {
     return null;
   },
 
+  /**
+   * Builds the fetch options for a refresh request: the credentials mode
+   * ApiService is configured for, and the CSRF header when a token is available.
+   *
+   * @returns {Object} Fetch options
+   */
   buildRefreshRequestOptions() {
     const includeCreds = (ApiService?.config?.security?.sendCredentials) ? 'include' : 'same-origin';
     const options = {
@@ -266,9 +325,11 @@ const AuthManager = {
     try {
       const csrfToken = this.getCSRFToken?.();
       if (csrfToken) {
+        // Same spelling as simpleFetch's own header: it merges these first and
+        // a differently-cased duplicate reaches the server as "tok, tok".
         options.headers = {
           ...(options.headers || {}),
-          'X-CSRF-TOKEN': csrfToken
+          'X-CSRF-Token': csrfToken
         };
       }
     } catch (e) {
@@ -278,6 +339,19 @@ const AuthManager = {
     return options;
   },
 
+  /**
+   * Obtains an access token by trying the refresh endpoint, then the verify
+   * endpoint, and returns the first attempt that yields one.
+   *
+   * A failing attempt is logged and the next one is tried.
+   *
+   * @param {Object} [options={}] - Fetch options
+   * @param {Object|null} [options.fallbackUser=null] - User to return when the
+   *   response carries none
+   * @param {boolean} [options.preferRefresh=true] - Try the refresh endpoint
+   * @param {boolean} [options.preferVerifyFallback=true] - Try the verify endpoint
+   * @returns {Promise<Object|null>} {token, user}, or null when every attempt failed
+   */
   async fetchAccessToken(options = {}) {
     const {
       fallbackUser = null,
@@ -347,14 +421,27 @@ const AuthManager = {
     return null;
   },
 
-  // (ensureAccessToken removed) Access tokens are never stored client-side under
-  // cookie-based auth — the server's httpOnly cookie is the sole token store.
-
-  // --- Lifecycle ---------------------------------------------------------
+  /**
+   * Reports whether init() has completed.
+   *
+   * @returns {boolean} True when the manager is initialized
+   */
   isInitialized() {
     return this.state?.initialized === true;
   },
 
+  /**
+   * Initializes authentication: merges the config with the shared Now.js auth
+   * settings, prepares the token service, tells ApiService to rely on the
+   * httpOnly cookie rather than an Authorization header, installs the HTTP
+   * interceptors, checks the current session and starts the refresh timer.
+   *
+   * Returns early when auth is disabled.
+   *
+   * @param {Object} [options={}] - Configuration merged over the defaults
+   * @returns {Promise<Object>} The manager instance
+   * @throws {Error} When initialization fails
+   */
   async init(options = {}) {
     const sharedAuthConfig = (window.Now && Now.DEFAULT_CONFIG && Now.DEFAULT_CONFIG.auth) ? Now.DEFAULT_CONFIG.auth : {};
     const mergedEndpoints = {
@@ -423,7 +510,15 @@ const AuthManager = {
     }
   },
 
-  // --- HTTP integration --------------------------------------------------
+  /**
+   * Installs the auth interceptors on the HTTP client.
+   *
+   * Requests get the CSRF header; responses adopt a rotated token. A 401
+   * triggers one refresh-and-retry, then a logout and a redirect to the login
+   * route through RedirectManager, and a 403 redirects to the forbidden route.
+   *
+   * @returns {void}
+   */
   setupHttpInterceptors() {
     if (!window.http || !window.http.addRequestInterceptor) {
       return;
@@ -512,8 +607,18 @@ const AuthManager = {
     );
   },
 
-
-  // --- Authentication state ---------------------------------------------
+  /**
+   * Asks the verify endpoint who the current user is and updates the session
+   * state, caching the user profile in local storage for display.
+   *
+   * A rejection by the server clears the session rather than leaving it
+   * half-set. An unreachable server does not: the cached profile is restored
+   * instead and the result carries offline:true, so that losing the connection
+   * does not throw the user back to the login page. See restoreCachedUser().
+   *
+   * @returns {Promise<Object>} {authenticated, user}, plus offline:true when
+   *                            answered from cache, or error when it failed
+   */
   async checkAuthStatus() {
     try {
       // Always rehydrate token before checking
@@ -560,6 +665,14 @@ const AuthManager = {
         };
       }
 
+      // Could not reach the server, which is not the same as being rejected
+      if (this.isUnreachable(response)) {
+        const cached = this.restoreCachedUser();
+        if (cached) {
+          return {authenticated: true, user: cached, offline: true};
+        }
+      }
+
       this.clearAuthData();
       return {
         authenticated: false,
@@ -567,6 +680,10 @@ const AuthManager = {
         error: response?.data?.message || response?.statusText || 'Authentication failed'
       };
     } catch (error) {
+      const cached = navigator.onLine === false ? this.restoreCachedUser() : null;
+      if (cached) {
+        return {authenticated: true, user: cached, offline: true};
+      }
       this.clearAuthData();
       return {
         authenticated: false,
@@ -576,6 +693,61 @@ const AuthManager = {
     }
   },
 
+  /**
+   * Tell "the server could not be reached" apart from "the server said no".
+   *
+   * simpleFetch returns status 0 when the fetch itself fails (offline, DNS
+   * failure and the like) and 408 on timeout. A genuine rejection always
+   * carries its own HTTP status (401/403).
+   *
+   * @param {Object} response - Result of simpleFetch
+   * @returns {boolean} True when the server was unreachable
+   */
+  isUnreachable(response) {
+    if (navigator.onLine === false) {
+      return true;
+    }
+    const status = response && typeof response.status !== 'undefined' ? response.status : null;
+    return status === 0 || status === 408;
+  },
+
+  /**
+   * Return the cached user profile and keep the session marked authenticated.
+   *
+   * Used ONLY when the server could not be reached, so that a dropped
+   * connection does not throw the user back to the login page - which would
+   * make an offline-capable app unusable.
+   *
+   * Trade-off worth knowing: if the session is revoked server-side while the
+   * device is offline, the UI keeps showing the user as logged in until it is
+   * back online. Nothing can be read or written in that state, because every
+   * API call is still authorised by the server as usual - only the screen is
+   * stale. The next successful verify clears the session.
+   *
+   * @returns {Object|null} The cached user, or null when there is none
+   */
+  restoreCachedUser() {
+    let cached = null;
+    try {
+      const raw = localStorage.getItem(this.config.token.storageKey);
+      cached = raw ? JSON.parse(raw) : null;
+    } catch (e) {
+      cached = null;
+    }
+    if (!cached || typeof cached !== 'object' || !cached.id) {
+      return null;
+    }
+    this.state.authenticated = true;
+    this.state.user = cached;
+    return cached;
+  },
+
+  /**
+   * Drops the local session: the state, the cached user profile, the access
+   * token ApiService holds, and everything the token service stores.
+   *
+   * @returns {void}
+   */
   clearAuthData() {
     this.state.authenticated = false;
     this.state.user = null;
@@ -715,6 +887,13 @@ const AuthManager = {
     }
   },
 
+  /**
+   * Turns a failed auth check into an unauthenticated result and clears the
+   * session.
+   *
+   * @param {Error} error - Error from the check
+   * @returns {Promise<Object>} {authenticated: false, user: null, error}
+   */
   async handleAuthCheckError(error) {
     console.warn('Auth check failed:', error.message);
     this.clearAuthData();
@@ -725,6 +904,15 @@ const AuthManager = {
     };
   },
 
+  /**
+   * Listens for the events SecurityManager emits, so a refreshed JWT or a
+   * security error reaches this manager.
+   *
+   * The jwt:refreshed listener calls handleJWTRefresh, which this manager does
+   * not define; the optional call makes that a no-op rather than an error.
+   *
+   * @returns {void}
+   */
   setupSecurityIntegration() {
     document.addEventListener('jwt:refreshed', (event) => {
       this.handleJWTRefresh?.(event.detail);
@@ -735,6 +923,13 @@ const AuthManager = {
     });
   },
 
+  /**
+   * Handles a security error: reports it, and on an unauthorized or invalid
+   * CSRF result clears the session and redirects to the login route.
+   *
+   * @param {Object} detail - Event detail from SecurityManager
+   * @returns {void}
+   */
   handleSecurityError(detail) {
     try {
       const info = detail || {};
@@ -752,6 +947,20 @@ const AuthManager = {
     }
   },
 
+  /**
+   * Posts credentials to the login endpoint and normalizes the response so the
+   * token and user sit where the caller expects them.
+   *
+   * Validates the email format and the password length before sending. Never
+   * throws: failures come back as a result with success false.
+   *
+   * @param {Object} credentials - Login credentials
+   * @param {string} credentials.email - Email address
+   * @param {string} credentials.password - Password, at least 8 characters
+   * @param {Object} [options={}] - Request options
+   * @param {Object} [options.fetchOptions] - Extra options for the fetch
+   * @returns {Promise<Object>} Response body, or {success: false, message}
+   */
   async authenticate(credentials, options = {}) {
     try {
       // Basic validation
@@ -806,6 +1015,17 @@ const AuthManager = {
     }
   },
 
+  /**
+   * Puts the manager into the authenticated state for a user, caches the
+   * profile for display, starts the refresh timer and emits auth:login.
+   *
+   * No token is stored: the server delivered it as an httpOnly cookie, and the
+   * browser sends it back on its own.
+   *
+   * @param {Object} userData - Response body carrying the user
+   * @param {Object} [options={}] - Reserved for callers passing ensureOptions
+   * @returns {Promise<Object>} {success, user, authenticated} or {success: false, message}
+   */
   async setAuthenticatedUser(userData, options = {}) {
     try {
       const user = this.resolveUserFromData(userData);
@@ -863,6 +1083,16 @@ const AuthManager = {
     }
   },
 
+  /**
+   * Full login flow: authenticate, set the session, then redirect through
+   * RedirectManager so the user lands on the route they were heading for.
+   *
+   * @param {Object} credentials - Login credentials
+   * @param {Object} [options={}] - Login options
+   * @param {boolean} [options.preventRedirect] - Stay on the current page
+   * @param {string} [options.redirectTo] - Explicit destination
+   * @returns {Promise<Object>} {success, user, authenticated} or {success: false, message}
+   */
   async login(credentials, options = {}) {
     try {
       const authResult = await this.authenticate(credentials, options);
@@ -905,6 +1135,20 @@ const AuthManager = {
     }
   },
 
+  /**
+   * Logs the user out: stops the refresh timer, tells the server, clears the
+   * caches and the local session, emits auth:logout and redirects.
+   *
+   * When the server reports that an impersonation ended, the restored admin
+   * session is kept and the response's own redirect is followed instead.
+   *
+   * @param {boolean} [callServer=true] - Call the logout endpoint
+   * @param {Object} [options={}] - Logout options
+   * @param {boolean} [options.preventRedirect] - Stay on the current page
+   * @param {string} [options.redirectTo] - Explicit destination
+   * @param {boolean} [options.clearAllCaches] - Set false to keep the caches
+   * @returns {Promise<void>}
+   */
   async logout(callServer = true, options = {}) {
     try {
       this.state.loading = true;
@@ -996,15 +1240,40 @@ const AuthManager = {
     }
   },
 
+  /**
+   * Refreshes the session against the refresh endpoint and schedules the next
+   * refresh.
+   *
+   * The new access token arrives as an httpOnly cookie, so only the user
+   * profile is updated here.
+   *
+   * @returns {Promise<boolean>} True when the session was refreshed
+   */
   async refreshToken() {
     try {
       const refreshToken = this.getRefreshToken();
       const payload = refreshToken ? {refresh_token: refreshToken} : null;
-      const response = await simpleFetch.post(
+      let response = await simpleFetch.post(
         this.config.endpoints.refresh,
         payload,
         this.buildRefreshRequestOptions()
       );
+
+      // 419 = the CSRF token no longer belongs to the server session (the
+      // session was recreated after idle/GC or a sleep). simpleFetch bypasses
+      // the http interceptors, so SecurityManager's own 419 recovery never
+      // runs for this request: fetch a token for the current session and
+      // retry once before giving up.
+      if (response?.status === 419) {
+        if (window.SecurityManager?.refreshCSRFToken) {
+          await SecurityManager.refreshCSRFToken();
+        }
+        response = await simpleFetch.post(
+          this.config.endpoints.refresh,
+          payload,
+          this.buildRefreshRequestOptions()
+        );
+      }
 
       if (response?.data?.success) {
         // The refreshed access token is set by the server as an httpOnly cookie;
@@ -1044,6 +1313,11 @@ const AuthManager = {
     }
   },
 
+  /**
+   * Schedules the next token refresh, replacing any timer already pending.
+   *
+   * @returns {void}
+   */
   setupAutoRefresh() {
     if (this.state.refreshTimer) {
       clearTimeout(this.state.refreshTimer);
@@ -1057,6 +1331,12 @@ const AuthManager = {
     }, refreshInterval);
   },
 
+  /**
+   * Reports whether the current user holds a permission, '*' granting all.
+   *
+   * @param {string} permission - Permission to test
+   * @returns {boolean} True when the user holds it
+   */
   hasPermission(permission) {
     if (!this.state.authenticated || !this.state.user) {
       return false;
@@ -1066,6 +1346,12 @@ const AuthManager = {
     return userPermissions.includes(permission) || userPermissions.includes('*');
   },
 
+  /**
+   * Reports whether the current user holds a role, 'admin' granting all.
+   *
+   * @param {string} role - Role to test
+   * @returns {boolean} True when the user holds it
+   */
   hasRole(role) {
     if (!this.state.authenticated || !this.state.user) {
       return false;
@@ -1075,6 +1361,12 @@ const AuthManager = {
     return userRoles.includes(role) || userRoles.includes('admin');
   },
 
+  /**
+   * Guards a page for signed-in users: remembers the current URL and redirects
+   * to login when nobody is signed in.
+   *
+   * @returns {boolean} True when the user may proceed
+   */
   requireAuth() {
     if (!this.state.authenticated) {
       this.saveIntendedUrl();
@@ -1084,6 +1376,12 @@ const AuthManager = {
     return true;
   },
 
+  /**
+   * Guards a page for signed-out users, redirecting a signed-in one to the
+   * post-login route.
+   *
+   * @returns {boolean} True when the user may proceed
+   */
   requireGuest() {
     if (this.state.authenticated) {
       this.redirectTo(this.config.redirects.afterLogin);
@@ -1092,6 +1390,17 @@ const AuthManager = {
     return true;
   },
 
+  /**
+   * Remembers where the user was heading so login can send them back, storing
+   * it both as auth_intended_route for AuthGuard and RedirectManager and as the
+   * legacy intended_url.
+   *
+   * The router base is stripped so the redirect stays inside the SPA, and auth
+   * pages are never remembered.
+   *
+   * @param {string} [url=null] - Explicit URL for the legacy key
+   * @returns {void}
+   */
   saveIntendedUrl(url = null) {
     const authPages = ['/login', '/register', '/forgot-password'];
 
@@ -1124,12 +1433,27 @@ const AuthManager = {
     }
   },
 
+  /**
+   * Reads and consumes the remembered destination.
+   *
+   * @returns {string|null} URL, or null when none was stored
+   */
   getIntendedUrl() {
     const url = sessionStorage.getItem('intended_url');
     sessionStorage.removeItem('intended_url');
     return url;
   },
 
+  /**
+   * Navigates to a URL, through the router when it is running and with a full
+   * page load otherwise.
+   *
+   * A login destination gains a redirect parameter pointing back to the current
+   * page.
+   *
+   * @param {string} url - Destination
+   * @returns {void}
+   */
   redirectTo(url) {
     if (url === '/login' || url.includes('/login')) {
       const currentUrl = `${window.location.pathname}${window.location.search}`;
@@ -1148,6 +1472,12 @@ const AuthManager = {
     }
   },
 
+  /**
+   * Writes the token into the csrf-token meta tag, creating it when absent.
+   *
+   * @param {string} token - CSRF token
+   * @returns {void}
+   */
   updateCSRFToken(token) {
     let metaToken = document.querySelector('meta[name="csrf-token"]');
     if (!metaToken) {
@@ -1158,7 +1488,12 @@ const AuthManager = {
     metaToken.setAttribute('content', token);
   },
 
-  // Read CSRF token from meta tag or cookie fallback.
+  /**
+   * Reads the CSRF token from the meta tag, falling back to the XSRF-TOKEN
+   * cookie.
+   *
+   * @returns {string|null} Token, or null when neither is present
+   */
   getCSRFToken() {
     try {
       const meta = document.querySelector('meta[name="csrf-token"]');
@@ -1174,6 +1509,14 @@ const AuthManager = {
     }
   },
 
+  /**
+   * Emits an event through EventManager and as a DOM CustomEvent, so listeners
+   * can use either channel.
+   *
+   * @param {string} eventName - Event name
+   * @param {Object} [data={}] - Event payload
+   * @returns {void}
+   */
   emit(eventName, data = {}) {
     EventManager.emit(eventName, data);
 
@@ -1186,6 +1529,13 @@ const AuthManager = {
     document.dispatchEvent(event);
   },
 
+  /**
+   * Emits auth:error and shows the message to the user.
+   *
+   * @param {string} message - Description of what failed
+   * @param {Error} error - Error that was caught
+   * @returns {void}
+   */
   handleError(message, error) {
     this.emit('auth:error', {
       message,
@@ -1198,26 +1548,60 @@ const AuthManager = {
     }
   },
 
+  /**
+   * Returns the current user.
+   *
+   * @returns {Object|null} User, or null when nobody is signed in
+   */
   getUser() {
     return this.state.user;
   },
 
+  /**
+   * Reports whether a user is signed in.
+   *
+   * @returns {boolean} True when authenticated
+   */
   isAuthenticated() {
     return this.state.authenticated;
   },
 
+  /**
+   * Returns the id of the current user.
+   *
+   * @returns {*} User id, or null when nobody is signed in
+   */
   getUserId() {
     return this.state.user?.id ?? null;
   },
 
+  /**
+   * Returns the roles of the current user.
+   *
+   * @returns {Array} Roles, empty when nobody is signed in or the user has none
+   */
   getRoles() {
-    return [];
+    if (!this.state.authenticated || !this.state.user) {
+      return [];
+    }
+
+    return Array.isArray(this.state.user.roles) ? this.state.user.roles : [];
   },
 
+  /**
+   * Returns the permissions of the current user.
+   *
+   * @returns {Array} Permissions, empty when there are none
+   */
   getPermissions() {
     return Array.isArray(this.state.user?.permission) ? this.state.user.permission : [];
   },
 
+  /**
+   * Re-checks the session against the server and reports the result.
+   *
+   * @returns {Promise<boolean>} True when the session is still valid
+   */
   async verifyAuthState() {
     try {
       await this.checkAuthStatus();
@@ -1227,18 +1611,39 @@ const AuthManager = {
     }
   },
 
+  /**
+   * Reports whether an auth request is in flight.
+   *
+   * @returns {boolean} True while loading
+   */
   isLoading() {
     return this.state.loading;
   },
 
+  /**
+   * Returns the last auth error.
+   *
+   * @returns {Error|null} Error, or null
+   */
   getError() {
     return this.state.error;
   },
 
+  /**
+   * Clears the stored auth error.
+   *
+   * @returns {void}
+   */
   clearError() {
     this.state.error = null;
   },
 
+  /**
+   * Stops the refresh timer and marks the manager uninitialized, leaving the
+   * session itself alone.
+   *
+   * @returns {void}
+   */
   cleanup() {
     if (this.state.refreshTimer) {
       clearTimeout(this.state.refreshTimer);
@@ -1248,6 +1653,16 @@ const AuthManager = {
     this.state.initialized = false;
   },
 
+  /**
+   * Starts a social login, either in a popup or by redirecting to the
+   * provider's endpoint.
+   *
+   * @param {string} provider - Provider name substituted into the endpoint
+   * @param {Object} [options={}] - Login options
+   * @param {boolean} [options.popup] - Use a popup instead of a redirect
+   * @param {string} [options.endpoint] - Endpoint template to use instead
+   * @returns {Promise<Object>} Result of the popup flow, or {success, method: 'redirect'}
+   */
   async socialLogin(provider, options = {}) {
     try {
       this.state.loading = true;
@@ -1279,6 +1694,17 @@ const AuthManager = {
     }
   },
 
+  /**
+   * Runs a social login in a popup and waits for it to report back.
+   *
+   * Only messages from this origin are accepted; the promise rejects when the
+   * popup is blocked, is closed by the user, or reports an error.
+   *
+   * @param {string} provider - Provider name, used to name the window
+   * @param {string} endpoint - URL to open
+   * @param {Object} [options={}] - Reserved for future options
+   * @returns {Promise<Object>} Result of setAuthenticatedUser()
+   */
   async handleSocialPopup(provider, endpoint, options = {}) {
     return new Promise((resolve, reject) => {
       const popup = window.open(
@@ -1327,6 +1753,13 @@ const AuthManager = {
     });
   },
 
+  /**
+   * Completes an OAuth callback: exchanges a code or token at the callback
+   * endpoint, or accepts a user the provider already returned.
+   *
+   * @param {Object} callbackData - Query parameters or payload from the provider
+   * @returns {Promise<Object>} {success, user} or {success: false, message}
+   */
   async handleAuthCallback(callbackData) {
     try {
       if (callbackData.error) {
@@ -1356,6 +1789,13 @@ const AuthManager = {
     }
   },
 
+  /**
+   * Signs a user in from an existing token by fetching their profile with it.
+   *
+   * @param {string} token - Access token to present as a Bearer token
+   * @param {Object} [options={}] - Reserved for future options
+   * @returns {Promise<Object>} {success, user} or {success: false, message}
+   */
   async loginWithToken(token, options = {}) {
     try {
       this.state.loading = true;

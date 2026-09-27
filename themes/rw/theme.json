@@ -1,0 +1,43 @@
+{
+  "name": "RW Theme",
+  "version": "1.0.0",
+  "author": "Goragod Wiriya",
+  "author_url": "https://goragod.com",
+  "description": "Theme สองคอลัมน์ แดง-ขาว",
+  "screenshot": "screenshot.webp",
+  "license": "MIT",
+  "layouts": [
+    "main",
+    "auth",
+    "blank",
+    "full-width"
+  ],
+  "components": [
+    "header",
+    "footer",
+    "navbar",
+    "sidebar",
+    "breadcrumb",
+    "pagination"
+  ],
+  "colors": {
+    "primary": "#FF0000",
+    "primary_hover": "#1d4ed8",
+    "secondary": "#6B645D",
+    "accent": "#DC2626",
+    "background": "#ffffff",
+    "text": "#2C2825"
+  },
+  "settings": {
+    "show_sidebar": true,
+    "sidebar_position": "right",
+    "footer_columns": 4,
+    "show_breadcrumb": true,
+    "show_search": true,
+    "products_per_page": 12
+  },
+  "designer": {
+    "compatible": true,
+    "editable": true
+  }
+}

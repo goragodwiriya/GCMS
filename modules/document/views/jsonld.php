@@ -77,8 +77,8 @@ class View extends \Kotchasan\KBase
         $imageUrl = '';
         if (!empty($article->picture) && file_exists(ROOT_PATH.DATA_FOLDER.'document/'.$article->picture)) {
             $imageUrl = WEB_URL.DATA_FOLDER.'document/'.$article->picture;
-        } elseif (!empty($index->config->default_icon) && file_exists(ROOT_PATH.$index->config->default_icon)) {
-            $imageUrl = WEB_URL.$index->config->default_icon;
+        } elseif (!empty($index->default_icon) && file_exists(ROOT_PATH.$index->default_icon)) {
+            $imageUrl = WEB_URL.$index->default_icon;
         }
 
         // Date ISO 8601
@@ -86,8 +86,8 @@ class View extends \Kotchasan\KBase
         $dateModified = '';
         if (!empty($article->published_date)) {
             $ts = is_numeric($article->published_date)
-            ? (int) $article->published_date
-            : strtotime($article->published_date);
+                ? (int) $article->published_date
+                : strtotime($article->published_date);
             if ($ts) {
                 $datePublished = date('c', $ts);
                 $dateModified = $datePublished;
@@ -95,8 +95,8 @@ class View extends \Kotchasan\KBase
         }
         if (!empty($article->updated_date)) {
             $ts = is_numeric($article->updated_date)
-            ? (int) $article->updated_date
-            : strtotime($article->updated_date);
+                ? (int) $article->updated_date
+                : strtotime($article->updated_date);
             if ($ts) {
                 $dateModified = date('c', $ts);
             }

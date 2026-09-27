@@ -1,0 +1,48 @@
+<aside data-component="sidebar"></aside>
+<div class="main-content">
+  <div>
+    <header data-component="topbar"></header>
+    <main class="content">
+      <div class="card-groups">
+        <header>
+          <div>
+            <h1 class="icon-calendar" data-i18n>Event Widget</h1>
+            <p data-i18n>{LNG_Choose which module this widget shows and how}</p>
+          </div>
+        </header>
+
+        <div class="content-body">
+          <!-- Deliberately a <div>, not a <form> — see
+               widgets/document/document.html for why. -->
+          <div data-widget-settings-form="true">
+            <fieldset>
+              <legend class="icon-calendar" data-i18n>Content</legend>
+
+              <div>
+                <label for="module" data-i18n>Module</label>
+                <span class="form-control icon-menus">
+                  <select id="module" name="module" data-widget-module-source required>
+                    <option value="" data-i18n>Please select a module</option>
+                  </select>
+                </span>
+                <div class="comment" data-i18n>
+                  The event module to read upcoming events from, e.g. calendar
+                </div>
+              </div>
+
+              <div>
+                <label for="count" data-i18n>Events to show</label>
+                <span class="form-control">
+                  <input type="number" id="count" name="count" min="1" max="20" value="5">
+                </span>
+              </div>
+            </fieldset>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+  <footer class="footer">
+    <p class="center">&copy; 2026 GCMS - Powered by <a href="https://nowjs.net">Now.js</a></p>
+  </footer>
+</div>

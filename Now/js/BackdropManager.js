@@ -1,3 +1,11 @@
+/**
+ * BackdropManager
+ *
+ * Shows and stacks the dimmed overlay behind modals, dialogs and dropdowns.
+ * Supports several backdrops at once, closes the topmost one on Escape, and
+ * resolves its base z-index from the `--z-index-loading` CSS variable so it
+ * stays in sync with a page's own stacking scheme.
+ */
 const BackdropManager = {
   config: {
     baseZIndex: 1070,
@@ -18,6 +26,12 @@ const BackdropManager = {
     isInitialized: false
   },
 
+  /**
+   * Read a CSS custom property as an integer.
+   *
+   * @param {string} variableName - CSS variable name, e.g. `--z-index-loading`.
+   * @returns {number|null} - The parsed value, or null when it is not a usable integer.
+   */
   getCssZIndexValue(variableName) {
     const value = getComputedStyle(document.documentElement)
       .getPropertyValue(variableName)
@@ -26,10 +40,27 @@ const BackdropManager = {
     return Number.isFinite(parsed) ? parsed : null;
   },
 
+  /**
+   * The base z-index to stack backdrops from.
+   *
+   * Read from the `--z-index-loading` CSS variable when present, so backdrops
+   * stay above or below other layers the page defines through CSS.
+   *
+   * @returns {number} - Resolved base z-index.
+   */
   getResolvedBaseZIndex() {
     return this.getCssZIndexValue('--z-index-loading') ?? this.config.baseZIndex;
   },
 
+  /**
+   * Work out which of `show`'s flexible arguments is the element, the handler
+   * and the options.
+   *
+   * @param {Element|Function|Object} elementOrOnClick - First argument to `show`.
+   * @param {Function|Object|null} [onClickOrOptions=null] - Second argument to `show`.
+   * @param {Object} [options={}] - Third argument to `show`.
+   * @returns {Object} - `{targetElement, onClick, options}` resolved from whatever was passed.
+   */
   normalizeShowArgs(elementOrOnClick, onClickOrOptions = null, options = {}) {
     const isTargetElement = (value) => value instanceof Element || value === document.body;
     const isListener = (value) => typeof value === 'function' || (value && typeof value.handleEvent === 'function');
@@ -72,6 +103,14 @@ const BackdropManager = {
     };
   },
 
+  /**
+   * Set up the manager: resolve the base z-index and bind the Escape handler.
+   *
+   * Runs once; a second call returns immediately.
+   *
+   * @param {Object} [options={}] - Overrides merged into the module config.
+   * @returns {Promise<Object>} - The manager itself, so calls can be chained.
+   */
   async init(options = {}) {
     if (this.state.isInitialized) return this;
 
@@ -87,6 +126,16 @@ const BackdropManager = {
     return this;
   },
 
+  /**
+   * Build the backdrop's DOM element.
+   *
+   * Marked `aria-hidden="true"` and `role="presentation"`, since a backdrop is
+   * purely visual and should not be announced by assistive tech.
+   *
+   * @param {Element} targetElement - Element the backdrop is shown behind.
+   * @param {Object} options - Resolved show options.
+   * @returns {HTMLElement} - The created backdrop element.
+   */
   createBackdropElement(targetElement, options) {
     const backdrop = document.createElement('div');
     backdrop.className = `${this.config.className} ${options.className || ''}`.trim();
@@ -120,6 +169,18 @@ const BackdropManager = {
     return backdrop;
   },
 
+  /**
+   * Show a backdrop behind an element, or as a bare full-page overlay.
+   *
+   * Arguments are flexible on purpose — see `normalizeShowArgs` for exactly how
+   * they are interpreted — so a caller can pass just a click handler when there
+   * is no specific target element.
+   *
+   * @param {Element|Function|Object} elementOrOnClick - Target element, a click handler, or an options object.
+   * @param {Function|Object} [onClick=null] - Click handler, or options when the first argument was the handler.
+   * @param {Object} [options={}] - Options, when both earlier arguments were used for element and handler.
+   * @returns {number} - Id of the shown backdrop, used with `hide`.
+   */
   show(elementOrOnClick, onClick = null, options = {}) {
     try {
       const id = this.state.nextId++;
@@ -164,6 +225,12 @@ const BackdropManager = {
     }
   },
 
+  /**
+   * Fade out and remove one backdrop.
+   *
+   * @param {number} id - Id returned by `show`.
+   * @returns {void}
+   */
   hide(id) {
     try {
       const backdropData = this.state.backdrops.get(id);
@@ -199,6 +266,13 @@ const BackdropManager = {
     }
   },
 
+  /**
+   * Change the options of a backdrop already showing behind an element.
+   *
+   * @param {Element} element - Element the backdrop is attached to.
+   * @param {Object} [options={}] - Options to merge into the existing ones.
+   * @returns {void}
+   */
   update(element, options = {}) {
     const backdropData = this.state.backdrops.get(element);
     if (!backdropData) return;
@@ -214,11 +288,25 @@ const BackdropManager = {
     backdropData.options = newOptions;
   },
 
+  /**
+   * Hide every currently active backdrop.
+   *
+   * @returns {void}
+   */
   hideAll() {
     [...this.state.activeBackdrops].forEach(id => this.hide(id));
   },
 
 
+  /**
+   * Hide the topmost backdrop when Escape is pressed.
+   *
+   * Only the most recently shown backdrop closes per press, so stacked
+   * overlays close one at a time rather than all at once.
+   *
+   * @param {KeyboardEvent} event - The keydown event.
+   * @returns {void}
+   */
   handleKeydown(event) {
     if (event.key === 'Escape' && this.state.activeBackdrops.length > 0) {
       const lastId = this.state.activeBackdrops[this.state.activeBackdrops.length - 1];
@@ -226,15 +314,32 @@ const BackdropManager = {
     }
   },
 
+  /**
+   * The DOM element for a shown backdrop.
+   *
+   * @param {number} id - Id returned by `show`.
+   * @returns {HTMLElement|null} - The backdrop element, or null when unknown.
+   */
   getBackdropById(id) {
     return this.state.backdrops.get(id)?.element || null;
   },
 
+  /**
+   * Whether an element currently has an active backdrop behind it.
+   *
+   * @param {Element} element - Element to check.
+   * @returns {boolean} - True when its backdrop is active.
+   */
   isActive(element) {
     const backdropData = this.state.backdrops.get(element);
     return backdropData && this.state.activeBackdrops.includes(backdropData);
   },
 
+  /**
+   * Tear the manager down: hide every backdrop and unbind the Escape handler.
+   *
+   * @returns {void}
+   */
   destroy() {
     this.hideAll();
     document.removeEventListener('keydown', this.handleKeydown);

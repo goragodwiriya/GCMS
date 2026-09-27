@@ -1,3 +1,14 @@
+/**
+ * FormError
+ *
+ * Renders validation errors onto a form: marks the field, writes the message
+ * next to it, focuses and scrolls to the first problem, and keeps a record of
+ * what is currently wrong.
+ *
+ * Messages go through `Now.translate` and then through token substitution, so a
+ * message like `:label is required` picks up the field's own label and data
+ * attributes without the caller having to assemble the text.
+ */
 class FormError {
   static config = {
     errorClass: 'invalid',
@@ -20,6 +31,12 @@ class FormError {
     originalGeneralMessages: new Map(),
   };
 
+  /**
+   * Merge options into the module configuration.
+   *
+   * @param {Object} [options={}] - Overrides for `config`, e.g. `autoFocus`, `scrollOffset`.
+   * @returns {void}
+   */
   static configure(options = {}) {
     this.config = {
       ...this.config,
@@ -27,6 +44,15 @@ class FormError {
     };
   }
 
+  /**
+   * Config to use for one form.
+   *
+   * A form managed by FormManager may carry its own settings; those win over the
+   * module defaults for that form only.
+   *
+   * @param {HTMLFormElement} form - The form being rendered into.
+   * @returns {Object} - Effective configuration.
+   */
   static getFormConfig(form) {
     const formInstance = FormManager.getInstanceByElement(form);
     if (formInstance) {
@@ -38,6 +64,16 @@ class FormError {
     return this.config;
   }
 
+  /**
+   * Find the element an error refers to.
+   *
+   * An element is returned as-is; a string is looked up by id and then by name,
+   * scoped to the form when one is given so two forms on a page do not collide.
+   *
+   * @param {HTMLElement|string} field - The element, its id, or its name.
+   * @param {HTMLFormElement} [form=null] - Search root; defaults to the document.
+   * @returns {HTMLElement|null} - The field element, or null.
+   */
   static resolveFieldElement(field, form = null) {
     if (field instanceof HTMLElement) {
       return field;
@@ -64,6 +100,16 @@ class FormError {
     return !!document.getElementById(resultId);
   }
 
+  /**
+   * The human-readable label for a field.
+   *
+   * Delegates to FormManager when it is loaded so labels stay consistent with
+   * the rest of the form layer, and falls back to its own lookup otherwise.
+   *
+   * @param {HTMLElement} element - Field to label.
+   * @param {HTMLFormElement} [form=null] - Form providing context.
+   * @returns {string} - The label text.
+   */
   static getFieldLabel(element, form = null) {
     if (!element) return '';
 
@@ -74,11 +120,30 @@ class FormError {
     return element.name || element.id || '';
   }
 
+  /**
+   * Coerce a token value into trimmed text.
+   *
+   * Null and undefined become an empty string, so a missing value renders as
+   * nothing rather than the word "undefined".
+   *
+   * @param {*} value - Raw value.
+   * @returns {string} - Trimmed string.
+   */
   static normalizeMessageTokenValue(value) {
     if (value === null || value === undefined) return '';
     return String(value).trim();
   }
 
+  /**
+   * Build the token values available to a field's messages.
+   *
+   * Covers the field label and its data attributes, which is what lets a shared
+   * message like `:label must be at least :data-min` work across fields.
+   *
+   * @param {HTMLElement} element - Field to read.
+   * @param {HTMLFormElement} [form=null] - Form providing context.
+   * @returns {Object} - Token name to value.
+   */
   static getMessageTokenMap(element, form = null) {
     if (!element) {
       return {};
@@ -94,6 +159,16 @@ class FormError {
     };
   }
 
+  /**
+   * Read one `data-*` value for token substitution.
+   *
+   * The `data-` prefix is optional in the token, and the remainder is converted
+   * from dashed form to the camelCase key `dataset` actually uses.
+   *
+   * @param {HTMLElement} element - Field to read.
+   * @param {string} token - Token name, with or without the `data-` prefix.
+   * @returns {string} - The value, or an empty string.
+   */
   static getDataTokenValue(element, token) {
     if (!element || !token) return '';
 
@@ -113,6 +188,17 @@ class FormError {
     return '';
   }
 
+  /**
+   * Translate a message and substitute its `:token` placeholders.
+   *
+   * Substitution is skipped entirely when the message contains no colon, so
+   * ordinary text is never scanned needlessly.
+   *
+   * @param {string} message - Message, possibly containing `:token` markers.
+   * @param {HTMLElement} [element=null] - Field supplying token values.
+   * @param {HTMLFormElement} [form=null] - Form providing context.
+   * @returns {string} - Translated message with tokens filled.
+   */
   static resolveMessageTokens(message, element = null, form = null) {
     const translated = Now.translate(message);
     if (!element || typeof translated !== 'string' || translated.indexOf(':') === -1) {
@@ -132,6 +218,17 @@ class FormError {
     });
   }
 
+  /**
+   * Turn a raw message into the final strings shown to the user.
+   *
+   * A single message and an array are both accepted; each entry is translated
+   * and has its tokens substituted.
+   *
+   * @param {HTMLElement|string} field - The field the messages belong to.
+   * @param {string|Array<string>} message - Message or messages.
+   * @param {HTMLFormElement} [form=null] - Form providing context.
+   * @returns {Array<string>} - Ready-to-display messages.
+   */
   static resolveFieldMessages(field, message, form = null) {
     const element = this.resolveFieldElement(field, form);
     const messages = Array.isArray(message) ? message : [message];
@@ -141,6 +238,14 @@ class FormError {
       .filter(item => item !== null && item !== undefined && item !== '');
   }
 
+  /**
+   * Show a success message in the same place a general error would appear.
+   *
+   * @param {string} message - Message to show.
+   * @param {HTMLFormElement} [form=null] - Form to show it on.
+   * @param {Object} [options={}] - Per-call overrides.
+   * @returns {void}
+   */
   static showSuccess(message, form = null, options = {}) {
     let config = this.config;
     let container = null;
@@ -186,6 +291,14 @@ class FormError {
     EventManager.emit('form:generalSuccess', {message, containerId, config});
   }
 
+  /**
+   * Show a message that belongs to the form as a whole, not one field.
+   *
+   * @param {string} message - Message to show.
+   * @param {HTMLFormElement} [form=null] - Form to show it on.
+   * @param {Object} [options={}] - Per-call overrides.
+   * @returns {void}
+   */
   static showGeneralError(message, form = null, options = {}) {
     let config = this.config;
     let container = null;
@@ -232,6 +345,18 @@ class FormError {
     EventManager.emit('form:generalError', {message, containerId, config});
   }
 
+  /**
+   * Mark one field as invalid and show its message.
+   *
+   * The resolved messages are returned even when the element cannot be found, so
+   * a caller can still report an error for a field that is not on screen.
+   *
+   * @param {HTMLElement|string} field - The element, its id, or its name.
+   * @param {string|Array<string>} message - Message or messages to show.
+   * @param {HTMLFormElement} [form=null] - Form to search within.
+   * @param {Object} [options={}] - Per-call overrides, e.g. `focus`.
+   * @returns {Array<string>} - The resolved messages.
+   */
   static showFieldError(field, message, form = null, options = {}) {
     const element = this.resolveFieldElement(field, form);
     const fieldKey = typeof field === 'string' ? field : (element?.id || element?.name || '');
@@ -317,6 +442,12 @@ class FormError {
     return messages;
   }
 
+  /**
+   * Remove the error state and message from one field.
+   *
+   * @param {HTMLElement|string} field - The element, its id, or its name.
+   * @returns {void}
+   */
   static clearFieldError(field) {
     const element = typeof field === 'string'
       ? document.getElementById(field) || document.querySelector(`[name="${field}"]`)
@@ -560,6 +691,16 @@ class FormError {
     return true;
   }
 
+  /**
+   * Render a whole set of field errors at once.
+   *
+   * Everything shown earlier is cleared first, and only the first field in the
+   * set is focused so the user lands on the top problem rather than the last.
+   *
+   * @param {Object} errors - Field name to message, or array of messages.
+   * @param {Object} [options={}] - Per-call overrides.
+   * @returns {void}
+   */
   static showErrors(errors, options = {}) {
     this.clearAll();
 
@@ -574,6 +715,15 @@ class FormError {
     EventManager.emit('form:errors', {errors});
   }
 
+  /**
+   * Scroll a field into view when it is not adequately visible.
+   *
+   * A field already showing at least 30% of its height is left alone, so
+   * reporting an error does not jump the page for no reason.
+   *
+   * @param {HTMLElement} element - Field to reveal.
+   * @returns {void}
+   */
   static scrollToElement(element) {
     const rect = element.getBoundingClientRect();
     const windowHeight = window.innerHeight || document.documentElement.clientHeight;
@@ -591,10 +741,20 @@ class FormError {
     }
   }
 
+  /**
+   * Whether any field is currently marked invalid.
+   *
+   * @returns {boolean} - True when at least one error is showing.
+   */
   static hasErrors() {
     return this.state.errors.size > 0;
   }
 
+  /**
+   * The errors currently showing.
+   *
+   * @returns {Array<Object>} - One record per field, each carrying `field`.
+   */
   static getErrors() {
     return Array.from(this.state.errors.entries()).map(([field, error]) => ({
       field,
@@ -609,6 +769,11 @@ class FormError {
     return this.state.errors.size;
   }
 
+  /**
+   * Clear every error and forget the recorded state.
+   *
+   * @returns {void}
+   */
   static reset() {
     this.clearAll();
     this.state = {

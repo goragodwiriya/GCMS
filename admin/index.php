@@ -38,7 +38,7 @@
   <!-- Framework Scripts -->
   <script src="<?php echo $root; ?>Now/dist/now.core.min.js?v=<?php echo $config['reversion'] ?>"></script>
   <script src="<?php echo $root; ?>Now/dist/now.table.min.js?v=<?php echo $config['reversion'] ?>"></script>
-  <script src="<?php echo $root; ?>Now/dist/now.graph.min.js?v=<?php echo $config['reversion'] ?>>"></script>
+  <script src="<?php echo $root; ?>Now/dist/now.graph.min.js?v=<?php echo $config['reversion'] ?>"></script>
   <!-- Rich Text Editor -->
   <script src="<?php echo $root; ?>Now/dist/richtext-editor.min.js?v=<?php echo $config['reversion'] ?>"></script>
 

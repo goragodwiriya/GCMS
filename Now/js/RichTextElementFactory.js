@@ -16,6 +16,9 @@
  *   data-rte-allow-interactive-tags="button|select" - allow specific interactive tags in content (supports true for all)
  */
 class RichTextElementFactory extends ElementFactory {
+  // Class of the "media unavailable" boxes older versions injected next to images and
+  // iframes. They are no longer created — the editor keeps a broken <img> clickable and
+  // shows iframes as placeholders itself — but may still sit in saved content.
   static MEDIA_FALLBACK_CLASS = 'rte-media-fallback';
 
   static config = {
@@ -40,7 +43,7 @@ class RichTextElementFactory extends ElementFactory {
         return element.value || '';
       },
       set(instance, newValue) {
-        const html = newValue ?? '';
+        const html = RichTextElementFactory._cleanValue(newValue ?? '');
         if (instance._rteInstance) {
           instance._rteInstance.setContent(html);
         } else {
@@ -51,6 +54,17 @@ class RichTextElementFactory extends ElementFactory {
     }
   };
 
+  /**
+   * Read the editor options a single element declares through its `data-rte-*` attributes.
+   *
+   * Anything not declared falls back to the value in `def`, and `placeholder` also
+   * falls back to the element's own `placeholder` attribute.
+   *
+   * @param {HTMLElement} element - The textarea the editor replaces.
+   * @param {Object} def - Default configuration for this element type.
+   * @param {DOMStringMap} dataset - The element's `data-*` attributes.
+   * @returns {Object} - Editor configuration for this element.
+   */
   static extractCustomConfig(element, def, dataset) {
     const config = {
       profile: dataset.rteProfile || def.profile,
@@ -80,6 +94,15 @@ class RichTextElementFactory extends ElementFactory {
     return config;
   }
 
+  /**
+   * Attach a RichTextEditor to the element and keep it in sync with the form.
+   *
+   * The editor bundle is loaded separately, so this retries every 100 ms until
+   * `window.RichTextEditor` exists rather than failing when it is not ready yet.
+   *
+   * @param {Object} instance - Element instance carrying `element` and `config`.
+   * @returns {void}
+   */
   static setupElement(instance) {
     const {element, config} = instance;
 
@@ -130,21 +153,14 @@ class RichTextElementFactory extends ElementFactory {
         }
       });
 
+      // The editor reads its initial content from the textarea
+      if ('value' in element) {
+        element.value = RichTextElementFactory._cleanValue(element.value);
+      }
+
       const editor = window.RichTextEditor.create(element, editorConfig);
 
       instance._rteInstance = editor;
-
-      const syncMediaFallbacks = () => {
-        const contentElement = editor.contentArea?.getElement?.();
-        if (contentElement) {
-          RichTextElementFactory._decorateMediaFallbacks(contentElement);
-        }
-      };
-
-      instance._syncMediaFallbacks = syncMediaFallbacks;
-
-      editor.events?.on?.('content:set', syncMediaFallbacks);
-      editor.events?.on?.('content:change', syncMediaFallbacks);
 
       // Apply any value that was set before the editor was ready
       if (instance._pendingValue !== undefined) {
@@ -152,11 +168,9 @@ class RichTextElementFactory extends ElementFactory {
         delete instance._pendingValue;
       }
 
-      syncMediaFallbacks();
-
       // Expose convenience methods on instance
-      instance.setValue = (html) => editor.setContent(html ?? '');
-      instance.getValue = () => editor.getContent();
+      instance.setValue = (html) => editor.setContent(RichTextElementFactory._cleanValue(html ?? ''));
+      instance.getValue = () => RichTextElementFactory._cleanValue(editor.getContent());
       instance.focus = () => editor.focus();
       instance.blur = () => editor.blur();
       instance.clear = () => editor.clear();
@@ -164,16 +178,16 @@ class RichTextElementFactory extends ElementFactory {
       instance.destroy = () => {
         editor.destroy();
         instance._rteInstance = null;
-        instance._syncMediaFallbacks = null;
       };
     };
 
     // Add setValue immediately so FormManager can call it during data binding
     instance.setValue = (html) => {
+      html = RichTextElementFactory._cleanValue(html ?? '');
       if (instance._rteInstance) {
-        instance._rteInstance.setContent(html ?? '');
+        instance._rteInstance.setContent(html);
       } else {
-        instance._pendingValue = html ?? '';
+        instance._pendingValue = html;
       }
     };
 
@@ -207,129 +221,60 @@ class RichTextElementFactory extends ElementFactory {
     };
   }
 
-  static _decorateMediaFallbacks(root) {
-    if (!root?.querySelectorAll) {
-      return;
+  /**
+   * Strip media-fallback artifacts that older versions left in saved content:
+   * injected fallback boxes, leftover data-rte-fallback-* flags, and the
+   * display:none they put on the media they replaced. Applied to content going
+   * into the editor as well as coming out, so old articles open clean.
+   * @param {string} html
+   * @returns {string}
+   */
+  static _cleanValue(html) {
+    if (!html || html.indexOf('rte-fallback') === -1 && html.indexOf(RichTextElementFactory.MEDIA_FALLBACK_CLASS) === -1) {
+      return html;
     }
 
-    root.querySelectorAll('img').forEach(img => {
-      RichTextElementFactory._attachImageFallback(img);
-    });
+    const template = document.createElement('template');
+    template.innerHTML = html;
 
-    root.querySelectorAll('iframe').forEach(iframe => {
-      RichTextElementFactory._attachIframeFallback(iframe);
-    });
-  }
+    const unhide = (el) => {
+      if (el?.style && el.style.display === 'none') {
+        el.style.display = '';
+        if (!el.getAttribute('style')) {
+          el.removeAttribute('style');
+        }
+      }
+    };
 
-  static _attachImageFallback(img) {
-    if (!img || img.dataset.rteFallbackBound === 'true') {
-      return;
-    }
-
-    img.dataset.rteFallbackBound = 'true';
-
-    const showFallback = () => {
-      const fallback = RichTextElementFactory._ensureMediaFallback(img, {
-        kind: 'image',
-        label: img.getAttribute('alt') || img.getAttribute('title') || img.getAttribute('src') || 'Image content'
+    template.content
+      .querySelectorAll('.' + RichTextElementFactory.MEDIA_FALLBACK_CLASS + ', [data-rte-media-fallback]')
+      .forEach(el => {
+        // The box was inserted right after the media it stood in for
+        const media = el.previousElementSibling;
+        if (media && /^(IMG|IFRAME)$/.test(media.tagName)) unhide(media);
+        el.remove();
       });
 
-      img.style.display = 'none';
-      fallback.hidden = false;
-      fallback.setAttribute('aria-hidden', 'false');
-    };
+    template.content
+      .querySelectorAll('[data-rte-fallback-bound], [data-rte-fallback-loaded]')
+      .forEach(el => {
+        el.removeAttribute('data-rte-fallback-bound');
+        el.removeAttribute('data-rte-fallback-loaded');
+        unhide(el);
+      });
 
-    const hideFallback = () => {
-      const fallback = RichTextElementFactory._getMediaFallback(img);
-      img.style.display = '';
-      if (fallback) {
-        fallback.hidden = true;
-        fallback.setAttribute('aria-hidden', 'true');
-      }
-    };
-
-    img.addEventListener('error', showFallback);
-    img.addEventListener('load', hideFallback);
-
-    if (img.complete) {
-      if (img.naturalWidth > 0) {
-        hideFallback();
-      } else {
-        showFallback();
-      }
-    }
+    return template.innerHTML;
   }
 
-  static _attachIframeFallback(iframe) {
-    if (!iframe || iframe.dataset.rteFallbackBound === 'true') {
-      return;
-    }
-
-    iframe.dataset.rteFallbackBound = 'true';
-
-    const fallback = RichTextElementFactory._ensureMediaFallback(iframe, {
-      kind: 'embed',
-      label: iframe.getAttribute('title') || iframe.getAttribute('src') || 'Embedded content'
-    });
-
-    const markLoaded = () => {
-      iframe.dataset.rteFallbackLoaded = 'true';
-      fallback.hidden = true;
-      fallback.setAttribute('aria-hidden', 'true');
-      iframe.style.display = '';
-    };
-
-    const showFallback = () => {
-      if (iframe.dataset.rteFallbackLoaded === 'true') {
-        return;
-      }
-      iframe.style.display = 'none';
-      fallback.hidden = false;
-      fallback.setAttribute('aria-hidden', 'false');
-    };
-
-    iframe.addEventListener('load', markLoaded, {once: true});
-    setTimeout(showFallback, 1800);
-  }
-
-  static _ensureMediaFallback(mediaElement, {kind, label}) {
-    let fallback = RichTextElementFactory._getMediaFallback(mediaElement);
-    if (!fallback) {
-      fallback = document.createElement('div');
-      fallback.className = RichTextElementFactory.MEDIA_FALLBACK_CLASS;
-      fallback.setAttribute('contenteditable', 'false');
-      fallback.setAttribute('data-rte-media-fallback', kind);
-      fallback.hidden = true;
-      mediaElement.insertAdjacentElement('afterend', fallback);
-    }
-
-    fallback.innerHTML = `
-      <div style="border:1px dashed #cbd5e1;border-radius:8px;padding:12px 14px;background:#f8fafc;color:#475569;font-size:13px;line-height:1.4;display:flex;flex-direction:column;gap:4px;">
-        <strong style="color:#0f172a;">${kind === 'image' ? 'Image unavailable' : 'Embedded content unavailable'}</strong>
-        <span>There is media content here${label ? `: ${RichTextElementFactory._escapeHtml(label)}` : ''}</span>
-      </div>
-    `;
-
-    return fallback;
-  }
-
-  static _getMediaFallback(mediaElement) {
-    const next = mediaElement?.nextElementSibling;
-    if (next?.classList?.contains(RichTextElementFactory.MEDIA_FALLBACK_CLASS)) {
-      return next;
-    }
-    return null;
-  }
-
-  static _escapeHtml(value) {
-    return String(value ?? '')
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#39;');
-  }
-
+  /**
+   * Destroy the editor attached to this element and release the reference.
+   *
+   * Safe to call when no editor was created, and errors thrown by the editor's
+   * own destroy are swallowed so teardown of the surrounding form still finishes.
+   *
+   * @param {Object} instance - The element instance being torn down.
+   * @returns {void}
+   */
   static cleanup(instance) {
     if (instance._rteInstance) {
       try {
@@ -339,7 +284,6 @@ class RichTextElementFactory extends ElementFactory {
       }
       instance._rteInstance = null;
     }
-    instance._syncMediaFallbacks = null;
     super.cleanup?.(instance);
   }
 }

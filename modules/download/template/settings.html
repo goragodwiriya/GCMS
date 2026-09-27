@@ -1,0 +1,92 @@
+<aside data-component="sidebar"></aside>
+<div class="main-content">
+  <div>
+    <header data-component="topbar"></header>
+    <main class="content">
+      <div class="card-groups">
+        <header>
+          <div>
+            <h1 class="icon-cog" data-i18n>{LNG_Download} {LNG_Settings}</h1>
+            <p data-i18n>{LNG_Module settings} {LNG_Download}</p>
+          </div>
+        </header>
+        <div class="content-body">
+          <form data-form="downloadSettings" action="../api/download/settings/save" method="POST" data-ajax-submit="true" data-load-api="../api/download/settings/get"
+                data-load-query-params="true" data-confirm="Confirm save">
+            <fieldset>
+              <legend class="icon-upload" data-i18n>{LNG_Upload}</legend>
+              <div>
+                <label for="file_typies" data-i18n>Type of file uploads</label>
+                <span class="form-control icon-file">
+                  <input type="text" id="file_typies" name="file_typies" data-attr="value:file_typies">
+                </span>
+                <div class="comment" data-i18n> Specify the file extension that allows uploading. English lowercase letters and numbers 2-4 characters to separate each type with a
+                  comma (,) and without spaces. eg zip,rar,doc,docx </div>
+              </div>
+              <div>
+                <label for="upload_size" data-i18n>{LNG_Size of} {LNG_upload file}</label>
+                <span class="form-control icon-upload">
+                  <select id="upload_size" name="upload_size" data-options-key="upload_sizes" data-attr="value:upload_size"></select>
+                </span>
+              </div>
+            </fieldset>
+            <fieldset>
+              <legend class="icon-grid" data-i18n>Display</legend>
+              <div>
+                <label for="list_per_page" data-i18n>Items per page</label>
+                <span class="form-control icon-number">
+                  <input type="number" id="list_per_page" name="list_per_page" data-attr="value:list_per_page" min="1">
+                </span>
+                <div id="result_list_per_page" class="comment" data-i18n>Determine how many items to display per page</div>
+              </div>
+              <div>
+                <label for="sort" data-i18n>Sort</label>
+                <span class="form-control icon-sort-asc">
+                  <select id="sort" name="sort" data-attr="value:sort">
+                    <option value="0" data-i18n>ID</option>
+                    <option value="1" data-i18n>Last updated</option>
+                    <option value="2" data-i18n>Random</option>
+                  </select>
+                </span>
+              </div>
+            </fieldset>
+            <fieldset>
+              <legend class="icon-shield" data-i18n>Permissions</legend>
+              <div>
+                <label for="can_download" data-i18n>Download</label>
+                <span class="form-control icon-user">
+                  <select id="can_download" name="can_download" data-options-key="user_status" data-attr="value:can_download" multiple></select>
+                </span>
+              </div>
+              <div>
+                <label for="can_upload" data-i18n>Upload</label>
+                <span class="form-control icon-user">
+                  <select id="can_upload" name="can_upload" data-options-key="user_status" data-attr="value:can_upload" multiple></select>
+                </span>
+              </div>
+              <div>
+                <label for="moderator" data-i18n>Moderator</label>
+                <span class="form-control icon-user">
+                  <select id="moderator" name="moderator" data-options-key="user_status" data-attr="value:moderator" multiple></select>
+                </span>
+              </div>
+              <div>
+                <label for="can_config" data-i18n>Settings</label>
+                <span class="form-control icon-user">
+                  <select id="can_config" name="can_config" data-options-key="user_status" data-attr="value:can_config" multiple></select>
+                </span>
+              </div>
+            </fieldset>
+            <fieldset class="submit">
+              <button type="submit" class="btn btn-primary icon-save" data-i18n>Save</button>
+              <input type="hidden" name="module_id" data-attr="value:module_id">
+            </fieldset>
+          </form>
+        </div>
+      </div>
+    </main>
+  </div>
+  <footer class="footer">
+    <p class="center">&copy; 2026 GCMS - Powered by <a href="https://nowjs.net">Now.js</a></p>
+  </footer>
+</div>

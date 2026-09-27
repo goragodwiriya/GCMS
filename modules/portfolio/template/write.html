@@ -1,0 +1,88 @@
+<aside data-component="sidebar"></aside>
+<div class="main-content">
+  <div>
+    <header data-component="topbar"></header>
+    <main class="content">
+      <form data-form="portfolioWrite" data-validate="true" data-reset="false" action="../api/portfolio/write/save" method="post" data-ajax-submit="true"
+            data-load-query-params="true" data-load-api="../api/portfolio/write/get" autocomplete="off">
+        <div class="card-groups">
+          <header>
+            <div>
+              <h1 class="icon-portfolio" data-text="id ? '{LNG_Edit} {LNG_Portfolio}' : '{LNG_Add} {LNG_Portfolio}'"></h1>
+              <p data-i18n>Manage portfolio item details</p>
+            </div>
+            <div class="header-actions">
+              <a class="btn icon-arrow-left" href="/portfolio-list" data-params="module_id" data-i18n>Back</a>
+              <button type="submit" class="btn btn-primary icon-save" data-i18n>Save</button>
+            </div>
+          </header>
+
+          <div class="content-body">
+            <fieldset>
+              <legend data-i18n>Details</legend>
+
+              <div>
+                <label for="title" data-i18n>Title</label>
+                <span class="form-control icon-edit">
+                  <input type="text" id="title" name="title" maxlength="255" required data-attr="value:title">
+                </span>
+              </div>
+
+              <div>
+                <label for="url" data-i18n>Project link</label>
+                <span class="form-control icon-link">
+                  <input type="url" id="url" name="url" data-attr="value:url" placeholder="https://">
+                </span>
+                <div class="comment" id="result_url" data-i18n>
+                  External link to the live project (optional)
+                </div>
+              </div>
+
+              <div>
+                <label for="keywords" data-i18n>Tags</label>
+                <span class="form-control icon-tags">
+                  <input type="text" id="keywords" name="keywords" data-element="tags" data-attr="value:keywords">
+                </span>
+                <div class="comment" id="result_keywords" data-i18n>
+                  Used for tag filtering on the public portfolio page
+                </div>
+              </div>
+
+              <div>
+                <label for="detail" data-i18n>Detail</label>
+                <textarea id="detail" name="detail" data-element="richtext" data-attr="value:detail" data-rte-profile="basic" data-rte-min-height="250"></textarea>
+              </div>
+            </fieldset>
+
+            <fieldset>
+              <legend data-i18n>Image</legend>
+
+              <div>
+                <label for="image" data-i18n>Image</label>
+                <span class="form-control icon-portfolio">
+                  <input type="file" id="image" name="image" data-files="image" data-preview="true" data-allow-remove-existing="true"
+                         data-action-url="../api/portfolio/write/remove-image" data-file-reference="url" data-action-params="module_id,id" accept="image/*"
+                         data-attr="placeholder:'{LNG_Browse image uploaded, type} ' + img_typies">
+                </span>
+              </div>
+
+              <div>
+                <input type="checkbox" class="switch" id="published" name="published" data-attr="checked:published">
+                <label for="published" data-i18n>Published</label>
+              </div>
+            </fieldset>
+          </div>
+
+          <div class="form-submit">
+            <button type="submit" class="btn btn-primary icon-save" data-i18n>Save</button>
+            <input type="hidden" name="id" data-attr="value:id">
+            <input type="hidden" name="module_id" data-attr="value:module_id">
+          </div>
+        </div>
+      </form>
+    </main>
+  </div>
+  <footer class="footer">
+    <p class="center">&copy; 2026 GCMS - Powered by <a href="https://nowjs.net">Now.js</a></p>
+  </footer>
+</div>

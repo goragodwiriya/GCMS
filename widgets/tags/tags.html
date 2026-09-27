@@ -13,6 +13,27 @@
           </div>
         </header>
         <div class="content-body">
+          <!-- Per-block display option for a tags widget placed via the
+               Designer's "Add Widget" menu (js/designer/inspector/Widget.js
+               picks this compact div over the page's own big data-form
+               below it — embedding the whole tag-management table in the
+               side panel would be unusably large). Deliberately a <div>,
+               not a <form> — see widgets/document/document.html for why.
+               The tag list itself is managed in the table below, shared
+               across the whole site regardless of which block shows it. -->
+          <div data-widget-settings-form="true" class="gcms-panel-section">
+            <h4 data-i18n>Widget display option</h4>
+            <div>
+              <label for="tags-module" data-i18n>Module</label>
+              <span class="form-control">
+                <input type="text" id="tags-module" name="module" value="tag" placeholder="tag">
+              </span>
+              <div class="comment" data-i18n>
+                Only change this if the site has more than one tag module
+              </div>
+            </div>
+          </div>
+
           <fieldset class="grid">
             <div class="tablebody">
               <table class="table border fullwidth" data-table="tags" data-editable-rows="true" data-attr="data:options" data-dynamic-columns="true">

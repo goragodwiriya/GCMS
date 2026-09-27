@@ -7,6 +7,8 @@ error_reporting(-1);
 session_start();
 // path
 define('ROOT_PATH', str_replace(['\\', 'install/index.php'], ['/', ''], __FILE__));
+// ฟังก์ชันส่วนกลางของตัวติดตั้งและตัวปรับรุ่น
+include_once ROOT_PATH.'install/common.php';
 // step
 $step = isset($_REQUEST['step']) ? (int) $_REQUEST['step'] : 0;
 // โหลดค่าติดตั้งปัจจุบัน
@@ -24,7 +26,9 @@ if (is_file(ROOT_PATH.'settings/config.php') && is_array(include (ROOT_PATH.'set
         // อัปเกรด
         $title = 'การปรับรุ่น เวอร์ชั่น '.$new_config['version'];
         $h1 = 'การปรับรุ่น เวอร์ชั่น '.$new_config['version'];
-        $file = ROOT_PATH.'install/upgrade'.$step.'.php';
+        // ต้องเช็ค is_file() เหมือนฝั่งติดตั้ง ไม่งั้น ?step= ที่ไม่มีไฟล์รองรับ
+        // (เช่นลิงก์เก่าที่ชี้ไป step=4 ของการติดตั้ง) จะ include ไฟล์ที่ไม่มีอยู่
+        $file = is_file(ROOT_PATH.'install/upgrade'.$step.'.php') ? ROOT_PATH.'install/upgrade'.$step.'.php' : ROOT_PATH.'install/upgrade0.php';
     } else {
         // ติดตั้งแล้ว
         $file = ROOT_PATH.'install/complete.php';
@@ -42,7 +46,7 @@ echo '<meta charset=utf-8>';
 echo '<title>'.$title.'</title>';
 echo '<link rel=stylesheet href="../Now/dist/now.core.min.css">';
 echo '<link rel=stylesheet href="../Now/css/fonts.css">';
-echo '<link rel=stylesheet href="./style.css">';
+echo '<link rel=stylesheet href="style.css">';
 echo '<link rel="shortcut icon" href="../favicon.ico">';
 echo '</head>';
 echo '<body>';

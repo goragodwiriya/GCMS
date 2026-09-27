@@ -26,7 +26,13 @@ const SecurityManager = {
       enabled: true,
       cookieName: 'auth_token',
       refreshCookieName: 'refresh_token',
-      storageKey: 'auth_user',
+      // MUST NOT be 'auth_user': that key belongs to AuthManager, which stores
+      // the user PROFILE there (a JSON object) for display. This one expects a
+      // JWT STRING. Sharing the key made initJWT() read the profile, fail to
+      // validate it as a JWT, and clearJWTToken() delete it on every page load,
+      // so the profile cache never survived and the app could not work offline.
+      // (Real tokens here are httpOnly cookies, so this key is rarely used.)
+      storageKey: 'auth_jwt',
       autoRefresh: true,
       refreshBeforeExpiry: 5 * 60 * 1000, // 5 minutes
       refreshEndpoint: 'api/auth/refresh',
@@ -73,6 +79,14 @@ const SecurityManager = {
     violations: new Set()
   },
 
+  /**
+   * Initializes the security layer: CSRF tokens, JWT handling, CSP and the
+   * HTTP interceptors, each according to its own enabled flag.
+   *
+   * @param {Object} [options={}] - Configuration merged over the defaults
+   * @returns {Promise<Object>} The manager instance
+   * @throws {Error} When initialization fails
+   */
   async init(options = {}) {
     try {
       this.config = this.mergeDeep(this.config, options);
@@ -113,6 +127,12 @@ const SecurityManager = {
   },
 
   // ============ CSRF Management ============
+  /**
+   * Prepares CSRF protection: reads or fetches the token, starts the refresh
+   * timer, and injects the token into the forms already on the page.
+   *
+   * @returns {Promise<void>}
+   */
   async initCSRF() {
     try {
       // Get existing token
@@ -135,6 +155,12 @@ const SecurityManager = {
     }
   },
 
+  /**
+   * Reads the current CSRF token, trying the cookie, then the meta tag, then
+   * a hidden input.
+   *
+   * @returns {string|null} Token, or null when none is present
+   */
   getCSRFToken() {
     // Priority: Cookie > Meta tag > Input field
     let token = null;
@@ -159,6 +185,12 @@ const SecurityManager = {
     return token;
   },
 
+  /**
+   * Fetches a new CSRF token from the server and propagates it to the meta tag
+   * and every form on the page.
+   *
+   * @returns {Promise<string|null>} New token, or null when the request failed
+   */
   async refreshCSRFToken() {
     try {
       if (!this.config.csrf.enabled) return null;
@@ -178,11 +210,18 @@ const SecurityManager = {
       }
 
       if (!response.success) {
-        throw new Error(`Failed to get CSRF token: ${response.status}`);
+        // The API's own message says what actually went wrong (a missing endpoint,
+        // a permission problem); the status alone says almost nothing.
+        const reason = response.data?.message || response.statusText || response.status;
+        throw new Error(`Failed to get CSRF token: ${reason}`);
       }
 
       const data = response.data || {};
-      this.state.csrfToken = data.data.csrf_token || null;
+      this.state.csrfToken = data.data?.csrf_token || null;
+
+      if (!this.state.csrfToken) {
+        throw new Error('Failed to get CSRF token: response carried no csrf_token');
+      }
 
       // Update meta tag
       this.updateCSRFMeta(this.state.csrfToken);
@@ -201,6 +240,12 @@ const SecurityManager = {
     }
   },
 
+  /**
+   * Writes the token into the CSRF meta tag, creating the tag when absent.
+   *
+   * @param {string} token - CSRF token
+   * @returns {void}
+   */
   updateCSRFMeta(token) {
     let meta = document.querySelector(`meta[name="${this.config.csrf.metaName}"]`);
     if (!meta) {
@@ -211,6 +256,11 @@ const SecurityManager = {
     meta.setAttribute('content', token);
   },
 
+  /**
+   * Injects the current CSRF token into every form in the document.
+   *
+   * @returns {void}
+   */
   injectCSRFIntoForms() {
     if (!this.state.csrfToken) return;
 
@@ -219,6 +269,16 @@ const SecurityManager = {
     });
   },
 
+  /**
+   * Adds or updates the hidden CSRF input of one form.
+   *
+   * Forms whose method needs no token, whose action is excluded, or which
+   * carry data-csrf="false" are skipped.
+   *
+   * @param {HTMLFormElement} form - Form to protect
+   * @param {string} [token=null] - Token to use; defaults to the current one
+   * @returns {void}
+   */
   injectCSRFIntoForm(form, token = null) {
     if (!this.config.csrf.enabled) return;
 
@@ -255,12 +315,23 @@ const SecurityManager = {
     csrfInput.value = token;
   },
 
+  /**
+   * Rewrites the value of every CSRF input in the document.
+   *
+   * @param {string} token - New CSRF token
+   * @returns {void}
+   */
   updateCSRFInForms(token) {
     document.querySelectorAll(`input[name="${this.config.csrf.tokenName}"]`).forEach(input => {
       input.value = token;
     });
   },
 
+  /**
+   * Starts the CSRF refresh timer, replacing any timer already running.
+   *
+   * @returns {void}
+   */
   startCSRFRefresh() {
     if (this.csrfRefreshTimer) {
       clearInterval(this.csrfRefreshTimer);
@@ -272,6 +343,12 @@ const SecurityManager = {
   },
 
   // ============ JWT Management ============
+  /**
+   * Prepares JWT handling: loads the stored token, drops it when it fails the
+   * structural check, and starts the refresh timer when it is still usable.
+   *
+   * @returns {Promise<void>}
+   */
   async initJWT() {
     try {
       // Get existing token
@@ -294,6 +371,14 @@ const SecurityManager = {
     }
   },
 
+  /**
+   * Reads the JWT from local storage.
+   *
+   * Tokens delivered as httpOnly cookies are invisible here by design; this
+   * only covers tokens the application stores itself.
+   *
+   * @returns {string|null} Stored token, or null
+   */
   getJWTToken() {
     // JWT tokens are typically httpOnly cookies, so we can't access them directly
     // This method would be used for non-httpOnly tokens stored in localStorage
@@ -354,13 +439,24 @@ const SecurityManager = {
     }
   },
 
-  // Decode a base64url segment (JWT uses base64url, not standard base64).
+  /**
+   * Decodes a base64url segment. JWT uses base64url, not standard base64, so
+   * the alphabet is translated and the padding restored before decoding.
+   *
+   * @param {string} segment - Base64url encoded segment
+   * @returns {string} Decoded string
+   */
   base64UrlDecode(segment) {
     const padded = segment.replace(/-/g, '+').replace(/_/g, '/');
     const pad = padded.length % 4 ? '='.repeat(4 - (padded.length % 4)) : '';
     return atob(padded + pad);
   },
 
+  /**
+   * Drops the stored JWT, stops the refresh timer and emits jwt:cleared.
+   *
+   * @returns {Promise<void>}
+   */
   async clearJWTToken() {
     this.state.jwtToken = null;
     localStorage.removeItem(this.config.jwt.storageKey);
@@ -372,6 +468,12 @@ const SecurityManager = {
     this.emit('jwt:cleared');
   },
 
+  /**
+   * Schedules the next JWT refresh for refreshBeforeExpiry milliseconds before
+   * the token expires. Does nothing when the token already expired.
+   *
+   * @returns {void}
+   */
   startJWTRefresh() {
     if (this.jwtRefreshTimer) {
       clearInterval(this.jwtRefreshTimer);
@@ -397,6 +499,12 @@ const SecurityManager = {
     }
   },
 
+  /**
+   * Requests a fresh JWT from the refresh endpoint, stores it and schedules
+   * the following refresh.
+   *
+   * @returns {Promise<void>}
+   */
   async refreshJWTToken() {
     try {
       const refreshUrl = this.config.jwt.refreshEndpoint || 'api/auth/refresh';
@@ -430,9 +538,21 @@ const SecurityManager = {
   },
 
   // ============ Input Sanitization (no validation) ============
+  /**
+   * Strips script tags, javascript: URLs and inline event handlers from a
+   * string, then trims it to the configured maximum length.
+   *
+   * base64 image data URLs are passed through untouched.
+   *
+   * @param {*} value - Value to clean; non-strings are returned unchanged
+   * @returns {*} Cleaned value
+   */
   sanitizeInput(value) {
     if (!this.config.sanitization.enabled) return value;
     if (typeof value !== 'string') return value;
+
+    // Keep data URL images intact (base64 is large and can contain patterns that sanitizers alter).
+    if (/^data:image\/[a-zA-Z]+;base64,/.test(value)) return value;
 
     let sanitized = value;
 
@@ -458,6 +578,12 @@ const SecurityManager = {
   },
 
   // ============ Content Security Policy ============
+  /**
+   * Applies the Content Security Policy: adds the meta tag when the document
+   * has none, and starts listening for violation reports.
+   *
+   * @returns {void}
+   */
   initCSP() {
     // Add CSP meta tag if not exists
     if (!document.querySelector('meta[http-equiv="Content-Security-Policy"]')) {
@@ -468,6 +594,12 @@ const SecurityManager = {
     document.addEventListener('securitypolicyviolation', this.handleCSPViolation.bind(this));
   },
 
+  /**
+   * Builds the CSP header value from config.csp.directives and adds it to the
+   * document as a meta tag.
+   *
+   * @returns {void}
+   */
   addCSPMeta() {
     const meta = document.createElement('meta');
     meta.setAttribute('http-equiv', 'Content-Security-Policy');
@@ -481,6 +613,13 @@ const SecurityManager = {
     document.head.appendChild(meta);
   },
 
+  /**
+   * Records a CSP violation, emits csp:violation, and reports it to the server
+   * when a report URI is configured.
+   *
+   * @param {SecurityPolicyViolationEvent} event - Violation event
+   * @returns {void}
+   */
   handleCSPViolation(event) {
     const violation = {
       directive: event.violatedDirective,
@@ -499,6 +638,14 @@ const SecurityManager = {
     }
   },
 
+  /**
+   * Posts a CSP violation to the configured report endpoint.
+   *
+   * Failures are swallowed: reporting must never break the page.
+   *
+   * @param {Object} violation - Violation record
+   * @returns {Promise<void>}
+   */
   async reportCSPViolation(violation) {
     try {
       const apiService = window.ApiService || window.Now?.getManager?.('api');
@@ -518,6 +665,14 @@ const SecurityManager = {
   },
 
   // ============ HTTP Interceptors ============
+  /**
+   * Installs the request and response interceptors on the HTTP client.
+   *
+   * Requests get the CSRF header and sanitized bodies; responses adopt a
+   * rotated token, and status 419 triggers the CSRF recovery flow.
+   *
+   * @returns {void}
+   */
   setupHttpInterceptors() {
     if (!window.http) return;
 
@@ -531,8 +686,11 @@ const SecurityManager = {
 
 
 
-      // Sanitize request data (no validation)
-      if (config.body && this.config.sanitization.enabled) {
+      // Sanitize request data (no validation).
+      // X-Skip-Sanitize (set by FormManager for forms with
+      // data-sanitize-input="false") opts a request out — the server
+      // encodes those fields itself and this stripping is lossy.
+      if (config.body && this.config.sanitization.enabled && config.headers?.['X-Skip-Sanitize'] !== 'true') {
         config.body = this.sanitizeRequestData(config.body);
       }
 
@@ -561,6 +719,13 @@ const SecurityManager = {
     );
   },
 
+  /**
+   * Decides whether a request needs the CSRF header, based on its method and
+   * whether its URL is excluded.
+   *
+   * @param {Object} config - Request configuration
+   * @returns {boolean} True when the header must be added
+   */
   shouldAddCSRF(config) {
     if (!config.method) return false;
 
@@ -572,6 +737,12 @@ const SecurityManager = {
     return !this.isPathExcluded(config.url);
   },
 
+  /**
+   * Cleans a request body, handling JSON strings, FormData and plain objects.
+   *
+   * @param {*} data - Request body
+   * @returns {*} Cleaned body of the same shape
+   */
   sanitizeRequestData(data) {
     if (typeof data === 'string') {
       try {
@@ -585,7 +756,11 @@ const SecurityManager = {
     if (data instanceof FormData) {
       const sanitized = new FormData();
       for (const [key, value] of data) {
-        sanitized.append(key, this.sanitizeInput(value));
+        if (typeof value === 'string' && /^data:image\/[a-zA-Z]+;base64,/.test(value)) {
+          sanitized.append(key, value);
+        } else {
+          sanitized.append(key, this.sanitizeInput(value));
+        }
       }
       return sanitized;
     }
@@ -593,6 +768,12 @@ const SecurityManager = {
     return this.sanitizeObject(data);
   },
 
+  /**
+   * Cleans every string value of an object, recursing into nested objects.
+   *
+   * @param {*} obj - Object or value to clean
+   * @returns {*} Cleaned copy
+   */
   sanitizeObject(obj) {
     if (typeof obj !== 'object' || obj === null) {
       return this.sanitizeInput(obj);
@@ -611,6 +792,12 @@ const SecurityManager = {
   },
 
   // ============ Form Interceptors ============
+  /**
+   * Enhances the forms already in the document and watches for new ones, so
+   * dynamically added forms are protected too.
+   *
+   * @returns {void}
+   */
   setupFormInterceptors() {
     // Intercept form creation
     const observer = new MutationObserver((mutations) => {
@@ -639,6 +826,13 @@ const SecurityManager = {
     });
   },
 
+  /**
+   * Applies the security configuration of one form, currently CSRF injection,
+   * and marks it so the work is not repeated.
+   *
+   * @param {HTMLFormElement} form - Form to enhance
+   * @returns {void}
+   */
   enhanceForm(form) {
     // Skip if already enhanced
     if (form.dataset.securityEnhanced) return;
@@ -654,6 +848,12 @@ const SecurityManager = {
     form.dataset.securityEnhanced = 'true';
   },
 
+  /**
+   * Reads the security settings a form declares through data attributes.
+   *
+   * @param {HTMLFormElement} form - Form to inspect
+   * @returns {Object} Settings, currently {csrf}
+   */
   extractFormSecurityConfig(form) {
     return {
       csrf: this.getDataBool(form, 'csrf', this.config.csrf.enabled)
@@ -661,6 +861,15 @@ const SecurityManager = {
   },
 
   // ============ Error Handlers ============
+  /**
+   * Recovers from a rejected CSRF token (HTTP 419).
+   *
+   * Emits csrf:retry first so a caller can re-send the failed request — the
+   * server may only consume a pending token on success — then refreshes the
+   * token as a fallback.
+   *
+   * @returns {Promise<void>}
+   */
   async handleCSRFError() {
     // Skip CSRF error handling if CSRF is disabled
     if (!this.config.csrf.enabled) {
@@ -698,6 +907,13 @@ const SecurityManager = {
   },
 
   // ============ Utility Methods ============
+  /**
+   * Tests a path against config.csrf.excludePaths, where a trailing '*' makes
+   * the entry a prefix match.
+   *
+   * @param {string} path - URL or form action to test
+   * @returns {boolean} True when the path is excluded from CSRF
+   */
   isPathExcluded(path) {
     if (!path) return false;
 
@@ -709,12 +925,26 @@ const SecurityManager = {
     });
   },
 
+  /**
+   * Reads a boolean data attribute, accepting 'true' and '1'.
+   *
+   * @param {HTMLElement} element - Element carrying the attribute
+   * @param {string} attribute - Dataset key
+   * @param {boolean} [defaultValue=false] - Value when the attribute is absent
+   * @returns {boolean} Parsed value
+   */
   getDataBool(element, attribute, defaultValue = false) {
     const value = element.dataset[attribute];
     if (value === undefined) return defaultValue;
     return value === 'true' || value === '1';
   },
 
+  /**
+   * Reads a cookie by name.
+   *
+   * @param {string} name - Cookie name
+   * @returns {string|null} Cookie value, or null when not set
+   */
   getCookie(name) {
     const value = `; ${document.cookie}`;
     const parts = value.split(`; ${name}=`);
@@ -724,12 +954,27 @@ const SecurityManager = {
     return null;
   },
 
+  /**
+   * Shows a notification when NotificationManager is available.
+   *
+   * @param {string} message - Message to display
+   * @param {string} [type='info'] - Notification type
+   * @returns {void}
+   */
   showNotification(message, type = 'info') {
     if (window.NotificationManager) {
       window.NotificationManager[type](message);
     }
   },
 
+  /**
+   * Emits an event through EventManager and as a DOM CustomEvent, so listeners
+   * can use either channel.
+   *
+   * @param {string} event - Event name
+   * @param {Object} [data={}] - Event payload
+   * @returns {void}
+   */
   emit(event, data = {}) {
     if (window.EventManager) {
       window.EventManager.emit(event, data);
@@ -744,6 +989,13 @@ const SecurityManager = {
     document.dispatchEvent(customEvent);
   },
 
+  /**
+   * Reports an error to ErrorManager and emits security:error.
+   *
+   * @param {string} message - Description of what failed
+   * @param {Error} error - Error that was caught
+   * @returns {void}
+   */
   handleError(message, error) {
     if (window.ErrorManager) {
       window.ErrorManager.handle(error, {
@@ -755,6 +1007,14 @@ const SecurityManager = {
     this.emit('security:error', {message, error});
   },
 
+  /**
+   * Merges source into target recursively, concatenating arrays and skipping
+   * the keys isUnsafeKey() rejects.
+   *
+   * @param {Object} target - Object to merge into; mutated
+   * @param {Object} source - Object to merge from
+   * @returns {Object} The merged target
+   */
   mergeDeep(target, source) {
     const isObject = (obj) => obj && typeof obj === 'object' && !Array.isArray(obj);
 
@@ -787,7 +1047,13 @@ const SecurityManager = {
   // instead of touching innerHTML directly; object merges/path-sets should use
   // safeMerge/safeSetByPath to stay free of prototype pollution.
 
-  // Keys that must never be written through merge/clone/path-set operations.
+  /**
+   * Reports whether a key must never be written through merge, clone or
+   * path-set operations, which is what keeps them free of prototype pollution.
+   *
+   * @param {string} key - Key about to be written
+   * @returns {boolean} True when the key is unsafe
+   */
   isUnsafeKey(key) {
     return key === '__proto__' || key === 'constructor' || key === 'prototype';
   },
@@ -910,10 +1176,21 @@ const SecurityManager = {
   },
 
   // ============ Public API ============
+  /**
+   * Returns the CSRF token a form should submit.
+   *
+   * @param {HTMLFormElement} form - Form asking for the token
+   * @returns {string|null} Current CSRF token
+   */
   getCSRFTokenForForm(form) {
     return this.state.csrfToken;
   },
 
+  /**
+   * Refreshes the CSRF and JWT tokens together.
+   *
+   * @returns {Promise<Array>} Results of both refreshes
+   */
   refreshTokens() {
     return Promise.all([
       this.refreshCSRFToken(),
@@ -925,6 +1202,12 @@ const SecurityManager = {
   // isRateLimited()/getRateLimitStatus() helpers referenced a checkRateLimit()
   // that never existed and were removed as dead, throw-on-call code.
 
+  /**
+   * Adds the CSRF header to a request configuration when the request needs it.
+   *
+   * @param {Object} config - Request configuration; mutated
+   * @returns {Object} The same configuration
+   */
   addCSRFToRequest(config) {
     if (this.config.csrf.enabled && this.shouldAddCSRF(config) && this.state.csrfToken) {
       config.headers = config.headers || {};
@@ -934,6 +1217,12 @@ const SecurityManager = {
   },
 
   // ============ Cleanup ============
+  /**
+   * Stops the refresh timers, clears the recorded violations and marks the
+   * manager uninitialized.
+   *
+   * @returns {void}
+   */
   destroy() {
     if (this.csrfRefreshTimer) {
       clearInterval(this.csrfRefreshTimer);

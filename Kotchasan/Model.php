@@ -1,5 +1,4 @@
 <?php
-
 namespace Kotchasan;
 
 use Kotchasan\QueryBuilder\DeleteBuilder;
@@ -66,10 +65,24 @@ class Model extends \Kotchasan\KBase
      *
      * @return Database
      */
-    public static function createDb()
+    public static function createDatabase()
     {
         $model = new static();
         return $model->getDB();
+    }
+
+    /**
+     * Create a DB helper bound to this model connection.
+     *
+     * Use this for direct insert/update/delete helper methods while keeping
+     * the connection tied to the model's conn setting.
+     *
+     * @return \Kotchasan\DB
+     */
+    public static function createDB()
+    {
+        $db = static::createDatabase();
+        return \Kotchasan\DB::create($db);
     }
 
     /**
@@ -211,5 +224,46 @@ class Model extends \Kotchasan\KBase
     public function getPrefix(): string
     {
         return $this->db->getPrefix();
+    }
+
+    /**
+     * Physical column names of a (logical) table, via SHOW COLUMNS.
+     *
+     * Used by CRUD models to restrict writes to columns that actually exist
+     * on a table whose CREATE TABLE is not always shipped in-repo (e.g.
+     * central/cross-connection tables). Returns an empty array if the table
+     * is unreachable so callers can fail closed.
+     *
+     * Runs against this model's own connection (static::createDB()), so a
+     * subclass bound to a non-default connection (e.g. `wsr`) resolves
+     * columns against that connection, not whichever is `default`.
+     *
+     * @param string $logicalTable
+     *
+     * @return array
+     */
+    protected static function tableColumns($logicalTable)
+    {
+        try {
+            $db = static::createDB();
+            $name = $db->getTableName($logicalTable);
+            $result = $db->raw('SHOW COLUMNS FROM `'.$name.'`');
+
+            if ($result === null) {
+                return [];
+            }
+
+            $columns = [];
+            foreach ($result->fetchAll() as $row) {
+                $field = is_object($row) ? ($row->Field ?? $row->field ?? null) : ($row['Field'] ?? $row['field'] ?? null);
+                if (is_string($field) && $field !== '') {
+                    $columns[] = $field;
+                }
+            }
+
+            return $columns;
+        } catch (\Exception $e) {
+            return [];
+        }
     }
 }

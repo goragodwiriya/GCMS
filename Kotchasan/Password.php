@@ -1,5 +1,4 @@
 <?php
-
 namespace Kotchasan;
 
 /**
@@ -71,6 +70,91 @@ class Password
         $data = http_build_query($params, '', '&');
         // Return the hashed string
         return strtoupper(hash_hmac('sha256', $data, $secret));
+    }
+
+    /**
+     * Hashes a user password for storage.
+     *
+     * The password is first keyed with the site's password_key (HMAC-SHA256) so a
+     * leaked database alone is not enough to attack it, then hashed with bcrypt
+     * (cost 12) through password_hash(). The result is a standard 60-character
+     * "$2y$..." string. Passwords used to be stored as sha1(key.password.salt),
+     * a fast hash that can be brute-forced offline; verify() still accepts that
+     * form so that existing accounts keep working, and needsRehash() tells the
+     * caller to upgrade the stored hash after a successful login.
+     *
+     * @param string $password    Plain-text password
+     * @param string $passwordKey Site-wide password_key from settings/config.php
+     *
+     * @return string
+     */
+    public static function hash($password, $passwordKey)
+    {
+        return password_hash(self::pepper($password, $passwordKey), PASSWORD_BCRYPT, ['cost' => 12]);
+    }
+
+    /**
+     * Verifies a password against a stored hash of either format.
+     *
+     * @param string $password    Plain-text password
+     * @param string $stored      Value of the password column
+     * @param string $salt        Value of the salt column (legacy sha1 form only)
+     * @param string $passwordKey Site-wide password_key
+     *
+     * @return bool
+     */
+    public static function verify($password, $stored, $salt, $passwordKey)
+    {
+        $password = (string) $password;
+        $stored = (string) $stored;
+        if ($password === '' || $stored === '') {
+            return false;
+        }
+        if (self::isLegacyHash($stored)) {
+            // sha1(key.password.salt), and the even older sha1(password.salt) without a key
+            return hash_equals($stored, sha1($passwordKey.$password.$salt))
+                || hash_equals($stored, sha1($password.$salt));
+        }
+        return password_verify(self::pepper($password, $passwordKey), $stored);
+    }
+
+    /**
+     * Whether a stored hash should be replaced by hash() after the next successful login
+     * (legacy sha1 form, or bcrypt with an outdated cost).
+     *
+     * @param string $stored
+     *
+     * @return bool
+     */
+    public static function needsRehash($stored)
+    {
+        return self::isLegacyHash($stored) || password_needs_rehash((string) $stored, PASSWORD_BCRYPT, ['cost' => 12]);
+    }
+
+    /**
+     * Whether a stored value is a legacy sha1 hash (40 hex characters).
+     *
+     * @param string $stored
+     *
+     * @return bool
+     */
+    public static function isLegacyHash($stored)
+    {
+        return preg_match('/^[0-9a-f]{40}$/i', (string) $stored) === 1;
+    }
+
+    /**
+     * Keys the password with the site password_key before bcrypt. HMAC output is
+     * 64 hex characters, safely under bcrypt's 72-byte limit whatever the password length.
+     *
+     * @param string $password
+     * @param string $passwordKey
+     *
+     * @return string
+     */
+    protected static function pepper($password, $passwordKey)
+    {
+        return hash_hmac('sha256', (string) $password, (string) $passwordKey);
     }
 
     /**

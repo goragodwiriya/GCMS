@@ -18,11 +18,96 @@
       width: 100%;
       height: 100%;
       overflow: hidden;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
     }
 
     #map {
       width: 100%;
       height: 100%;
+    }
+
+    /* ── Search box (edit mode only) ─────────────────────────── */
+    .map-search {
+      position: absolute;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 1000;
+      width: min(360px, calc(100% - 90px));
+    }
+
+    .map-search__bar {
+      display: flex;
+      background: #fff;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, .25);
+      overflow: hidden;
+    }
+
+    .map-search__input {
+      flex: 1 1 auto;
+      min-width: 0;
+      border: 0;
+      outline: none;
+      padding: 9px 12px;
+      font-size: 14px;
+    }
+
+    .map-search__btn {
+      flex: 0 0 auto;
+      border: 0;
+      background: #2563eb;
+      color: #fff;
+      padding: 0 14px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    .map-search__btn:hover {
+      background: #1d4ed8;
+    }
+
+    .map-search__results {
+      list-style: none;
+      margin: 6px 0 0;
+      background: #fff;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, .2);
+      max-height: 220px;
+      overflow-y: auto;
+    }
+
+    .map-search__results:empty {
+      display: none;
+    }
+
+    .map-search__result {
+      padding: 8px 12px;
+      font-size: 13px;
+      cursor: pointer;
+      border-bottom: 1px solid #f1f1f1;
+    }
+
+    .map-search__result:last-child {
+      border-bottom: 0;
+    }
+
+    .map-search__result:hover {
+      background: #eff6ff;
+    }
+
+    .map-hint {
+      position: absolute;
+      bottom: 8px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 1000;
+      background: rgba(17, 24, 39, .82);
+      color: #fff;
+      font-size: 12px;
+      padding: 5px 12px;
+      border-radius: 999px;
+      pointer-events: none;
     }
   </style>
 </head>
@@ -32,11 +117,10 @@
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
-    (function() {
+    (function () {
       'use strict';
 
-      var leafletMap = null;
-      var leafletMarker = null;
+      var EDIT = new URLSearchParams(window.location.search).get('edit') === '1';
 
       var DEFAULTS = {
         lat: 13.727639,
@@ -48,81 +132,232 @@
         google_maps_url: ''
       };
 
+      var map = null;
+      var marker = null;
+      var current = {};
+
+      function num(v, fallback) {
+        var n = parseFloat(v);
+        return isFinite(n) ? n : fallback;
+      }
+
       function buildMarkerHtml(icon) {
         return '<div style="background:#FFFFFF;width:40px;height:40px;' +
           'border-radius:50% 50% 50% 0;transform:rotate(-45deg);' +
           'border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,.3)">' +
           '<div style="transform:rotate(45deg);color:#fff;font-size:20px;' +
-          'text-align:center;line-height:34px">' + icon + '</div></div>';
+          'text-align:center;line-height:34px">' + (icon || '📍') + '</div></div>';
       }
 
-      function renderMap(cfg) {
-        var lat = parseFloat(cfg.lat) || DEFAULTS.lat;
-        var lng = parseFloat(cfg.lng) || DEFAULTS.lng;
-        var zoom = parseInt(cfg.zoom) || DEFAULTS.zoom;
-        var icon = cfg.marker_icon || DEFAULTS.marker_icon;
-        var name = cfg.popup_name || '';
-        var addr = cfg.popup_address || '';
-        var gmUrl = cfg.google_maps_url || '';
+      function popupHtml() {
+        var name = current.popup_name || '';
+        var addr = current.popup_address || '';
+        var gmUrl = current.google_maps_url || '';
+        return '<div style="text-align:center;padding:6px 10px;min-width:160px">' +
+          (name ? '<strong style="font-size:15px">' + name + '</strong><br>' : '') +
+          (addr ? '<p style="margin:6px 0;color:#6B645D;font-size:13px">' + addr.replace(/\n/g, '<br>') + '</p>' : '') +
+          (gmUrl ? '<a href="' + gmUrl + '" target="_blank" rel="noopener" style="font-weight:bold;font-size:13px;text-decoration:none">Google Maps →</a>' : '') +
+          '</div>';
+      }
 
-        if (!leafletMap) {
-          leafletMap = L.map('map', {zoomControl: true}).setView([lat, lng], zoom);
-          L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-            maxZoom: 19
-          }).addTo(leafletMap);
-        } else {
-          leafletMap.setView([lat, lng], zoom);
+      // Notify the parent (settings page) after a user-driven change so the
+      // form fields stay in sync. Programmatic updates (applyConfig) do NOT
+      // call this, which prevents a feedback loop.
+      function notifyParent() {
+        if (window.parent && window.parent !== window) {
+          window.parent.postMessage({
+            type: 'gcms-map-pick',
+            lat: current.lat,
+            lng: current.lng,
+            zoom: map ? map.getZoom() : current.zoom
+          }, '*');
         }
+      }
 
-        if (leafletMarker) {leafletMap.removeLayer(leafletMarker);}
-
-        var customIcon = L.divIcon({
+      function drawMarker() {
+        if (marker) {
+          map.removeLayer(marker);
+        }
+        var icon = L.divIcon({
           className: '',
-          html: buildMarkerHtml(icon),
+          html: buildMarkerHtml(current.marker_icon),
           iconSize: [40, 40],
           iconAnchor: [20, 40],
           popupAnchor: [0, -40]
         });
+        marker = L.marker([current.lat, current.lng], {icon: icon, draggable: EDIT}).addTo(map);
+        marker.bindPopup(popupHtml()).openPopup();
 
-        leafletMarker = L.marker([lat, lng], {icon: customIcon}).addTo(leafletMap);
-
-        var popupHtml =
-          '<div style="text-align:center;padding:6px 10px;min-width:160px">' +
-          (name ? '<strong style="font-size:15px">' + name + '</strong><br>' : '') +
-          (addr ? '<p style="margin:6px 0;color:#6B645D;font-size:13px">' +
-            addr.replace(/\n/g, '<br>') + '</p>' : '') +
-          (gmUrl ? '<a href="' + gmUrl + '" target="_blank" rel="noopener" ' +
-            'style="font-weight:bold;font-size:13px;text-decoration:none">' +
-            'Google Maps →</a>' : '') +
-          '</div>';
-
-        leafletMarker.bindPopup(popupHtml).openPopup();
-
-        setTimeout(function() {
-          if (leafletMap) {leafletMap.invalidateSize();}
-        }, 120);
+        if (EDIT) {
+          marker.on('dragend', function () {
+            var pos = marker.getLatLng();
+            current.lat = pos.lat;
+            current.lng = pos.lng;
+            marker.setPopupContent(popupHtml());
+            notifyParent();
+          });
+        }
       }
 
-      /* ── resolve API URL relative to this file's location ─────────────
-         iframe.html lives at:  widgets/map/iframe.html
-         API endpoint lives at: api/index/widgets/get?widget=map
-         Relative path:         ../../api/index/widgets/get?widget=map      */
+      // Apply a config object (from the parent form or the saved settings).
+      // Programmatic — never calls notifyParent (avoids a sync loop).
+      function applyConfig(cfg) {
+        cfg = cfg || {};
+        current.lat = num(cfg.lat, current.lat);
+        current.lng = num(cfg.lng, current.lng);
+        current.zoom = parseInt(cfg.zoom, 10) || current.zoom;
+        current.marker_icon = (cfg.marker_icon !== undefined && cfg.marker_icon !== '') ? cfg.marker_icon : '📍';
+        current.popup_name = cfg.popup_name || '';
+        current.popup_address = cfg.popup_address || '';
+        current.google_maps_url = cfg.google_maps_url || '';
+
+        if (!map) {
+          return;
+        }
+        map.setView([current.lat, current.lng], current.zoom);
+        drawMarker();
+      }
+
+      // ── Geocoding search (edit mode) ───────────────────────────
+      function addSearchControl() {
+        var box = document.createElement('div');
+        box.className = 'map-search';
+        box.innerHTML =
+          '<div class="map-search__bar">' +
+          '  <input type="text" class="map-search__input" placeholder="ค้นหาสถานที่ / Search a place…" autocomplete="off">' +
+          '  <button type="button" class="map-search__btn">🔍</button>' +
+          '</div>' +
+          '<ul class="map-search__results"></ul>';
+        document.body.appendChild(box);
+
+        var input = box.querySelector('.map-search__input');
+        var btn = box.querySelector('.map-search__btn');
+        var results = box.querySelector('.map-search__results');
+
+        // Keep Leaflet from swallowing clicks/scroll on the search UI.
+        if (window.L && L.DomEvent) {
+          L.DomEvent.disableClickPropagation(box);
+          L.DomEvent.disableScrollPropagation(box);
+        }
+
+        function pick(lat, lng) {
+          current.lat = lat;
+          current.lng = lng;
+          map.setView([lat, lng], Math.max(map.getZoom(), 15));
+          drawMarker();
+          notifyParent();
+          results.innerHTML = '';
+        }
+
+        function doSearch() {
+          var q = input.value.trim();
+          if (q.length < 2) {
+            return;
+          }
+          btn.textContent = '…';
+          fetch('https://nominatim.openstreetmap.org/search?format=json&limit=5&accept-language=th&q=' + encodeURIComponent(q), {
+            headers: {'Accept': 'application/json'}
+          })
+            .then(function (r) { return r.json(); })
+            .then(function (list) {
+              results.innerHTML = '';
+              (list || []).forEach(function (item) {
+                var li = document.createElement('li');
+                li.className = 'map-search__result';
+                li.textContent = item.display_name;
+                li.addEventListener('click', function () {
+                  input.value = item.display_name;
+                  pick(parseFloat(item.lat), parseFloat(item.lon));
+                });
+                results.appendChild(li);
+              });
+              if (!list || !list.length) {
+                var none = document.createElement('li');
+                none.className = 'map-search__result';
+                none.textContent = 'ไม่พบสถานที่ / No results';
+                results.appendChild(none);
+              }
+            })
+            .catch(function () { results.innerHTML = ''; })
+            .finally(function () { btn.textContent = '🔍'; });
+        }
+
+        btn.addEventListener('click', doSearch);
+        input.addEventListener('keydown', function (e) {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            doSearch();
+          }
+        });
+      }
+
+      function addEditHint() {
+        var hint = document.createElement('div');
+        hint.className = 'map-hint';
+        hint.textContent = 'คลิกหรือลากหมุดเพื่อกำหนดตำแหน่ง · Click or drag the pin to set the location';
+        document.body.appendChild(hint);
+        setTimeout(function () { hint.style.display = 'none'; }, 6000);
+      }
+
+      function initMap(cfg) {
+        current = {
+          lat: num(cfg.lat, DEFAULTS.lat),
+          lng: num(cfg.lng, DEFAULTS.lng),
+          zoom: parseInt(cfg.zoom, 10) || DEFAULTS.zoom,
+          marker_icon: cfg.marker_icon || DEFAULTS.marker_icon,
+          popup_name: cfg.popup_name || '',
+          popup_address: cfg.popup_address || '',
+          google_maps_url: cfg.google_maps_url || ''
+        };
+
+        map = L.map('map', {zoomControl: true}).setView([current.lat, current.lng], current.zoom);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+          maxZoom: 19
+        }).addTo(map);
+
+        drawMarker();
+
+        if (EDIT) {
+          map.on('click', function (e) {
+            current.lat = e.latlng.lat;
+            current.lng = e.latlng.lng;
+            drawMarker();
+            notifyParent();
+          });
+          map.on('zoomend', function () { notifyParent(); });
+          addSearchControl();
+          addEditHint();
+        }
+
+        // Tell the parent we are ready so it can push the current form values.
+        if (window.parent && window.parent !== window) {
+          window.parent.postMessage({type: 'gcms-map-ready'}, '*');
+        }
+
+        setTimeout(function () { if (map) { map.invalidateSize(); } }, 120);
+      }
+
+      // Live config pushed from the settings page.
+      window.addEventListener('message', function (ev) {
+        var d = ev.data;
+        if (d && typeof d === 'object' && d.type === 'gcms-map-config' && d.config) {
+          applyConfig(d.config);
+        }
+      });
+
+      /* Resolve the settings API relative to this file (widgets/map/iframe.html
+         → ../../api/index/widgets/get?widget=map). */
       function resolveApiUrl() {
-        var base = window.location.href.replace(/\/[^/]+$/, '/');
-        // Navigate two levels up from widgets/map/ to reach site root
+        var base = window.location.href.replace(/\/[^/]+(\?.*)?$/, '/');
         return base + '../../api/index/widgets/get?widget=map';
       }
 
-      document.addEventListener('DOMContentLoaded', function() {
+      document.addEventListener('DOMContentLoaded', function () {
         fetch(resolveApiUrl(), {credentials: 'same-origin'})
-          .then(function(res) {return res.ok ? res.json() : Promise.reject(res.status);})
-          .then(function(json) {
-            renderMap((json && json.data) ? json.data : json);
-          })
-          .catch(function() {
-            renderMap(DEFAULTS);
-          });
+          .then(function (res) { return res.ok ? res.json() : Promise.reject(res.status); })
+          .then(function (json) { initMap((json && json.data) ? json.data : json); })
+          .catch(function () { initMap(DEFAULTS); });
       });
     })();
   </script>

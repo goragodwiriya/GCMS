@@ -88,6 +88,15 @@ class Modal {
 
     // Add to document
     document.body.appendChild(this.modal);
+
+    // Content passed to the constructor lands in body.innerHTML above, which
+    // is not the setContent() path — scan here as well so a modal built in one
+    // step still gets Now.js controls instead of bare inputs. Scanning after
+    // the append keeps the fields connected, and ElementManager skips anything
+    // it has already enhanced, so the second scan on setContent() is a no-op.
+    if (this.body.children.length > 0) {
+      this._scanModalElements();
+    }
   }
 
   /**

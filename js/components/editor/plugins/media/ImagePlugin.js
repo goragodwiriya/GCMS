@@ -168,6 +168,23 @@ class ImageDialog extends BaseDialog {
     });
     commonFields.appendChild(this.alignField);
 
+    // Link URL — wrap the image in a hyperlink (optional)
+    this.linkField = this.createField({
+      type: 'url',
+      label: 'Link URL',
+      id: 'rte-image-link',
+      placeholder: 'https://example.com (optional)'
+    });
+    commonFields.appendChild(this.linkField);
+
+    // Open link in new tab
+    this.linkNewTabField = this.createField({
+      type: 'checkbox',
+      id: 'rte-image-link-newtab',
+      checkLabel: 'Open link in new tab'
+    });
+    commonFields.appendChild(this.linkNewTabField);
+
     this.body.appendChild(commonFields);
 
     // Tab switching
@@ -238,6 +255,11 @@ class ImageDialog extends BaseDialog {
     heightInput.value = data.height || '';
     alignSelect.value = data.align || '';
 
+    const linkInput = this.linkField.querySelector('input');
+    const linkNewTabInput = this.linkNewTabField.querySelector('input');
+    linkInput.value = data.link || '';
+    linkNewTabInput.checked = data.linkNewTab || false;
+
     this.selectedFile = null;
     this.previewArea.style.display = 'none';
     this.previewArea.innerHTML = '';
@@ -275,6 +297,8 @@ class ImageDialog extends BaseDialog {
       maxWidth: this.isEdit ? widthVal : '',
       maxHeight: this.isEdit ? heightVal : '',
       align: this.alignField.querySelector('select').value,
+      link: this.linkField.querySelector('input').value.trim(),
+      linkNewTab: this.linkNewTabField.querySelector('input').checked,
       file: this.selectedFile,
       isEdit: this.isEdit,
       existingImage: this.existingImage
@@ -293,6 +317,12 @@ class ImageDialog extends BaseDialog {
     // Block dangerous URI schemes — only allow http, https, relative paths, and data:image/*
     if (data.src && /^\s*(javascript:|vbscript:|data:(?!image\/))/i.test(data.src)) {
       this.showError('Invalid image URL');
+      return false;
+    }
+
+    // Block dangerous URI schemes in the optional link URL
+    if (data.link && /^\s*(javascript:|vbscript:|data:)/i.test(data.link)) {
+      this.showError('Invalid link URL');
       return false;
     }
 
@@ -359,6 +389,9 @@ class ImagePlugin extends PluginBase {
 
     if (img) {
       // Edit mode — open dialog pre-populated with existing image data
+      const contentEl = this.editor.contentArea?.getElement();
+      const parentLink = img.parentElement && img.parentElement.tagName === 'A' ? img.parentElement : null;
+      const wrappingLink = parentLink && contentEl?.contains(parentLink) ? parentLink : null;
       this.dialog.open({
         src: img.src || '',
         alt: img.alt || '',
@@ -366,6 +399,8 @@ class ImagePlugin extends PluginBase {
         width: img.style.maxWidth || img.getAttribute('width') || '',
         height: img.style.maxHeight || img.getAttribute('height') || '',
         align: this.getImageAlignment(img),
+        link: wrappingLink ? wrappingLink.getAttribute('href') || '' : '',
+        linkNewTab: wrappingLink ? wrappingLink.target === '_blank' : false,
         isEdit: true,
         element: img
       });
@@ -402,10 +437,25 @@ class ImagePlugin extends PluginBase {
    * @returns {string}
    */
   getImageAlignment(img) {
-    const style = img.style;
+    const anchor = img.parentElement && img.parentElement.tagName === 'A'
+      ? img.parentElement
+      : null;
+    // Prefer the wrapping link's alignment; fall back to the image (legacy content)
+    return this._readAlignment(anchor) || this._readAlignment(img);
+  }
+
+  /**
+   * Read alignment from an element's inline styles
+   * @param {HTMLElement|null} el
+   * @returns {string}
+   */
+  _readAlignment(el) {
+    if (!el) return '';
+    const style = el.style;
     if (style.float === 'left') return 'left';
     if (style.float === 'right') return 'right';
-    if (style.display === 'block' && style.marginLeft === 'auto' && style.marginRight === 'auto') {
+    if (style.display === 'block' &&
+      (style.textAlign === 'center' || (style.marginLeft === 'auto' && style.marginRight === 'auto'))) {
       return 'center';
     }
     return '';
@@ -437,6 +487,8 @@ class ImagePlugin extends PluginBase {
       img.removeAttribute('height');
       img.style.maxWidth = data.maxWidth || '';
       img.style.maxHeight = data.maxHeight || '';
+      // Wrap/unwrap the link first so alignment targets the correct element
+      this.applyImageLink(img, data.link, data.linkNewTab);
       this.applyImageAlignment(img, data.align);
       this.recordHistory(true);
       this.focusEditor();
@@ -467,11 +519,64 @@ class ImagePlugin extends PluginBase {
     const img = document.createElement('img');
     img.src = src;
     img.alt = data.alt || '';
+
+    // Optionally wrap the new image in a hyperlink
+    let node = img;
+    if (data.link) {
+      const anchor = document.createElement('a');
+      anchor.setAttribute('href', data.link);
+      if (data.linkNewTab) {
+        anchor.setAttribute('target', '_blank');
+        anchor.setAttribute('rel', 'noopener noreferrer');
+      }
+      anchor.appendChild(img);
+      node = anchor;
+    }
+
+    // Align the wrapping link when present, otherwise the image itself
     this.applyImageAlignment(img, data.align);
-    this.insertHtml(img.outerHTML);
+    this.insertHtml(node.outerHTML);
 
     this.recordHistory(true);
     this.focusEditor();
+  }
+
+  /**
+   * Create, update, or remove the hyperlink wrapping an image.
+   * @param {HTMLImageElement} img
+   * @param {string} url - Link URL; empty removes the wrapping link
+   * @param {boolean} newTab - Open the link in a new tab
+   */
+  applyImageLink(img, url, newTab) {
+    url = (url || '').trim();
+    const existingLink = img.parentElement && img.parentElement.tagName === 'A'
+      ? img.parentElement
+      : null;
+
+    if (url) {
+      let link = existingLink;
+      if (!link) {
+        // Wrap the image in a new anchor
+        link = document.createElement('a');
+        img.replaceWith(link);
+        link.appendChild(img);
+      }
+      link.setAttribute('href', url);
+      if (newTab) {
+        link.setAttribute('target', '_blank');
+        link.setAttribute('rel', 'noopener noreferrer');
+      } else {
+        link.removeAttribute('target');
+        link.removeAttribute('rel');
+      }
+    } else if (existingLink) {
+      // Unwrap: move the anchor's children out (preserving any siblings), then drop it
+      const parent = existingLink.parentNode;
+      while (existingLink.firstChild) {
+        parent.insertBefore(existingLink.firstChild, existingLink);
+      }
+      parent.removeChild(existingLink);
+    }
   }
 
   /**
@@ -480,26 +585,51 @@ class ImagePlugin extends PluginBase {
    * @param {string} align
    */
   applyImageAlignment(img, align) {
-    img.style.float = '';
-    img.style.display = '';
-    img.style.marginLeft = '';
-    img.style.marginRight = '';
+    // When the image is wrapped in a link, align the (inline) anchor instead of
+    // the image so float/centering takes effect on the wrapper, not the image.
+    const anchor = img.parentElement && img.parentElement.tagName === 'A'
+      ? img.parentElement
+      : null;
+    const target = anchor || img;
+
+    // Reset alignment styles on both so nothing lingers when wrapping/unwrapping
+    this._resetAlignmentStyles(img);
+    if (anchor) this._resetAlignmentStyles(anchor);
 
     switch (align) {
       case 'left':
-        img.style.float = 'left';
-        img.style.marginRight = '1em';
+        target.style.float = 'left';
+        target.style.marginRight = '1em';
         break;
       case 'right':
-        img.style.float = 'right';
-        img.style.marginLeft = '1em';
+        target.style.float = 'right';
+        target.style.marginLeft = '1em';
         break;
       case 'center':
-        img.style.display = 'block';
-        img.style.marginLeft = 'auto';
-        img.style.marginRight = 'auto';
+        target.style.display = 'block';
+        target.style.marginLeft = 'auto';
+        target.style.marginRight = 'auto';
+        // A block anchor spans the full width, so margin:auto alone can't center
+        // it. Shrink it to the image width; margin:auto then centers it in normal
+        // flow and as a flex item alike (an <img> already has an intrinsic width).
+        if (anchor) {
+          target.style.width = 'fit-content';
+        }
         break;
     }
+  }
+
+  /**
+   * Clear alignment-related inline styles from an element
+   * @param {HTMLElement} el
+   */
+  _resetAlignmentStyles(el) {
+    el.style.float = '';
+    el.style.display = '';
+    el.style.width = '';
+    el.style.marginLeft = '';
+    el.style.marginRight = '';
+    el.style.textAlign = '';
   }
 
   /**
@@ -526,6 +656,8 @@ class ImagePlugin extends PluginBase {
     const requestOptions = Now.applyRequestLanguage({
       method: 'POST',
       body: formData,
+      // Custom header enables server-side CSRF validation for cookie auth
+      headers: {'X-Requested-With': 'XMLHttpRequest'},
       credentials: 'include'
     });
 

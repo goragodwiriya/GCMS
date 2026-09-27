@@ -1,5 +1,4 @@
 <?php
-
 namespace Kotchasan;
 
 /**
@@ -61,7 +60,8 @@ class Csv
      * @param string   $file      Path to the CSV file
      * @param callable $onRow     Callback function to be executed for each row of data
      * @param array    $headers   Array of expected header values for validation (optional)
-     * @param string   $charset   Character encoding of the CSV file (default: UTF-8)
+     * @param string   $charset   Character encoding of the CSV file (default: UTF-8).
+     *                            'AUTO' or an empty string detects it from the file itself
      * @param callable $onBeforeRead  Callback function to be executed before processing rows (optional)
      * @param mixed    $args      Additional arguments to be passed to the callback functions (optional)
      *
@@ -72,35 +72,51 @@ class Csv
     public static function read($file, $onRow, $headers = null, $charset = 'UTF-8', $onBeforeRead = null, $args = null)
     {
         $columns = [];
+
+        // Convert charset to uppercase. 'AUTO' (or an empty charset) lets the file
+        // decide, so a caller holding a file someone else produced does not have to guess
+        $charset = strtoupper((string) $charset);
+        if ($charset === '' || $charset === 'AUTO') {
+            $charset = self::detectCharset($file);
+        }
+
         $f = @fopen($file, 'r');
         if ($f) {
-            // Convert charset to uppercase
-            $charset = strtoupper($charset);
-
             while (($data = fgetcsv($f, 0, self::DELIMITER, self::ENCLOSURE, self::ESCAPE)) !== false) {
                 if (empty($columns)) {
+                    // Clean the header row before anything reads it.
+                    //
+                    // The BOM has to go whether or not $headers was given: a caller that
+                    // passes null still gets the column names as array keys, and a leading
+                    // BOM turns the first one into "\xEF\xBB\xBFname", which then matches
+                    // nothing. Files exported by self::send() carry a BOM by default, so
+                    // leaving it here breaks the export/import round trip
+                    if ($charset == 'UTF-8') {
+                        // Remove BOM
+                        $data[0] = self::removeBomUtf8($data[0]);
+                        foreach ($data as $k => $v) {
+                            $data[$k] = trim($v, " \t\n\r\0\x0B\'\"");
+                        }
+                    } else {
+                        // Convert to UTF-8
+                        foreach ($data as $k => $v) {
+                            $data[$k] = trim(iconv($charset, 'UTF-8//IGNORE', $v), " \t\n\r\0\x0B\'\"");
+                        }
+                    }
+
                     if (is_array($headers)) {
                         if (count($headers) != count($data)) {
                             throw new \Exception('Invalid CSV Header');
-                        } else {
-                            if ($charset == 'UTF-8') {
-                                // Remove BOM
-                                $data[0] = trim(self::removeBomUtf8($data[0]), " \t\n\r\0\x0B\'\"");
-                            } else {
-                                // Convert to UTF-8
-                                foreach ($data as $k => $v) {
-                                    $data[$k] = trim(iconv($charset, 'UTF-8//IGNORE', $v), " \t\n\r\0\x0B\'\"");
-                                }
-                            }
+                        }
 
-                            // Check header values
-                            foreach ($headers as $k) {
-                                if (!in_array($k, $data)) {
-                                    throw new \Exception('Column not found : '.$k);
-                                }
+                        // Check header values
+                        foreach ($headers as $k) {
+                            if (!in_array($k, $data)) {
+                                throw new \Exception('Column not found : '.$k);
                             }
                         }
                     }
+
                     $columns = $data;
                     if (is_callable($onBeforeRead)) {
                         // Call the provided callback function before processing rows
@@ -128,6 +144,46 @@ class Csv
 
             fclose($f);
         }
+    }
+
+    /**
+     * Detect the character encoding of a CSV file
+     *
+     * Tells UTF-8 and TIS-620 apart, the two encodings Thai spreadsheets produce.
+     * A BOM settles it outright; otherwise the file is UTF-8 only if every byte
+     * forms a valid UTF-8 sequence, which Thai text in TIS-620 never does.
+     *
+     * A file that is pure ASCII reports UTF-8, and that is correct either way
+     * because the two encodings are byte identical over ASCII.
+     *
+     * @param string $file  Path to the CSV file
+     *
+     * @return string  'UTF-8' or 'TIS-620'
+     */
+    public static function detectCharset($file)
+    {
+        // A megabyte of rows is far more Thai text than is needed to decide, and
+        // keeps the check cheap on the large files import is built to accept
+        $limit = 1048576;
+        $data = @file_get_contents($file, false, null, 0, $limit);
+        if ($data === false || $data === '') {
+            return 'UTF-8';
+        }
+
+        if (substr($data, 0, 3) === "\xEF\xBB\xBF") {
+            return 'UTF-8';
+        }
+
+        // Only when the read actually hit the cap: drop the trailing partial line so a
+        // multi byte character cut in half is not mistaken for invalid UTF-8
+        if (strlen($data) >= $limit) {
+            $cut = strrpos($data, "\n");
+            if ($cut !== false) {
+                $data = substr($data, 0, $cut);
+            }
+        }
+
+        return mb_check_encoding($data, 'UTF-8') ? 'UTF-8' : 'TIS-620';
     }
 
     /**
@@ -201,7 +257,6 @@ class Csv
 
             fclose($f);
             exit();
-
         } catch (\Exception $e) {
             if (ob_get_length()) {
                 ob_end_clean();

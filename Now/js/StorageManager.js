@@ -455,6 +455,17 @@ const StorageManager = {
    * @param {string} [dbName=this.config.defaultDB] - Database name
    * @returns {Promise<Array>} - Returns an array of all data
    */
+  /**
+   * Read every record in an object store.
+   *
+   * Retries on failure according to the manager's retry policy, and records
+   * timing when `config.statistics.trackTiming` is on.
+   *
+   * @param {string} storeName - Object store to read.
+   * @param {Object} [options={}] - Query options such as index, range and limit.
+   * @param {string} [dbName=this.config.defaultDB] - Database holding the store.
+   * @returns {Promise<Array>} - The records found.
+   */
   async getAll(storeName, options = {}, dbName = this.config.defaultDB) {
     const startTime = this.config.statistics.trackTiming ? performance.now() : 0;
     let retryCount = 0;
@@ -892,6 +903,16 @@ const StorageManager = {
    * @param {string} storeName - Object store name
    * @param {string} [dbName=this.config.defaultDB] - Database name
    * @returns {Promise<boolean>} - Returns true if successful
+   */
+  /**
+   * Empty an object store.
+   *
+   * Retries on failure according to the manager's retry policy, and records
+   * timing when `config.statistics.trackTiming` is on.
+   *
+   * @param {string} storeName - Object store to clear.
+   * @param {string} [dbName=this.config.defaultDB] - Database holding the store.
+   * @returns {Promise<void>}
    */
   async clear(storeName, dbName = this.config.defaultDB) {
     const startTime = this.config.statistics.trackTiming ? performance.now() : 0;
@@ -1564,12 +1585,31 @@ const StorageManager = {
    * LocalStorage shorthand
    */
   local: {
+    /**
+     * Read a value from localStorage.
+     *
+     * @param {string} key - Key to read.
+     * @returns {*} - The stored value, or whatever the adapter returns when absent.
+     */
     get(key) {
       return StorageManager.adapters.localStorage.get(key);
     },
+    /**
+     * Write a value to localStorage.
+     *
+     * @param {string} key - Key to write.
+     * @param {*} value - Value to store; the adapter handles serialisation.
+     * @returns {*} - Whatever the adapter returns.
+     */
     set(key, value) {
       return StorageManager.adapters.localStorage.set(key, value);
     },
+    /**
+     * Remove one key from localStorage.
+     *
+     * @param {string} key - Key to remove.
+     * @returns {*} - Whatever the adapter returns.
+     */
     remove(key) {
       return StorageManager.adapters.localStorage.remove(key);
     },
@@ -1647,6 +1687,19 @@ const StorageManager = {
     return result;
   },
 
+  /**
+   * Update a record locally and queue the change for the server.
+   *
+   * Writes locally first, then hands a pending operation to the sync manager so
+   * the change survives being offline. Pass `syncOptions.sync = false` to write
+   * locally only, or `syncOptions.priority` to change queue ordering
+   * (defaults to `medium`).
+   *
+   * @param {string} storeName - Object store holding the record.
+   * @param {Object} data - Record to write.
+   * @param {Object} [syncOptions={}] - Options forwarded to the sync manager.
+   * @returns {Promise<void>}
+   */
   async updateWithSync(storeName, data, syncOptions = {}) {
     const syncManager = window.Now?.getManager('sync');
     await this.update(storeName, data);
@@ -1663,6 +1716,18 @@ const StorageManager = {
     return true;
   },
 
+  /**
+   * Delete a record locally and queue the deletion for the server.
+   *
+   * Reads the record first so the sync payload carries what was removed, then
+   * hands a pending operation to the sync manager. Pass `syncOptions.sync = false`
+   * to delete locally only.
+   *
+   * @param {string} storeName - Object store holding the record.
+   * @param {*} id - Primary key of the record.
+   * @param {Object} [syncOptions={}] - Options forwarded to the sync manager.
+   * @returns {Promise<void>}
+   */
   async deleteWithSync(storeName, id, syncOptions = {}) {
     const syncManager = window.Now?.getManager('sync');
     const data = await this.getById(storeName, id);

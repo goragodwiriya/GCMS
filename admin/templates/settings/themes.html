@@ -1,0 +1,63 @@
+<aside data-component="sidebar"></aside>
+<div class="main-content">
+  <div>
+    <header data-component="topbar"></header>
+    <main class="content">
+      <div class="card-groups">
+        <header>
+          <div>
+            <h1 class="icon-template" data-i18n>Choose Theme</h1>
+            <p data-i18n>Select and activate a theme for your website</p>
+          </div>
+        </header>
+
+        <div class="content-body">
+          <!-- Theme Gallery - data loaded by ApiComponent -->
+          <div data-component="api" data-endpoint="../api/index/themes" data-on-load="initThemeGallery">
+            <div class="theme-grid" data-for="theme of themes">
+              <template>
+                <div class="theme-card" data-attr="data-theme:theme.name" data-class="theme-card--active:theme.active,theme-card--personal:theme.personal">
+                  <!-- Screenshot -->
+                  <div class="theme-card__screenshot">
+                    <img data-if="theme.screenshot" data-attr="src:theme.screenshot,alt:theme.label" loading="lazy">
+                    <div data-if="!theme.screenshot" class="theme-card__placeholder">
+                      <div class="theme-card__placeholder-header"></div>
+                      <div class="theme-card__placeholder-body">
+                        <div class="theme-card__placeholder-bar"></div>
+                        <div class="theme-card__placeholder-bar"></div>
+                        <div class="theme-card__placeholder-dot"></div>
+                      </div>
+                    </div>
+                    <span data-if="theme.active" class="theme-card__badge icon-valid" data-i18n>Active</span>
+                    <span data-if="theme.personal" class="theme-card__badge theme-card__badge--personal icon-user" data-i18n>My Theme</span>
+                    <div class="theme-card__color-dots" data-attr="data-colors:theme.name"></div>
+                  </div>
+                  <!-- Info -->
+                  <div class="theme-card__body">
+                    <div class="theme-card__meta">
+                      <h3 class="theme-card__name" data-text="theme.label"></h3>
+                      <span data-if="theme.version" class="theme-card__version" data-text="'v' + theme.version"></span>
+                    </div>
+                    <p data-if="theme.description" class="theme-card__desc" data-text="theme.description"></p>
+                    <p data-if="theme.author" class="theme-card__author icon-user">
+                      &nbsp;<span data-text="theme.author"></span>
+                    </p>
+                  </div>
+                  <!-- Actions -->
+                  <div class="theme-card__actions">
+                    <button data-if="theme.active == false" class="btn btn-primary icon-brush" data-theme-activate data-attr="data-theme:theme.name" data-i18n>Activate</button>
+                    <button data-if="theme.personal && theme.active == false" class="btn btn-danger icon-delete" data-theme-delete data-attr="data-theme:theme.name" data-i18n>Delete</button>
+                  </div>
+                </div>
+              </template>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+  <footer class="footer">
+    <p class="center">&copy; 2026 GCMS - Powered by <a href="https://nowjs.net">Now.js</a></p>
+  </footer>
+</div>

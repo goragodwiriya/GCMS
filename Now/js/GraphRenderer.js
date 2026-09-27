@@ -348,16 +348,6 @@ class GraphRenderer {
   }
 
   /**
-   * Loads and processes data from an HTML table
-   * @param {HTMLTableElement} table - The table element to load data from
-   * @returns {Array} The processed series data
-   */
-  loadAndProcessTableData(table) {
-    const tableData = this.loadFromTable(table);
-    return this.processTableData(tableData);
-  }
-
-  /**
    * Loads raw data from an HTML table
    * @param {HTMLTableElement} table - The table element to load data from
    * @returns {Object} The raw table data
@@ -480,42 +470,6 @@ class GraphRenderer {
     });
 
     return true;
-  }
-
-  /**
-   * Calculates a "nice" range for the y-axis based on the data
-   */
-  calculateNiceRange() {
-    const range = this.maxValue - this.minValue;
-    if (range === 0) {
-      this.minNice = this.minValue - 1;
-      this.maxNice = this.maxValue + 1;
-      return;
-    }
-    const roughStep = range / 5;
-    const magnitude = Math.pow(10, Math.floor(Math.log10(roughStep)));
-    const niceStep = Math.ceil(roughStep / magnitude) * magnitude;
-
-    this.minNice = Math.floor(this.minValue / niceStep) * niceStep;
-    this.maxNice = Math.ceil(this.maxValue / niceStep) * niceStep;
-
-    if (this.minValue > 0) {
-      if (this.minValue === this.minNice) {
-        this.minNice = Math.max(0, this.minNice - niceStep);
-      }
-      if (this.maxValue === this.maxNice) {
-        this.maxNice += niceStep;
-      }
-    }
-
-    if (this.maxValue < 0) {
-      if (this.maxValue === this.maxNice) {
-        this.maxNice = Math.min(0, this.maxNice + niceStep);
-      }
-      if (this.minValue === this.minNice) {
-        this.minNice -= niceStep;
-      }
-    }
   }
 
   /**
@@ -802,6 +756,26 @@ class GraphRenderer {
     return [
       "M", start.x, start.y,
       "A", radius, radius, 0, largeArcFlag, 0, end.x, end.y
+    ].join(" ");
+  }
+
+  /**
+   * Describes a gauge arc that follows the visual sweep from startAngle to endAngle.
+   * @param {number} x - The x-coordinate of the center
+   * @param {number} y - The y-coordinate of the center
+   * @param {number} radius - The radius of the arc
+   * @param {number} startAngle - The start angle in radians
+   * @param {number} endAngle - The end angle in radians
+   * @returns {string} The SVG path data for the arc
+   */
+  describeGaugeArc(x, y, radius, startAngle, endAngle) {
+    const start = this.polarToCartesian(x, y, radius, startAngle);
+    const end = this.polarToCartesian(x, y, radius, endAngle);
+    const largeArcFlag = Math.abs(endAngle - startAngle) <= Math.PI ? "0" : "1";
+    const sweepFlag = endAngle >= startAngle ? "1" : "0";
+    return [
+      "M", start.x, start.y,
+      "A", radius, radius, 0, largeArcFlag, sweepFlag, end.x, end.y
     ].join(" ");
   }
 
@@ -1632,31 +1606,32 @@ class GraphRenderer {
     const centerX = this.margin.left + (this.width - this.margin.left - this.margin.right) / 2;
     const centerY = this.margin.top + (this.height - this.margin.top - this.margin.bottom) / 2;
 
-    const radius = Math.min(
-      this.width - this.margin.left - this.margin.right,
-      this.height - this.margin.top - this.margin.bottom
-    ) / 2.0;
+    const strokeWidth = Math.max(1, Number(this.config.gaugeCurveWidth) || 0);
+    const availableWidth = this.width - this.margin.left - this.margin.right;
+    const availableHeight = this.height - this.margin.top - this.margin.bottom;
+
+    const radius = Math.max(0, Math.min(availableWidth, availableHeight) / 2 - strokeWidth / 2);
     const startAngle = -Math.PI * 0.75;
     const endAngle = Math.PI * 0.75;
 
     const background = this.createSVGElement('path', {
-      d: this.describeArc(centerX, centerY, radius, startAngle, endAngle),
+      d: this.describeGaugeArc(centerX, centerY, radius, startAngle, endAngle),
       fill: 'none',
       stroke: this.config.gridColor,
-      'stroke-width': this.config.gaugeCurveWidth
+      'stroke-width': strokeWidth
     });
     this.svg.appendChild(background);
 
     const value = this.data[0].data[0].value;
     const maxValue = this.config.maxGaugeValue || 100;
-    const percentage = (value / maxValue) * 100;
+    const percentage = Math.max(0, Math.min(100, (value / maxValue) * 100));
     const valueAngle = startAngle + (percentage / 100) * (endAngle - startAngle);
 
     const valuePath = this.createSVGElement('path', {
-      d: this.describeArc(centerX, centerY, radius, startAngle, valueAngle),
+      d: this.describeGaugeArc(centerX, centerY, radius, startAngle, valueAngle),
       fill: 'none',
       stroke: this.data[0].color || this.config.colors[0],
-      'stroke-width': this.config.gaugeCurveWidth,
+      'stroke-width': strokeWidth,
       'stroke-linecap': 'round'
     });
 
@@ -1875,7 +1850,9 @@ class GraphRenderer {
     let margin = {top: 50, right: 50, bottom: 50, left: 50};
 
     if (this.config.type === 'gauge') {
-      margin = {top: 66, right: 66, bottom: 66, left: 66};
+      const strokeWidth = Math.max(1, Number(this.config.gaugeCurveWidth) || 0);
+      const padding = Math.ceil(strokeWidth / 2) + 2;
+      margin = {top: padding, right: padding, bottom: padding, left: padding};
     } else if (!this.config.showDataLabels) {
       if (['pie', 'donut'].includes(this.config.type)) {
         margin = {top: 30, right: 30, bottom: 30, left: 30};
@@ -2040,40 +2017,6 @@ class GraphRenderer {
     const length = tempPath.getTotalLength();
     tempPath.remove();
     return length;
-  }
-
-  /**
-   * Handles touch start events.
-   * @param {TouchEvent} event - The touch event.
-   */
-  handleTouchStart(event) {
-    this.touchStartX = event.touches[0].clientX;
-    this.touchStartY = event.touches[0].clientY;
-  }
-
-  /**
-   * Handles touch move events.
-   * @param {TouchEvent} event - The touch event.
-   */
-  handleTouchMove(event) {
-    if (!this.touchStartX || !this.touchStartY) return;
-
-    const xDiff = this.touchStartX - event.touches[0].clientX;
-    const yDiff = this.touchStartY - event.touches[0].clientY;
-
-    if (Math.abs(xDiff) > Math.abs(yDiff)) {
-      this.pan(xDiff);
-    } else {
-      this.zoom(yDiff);
-    }
-  }
-
-  /**
-   * Handles touch end events.
-   */
-  handleTouchEnd() {
-    this.touchStartX = 0;
-    this.touchStartY = 0;
   }
 
   /**

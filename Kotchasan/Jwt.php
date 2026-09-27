@@ -54,7 +54,7 @@ class Jwt
     /**
      * Decode JWT
      * @param string $jwt
-     * @param string $secret
+     * @param string|null $secret
      * @param array $allowedAlgos
      * @return mixed
      */
@@ -111,16 +111,16 @@ class Jwt
     private static function sign($data, $secret, $algo)
     {
         switch ($algo) {
-            case 'HS256':
-                return hash_hmac('sha256', $data, $secret, true);
-            case 'HS384':
-                return hash_hmac('sha384', $data, $secret, true);
-            case 'HS512':
-                return hash_hmac('sha512', $data, $secret, true);
-            default:
-                // Refuse unknown/unsupported algorithms instead of silently
-                // HMAC-signing them (which would enable algorithm confusion).
-                throw new \InvalidArgumentException('Unsupported JWT algorithm: '.$algo);
+        case 'HS256':
+            return hash_hmac('sha256', $data, $secret, true);
+        case 'HS384':
+            return hash_hmac('sha384', $data, $secret, true);
+        case 'HS512':
+            return hash_hmac('sha512', $data, $secret, true);
+        default:
+            // Refuse unknown/unsupported algorithms instead of silently
+            // HMAC-signing them (which would enable algorithm confusion).
+            throw new \InvalidArgumentException('Unsupported JWT algorithm: '.$algo);
         }
     }
 }

@@ -1,5 +1,4 @@
 <?php
-
 namespace Kotchasan;
 
 /**
@@ -40,6 +39,13 @@ class Template
      * @var string
      */
     protected static $src;
+
+    /**
+     * URL base for the currently selected template source.
+     *
+     * @var string
+     */
+    protected static $url = '';
 
     /**
      * Template data
@@ -128,6 +134,16 @@ class Template
     }
 
     /**
+     * Returns the URL base for the current template source.
+     *
+     * @return string
+     */
+    public static function getUrl()
+    {
+        return self::$url;
+    }
+
+    /**
      * Checks if data has been added to the template
      *
      * @return bool Returns true if the add function has been called before, false otherwise
@@ -140,11 +156,21 @@ class Template
     /**
      * Sets the template to be used
      *
-     * @param string $theme The directory of the template starting from DOCUMENT_ROOT without a trailing slash, e.g., skin/default
+     * @param string $theme Theme slug. A personal theme in the site's own data
+     *                      folder (DATA_FOLDER.themes/{slug}/ — DATA_FOLDER is
+     *                      already per-user, e.g. datas/users/{username}/) wins
+     *                      over a shared theme of the same slug in themes/.
      */
     public static function init($theme)
     {
-        self::$src = ($theme == '') ? '' : 'themes/'.$theme.'/';
+        if ($theme == '') {
+            self::$src = '';
+            self::$url = '';
+            return;
+        }
+
+        self::$src = 'themes/'.$theme.'/';
+        self::$url = WEB_URL.self::$src;
     }
 
     /**

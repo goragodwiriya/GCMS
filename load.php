@@ -28,7 +28,7 @@ define('DATA_FOLDER', 'datas/');
  *
  * @var int
  */
-define('DEBUG', 0);
+define('DEBUG', 2);
 /**
  * กำหนดที่เก็บ error log
  * LOG_FILE   = บันทึกลงไฟล์ error_log.php ของระบบ
@@ -90,6 +90,14 @@ define('INIT_LANGUAGE', 'th');
  * @var bool
  */
 define('USE_SESSION_DATABASE', false);
+/**
+ * IP ของ reverse proxy / load balancer ที่อยู่หน้าเว็บนี้ (คั่นด้วย ,)
+ * ระบบจะเชื่อ X-Forwarded-For / X-Real-IP เฉพาะเมื่อคำขอมาจาก IP ในรายการนี้
+ * ไม่ตั้ง = ใช้ REMOTE_ADDR เป็น IP ของผู้ใช้เสมอ (ปลอม header เพื่อหลบ rate limit / api_ips ไม่ได้)
+ *
+ * @var string
+ */
+define('TRUSTED_PROXIES', '');
 /*
  * ระบุ SQL Mode ที่ต้องการ
  * หากพบปัญหาการใช้งาน
@@ -124,17 +132,30 @@ if (!headers_sent()) {
     // its templates. This still adds meaningful defence (object-src/base-uri/
     // form-action lockdown, frame-ancestors, scheme restrictions). Tightening to
     // a nonce/hash-based policy is a follow-up that requires template changes.
-    // Allow the third parties this app actually uses: Google Fonts (very common)
-    // and the social-login providers (Google / Facebook / LINE / Telegram).
+    // ระบบนี้เป็น CMS สำหรับเว็บสาธารณะ ไม่ใช่แอปภายในแบบ adminframework — ธีมและ
+    // เนื้อหาที่ผู้ดูแลแต่ละไซต์ใส่เองต้องพึ่งบริการภายนอกได้:
+    //   - Google Fonts ใน themes/*/index.html แทบทุกธีม
+    //   - Leaflet จาก unpkg.com (แผนที่ในหน้า about ของธีม)
+    //   - iframe ที่ผู้ใช้ฝังผ่าน editor (IframePlugin/VideoPlugin: YouTube, Vimeo,
+    //     Google Maps, Facebook page plugin, OpenStreetMap …) — ปลั๊กอินยอมเฉพาะ https://
+    //     จึงเปิด frame-src เป็น https: ทั้งหมดแทนการไล่รายชื่อโฮสต์ที่ไม่มีวันครบ
+    //   - <video src="https://…"> จาก VideoPlugin (media-src)
+    //   - Google AdSense (google_ads_code) และ Google Tag/Analytics (google_tag) ที่
+    //     index controller ใส่ใน <head>: adsbygoogle.js โหลดสคริปต์ต่อจาก
+    //     googlesyndication / adtrafficquality.google / fundingchoicesmessages.google.com /
+    //     doubleclick และยิง fetch กลับไปโฮสต์เดียวกัน — ตัวโฆษณาอยู่ใน iframe (frame-src https:)
+    // frame-ancestors ยังเป็น 'self' — ใครฝังเราได้ต่างจากเราฝังใครได้
+    $googleAds = 'https://*.googlesyndication.com https://*.adtrafficquality.google https://*.doubleclick.net https://*.google.com https://*.gstatic.com https://*.googleadservices.com https://*.googletagmanager.com https://*.google-analytics.com';
     $csp = implode('; ', array(
         "default-src 'self'",
-        "script-src 'self' 'unsafe-inline' https://accounts.google.com https://apis.google.com https://connect.facebook.net https://telegram.org https://*.telegram.org",
-        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+        "script-src 'self' 'unsafe-inline' https://accounts.google.com https://apis.google.com https://connect.facebook.net https://telegram.org https://*.telegram.org https://unpkg.com ".$googleAds,
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com",
         "font-src 'self' data: https://fonts.gstatic.com",
-        "img-src 'self' data: https:",
-        "connect-src 'self' https://accounts.google.com https://www.googleapis.com",
-        // Social-login popups/iframes (Google One Tap, Facebook, LINE, Telegram)
-        "frame-src 'self' https://accounts.google.com https://www.facebook.com https://web.facebook.com https://access.line.me https://oauth.line.me https://oauth.telegram.org https://t.me",
+        "img-src 'self' data: blob: https:",
+        "media-src 'self' data: blob: https:",
+        "connect-src 'self' https://accounts.google.com https://www.googleapis.com https://*.analytics.google.com ".$googleAds,
+        // Social-login popups + ทุก iframe https ที่ผู้ดูแลไซต์ฝังผ่าน editor
+        "frame-src 'self' https:",
         "frame-ancestors 'self'",
         "object-src 'none'",
         "base-uri 'self'",

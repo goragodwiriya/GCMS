@@ -899,6 +899,16 @@ const AppConfigManager = {
     this.processTemplateBindings(config);
   },
 
+  /**
+   * Decide whether a configured API URL is safe to call.
+   *
+   * The policy is https same-origin by default; plain http is accepted only when
+   * it is same-origin and the page itself is served over http. Anything that
+   * fails to parse as a URL is rejected.
+   *
+   * @param {string} configUrl - URL from configuration, absolute or relative.
+   * @returns {boolean} - True when the URL may be used.
+   */
   isSafeApiUrl(configUrl) {
     try {
       const urlObj = new URL(configUrl, window.location.origin);
@@ -1031,11 +1041,21 @@ if (window.ComponentManager) {
     template: null,
 
     // Called when component is mounted
+    /**
+     * ComponentManager hook — enhance the element when the component mounts.
+     *
+     * @returns {void}
+     */
     mounted() {
       AppConfigManager.enhance(this.element);
     },
 
     // Called when component is destroyed
+    /**
+     * ComponentManager hook — forget the element's theme toggle on teardown.
+     *
+     * @returns {void}
+     */
     destroyed() {
       if (this.element?._themeToggle) {
         AppConfigManager.state.toggles.delete(this.element);

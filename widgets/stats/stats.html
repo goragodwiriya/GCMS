@@ -13,6 +13,32 @@
         </header>
 
         <div class="content-body">
+          <!-- Per-block display options for a stats widget placed via the
+               Designer's "Add Widget" menu (js/designer/inspector/Widget.js
+               picks up this div specifically, ignoring the table below it).
+               Deliberately a <div>, not a <form> — see
+               widgets/document/document.html for why. Stat items themselves
+               (icon/label/value/...) are managed in the table below, shared
+               across the whole site regardless of which block shows them. -->
+          <div data-widget-settings-form="true" class="gcms-panel-section">
+            <h4 data-i18n>Widget display options</h4>
+            <div>
+              <label for="stats-name" data-i18n>Stats set</label>
+              <span class="form-control">
+                <input type="text" id="stats-name" name="name" value="default" placeholder="default">
+              </span>
+              <div class="comment" data-i18n>
+                Which "Group" of stat items (below) this block shows
+              </div>
+            </div>
+            <div>
+              <label for="stats-columns" data-i18n>Columns</label>
+              <span class="form-control">
+                <input type="number" id="stats-columns" name="columns" min="2" max="6" value="4">
+              </span>
+            </div>
+          </div>
+
           <div class="tablebody">
             <table class="table border fullwidth" data-table="stats" data-source="../api/index/widgets/table?widget=stats" data-row-sortable="true" data-page-size="25"
                    data-show-checkbox="true" data-actions='{"delete":"Delete"}' data-action-url="../api/index/widgets/tableaction?widget=stats" data-row-actions='{

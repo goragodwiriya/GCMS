@@ -45,11 +45,11 @@ class Controller extends \Kotchasan\Controller
             // Get categories
             $index->categories = \Web\Category::create($index->module_id);
 
-            if (!empty($index->category_id) || empty($index->categories) || empty($index->config->category_display)) {
+            if (!empty($index->category_id) || $index->categories->isEmpty() || empty($index->category_display)) {
                 // Select category or no category? or turn off category display Show a list of articles
                 $page = max(1, $request->get('page')->toInt());
                 $listModel = \Board\Stories\Model::create($index);
-                $pagination = $listModel->paginate($page, $index->config->list_per_page);
+                $pagination = $listModel->paginate($page, $index->list_per_page);
                 $index = ArrayTool::replace($index, $pagination);
                 // Article listing view
                 return \Board\Stories\View::create()->render($index);
@@ -58,8 +58,9 @@ class Controller extends \Kotchasan\Controller
                 return \Board\Categories\View::create()->render($request, $index);
             }
         }
+
         // Not found
-        return \Index\Error\Controller::create()->init('document');
+        return \Index\Error\Controller::create()->init('board');
     }
 
     /**

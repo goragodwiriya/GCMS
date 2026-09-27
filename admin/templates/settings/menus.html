@@ -1,0 +1,54 @@
+<aside data-component="sidebar"></aside>
+<div class="main-content">
+  <div>
+    <header data-component="topbar"></header>
+    <main class="content">
+      <div class="card-groups">
+        <header>
+          <div>
+            <h1 class="icon-menus" data-i18n>Menus</h1>
+            <p data-i18n>Create or edit Various menus of the website</p>
+          </div>
+          <div>
+            <a class="btn btn-primary icon-new" href="/menu" data-params="parent" data-i18n>{LNG_Add} {LNG_Menu}</a>
+          </div>
+        </header>
+
+        <div class="content-body">
+          <!-- Users Table -->
+          <div class="tablebody">
+            <table class="table border fullwidth" data-table="adminmenus" data-source="../api/index/adminmenus" data-action-url="../api/index/adminmenus/action"
+                   data-row-sortable="true" data-row-actions='{
+                              "edit": {
+                                "label": "Edit",
+                                "className": "btn btn-success icon-edit"
+                              },
+                              "delete": {
+                                "label": "Delete",
+                                "className": "btn btn-danger icon-delete"
+                              }
+                          }'>
+              <thead>
+                <tr>
+                  <th data-field="menu_text" data-i18n>{LNG_Menu}</th>
+                  <th data-field="move_left" class="center" data-cell-class="center" data-formatter="formatMenuArrow"></th>
+                  <th data-field="move_right" class="center" data-cell-class="center" data-formatter="formatMenuArrow"></th>
+                  <th data-field="alias" class="center" data-cell-class="center" data-i18n>{LNG_Alias}</th>
+                  <th data-field="published" class="center" data-cell-class="center" data-format="lookup" data-i18n>{LNG_Status}</th>
+                  <th data-field="language" class="center" data-cell-class="center" data-i18n>{LNG_Language}</th>
+                  <th data-field="menu_tooltip" data-i18n>{LNG_Tooltip}</th>
+                  <th data-field="accesskey" class="center" data-cell-class="center" data-i18n>{LNG_Accesskey}</th>
+                  <th data-field="module" data-i18n>{LNG_Link}/{LNG_Module}</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+  <footer class="footer">
+    <p class="center">&copy; 2026 GCMS - Powered by <a href="https://nowjs.net">Now.js</a></p>
+  </footer>
+</div>

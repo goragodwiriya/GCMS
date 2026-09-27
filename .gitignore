@@ -73,40 +73,9 @@ ehthumbs.db
 Desktop.ini
 
 # Exclude non-core files and directories
-examples/xlsx-browser/
-examples/playground/
-examples/animated-landing/
-examples/spa/
-examples/onepage/
-examples/scrollmanager/
-examples/cms/
-demos/
-documents/
-docs/
-modules/
-Kotchasan/
-Gcms/
-th/
-en/
-.htaccess
-js/main.js
-js/components/footer.js
-js/components/header.js
-js/components/nav.js
-css/
-images/
-settings/
-templates/
-api/
+/settings/
 datas/
 data/
-translations/*
-*.php
-CDN.md
-CLAUDE.md
-
-# Include only specific HTML files
-!example-cdn.html
 
 # Track shared activation and continuity assets
 !.github/copilot-instructions.md

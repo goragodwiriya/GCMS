@@ -71,6 +71,35 @@ const SocialLoginComponent = {
   },
 
   /**
+   * Validate the per-provider value carried in data-username. Anything that
+   * cannot possibly work for that provider (e.g. a Facebook *page URL* typed
+   * into the App ID field) is treated as "not configured" so the button is
+   * hidden instead of loading an SDK with garbage and throwing on click.
+   * @param {string} provider
+   * @param {string} raw
+   * @returns {string} normalized value, or '' when the provider is not usable
+   */
+  normalizeProviderConfig(provider, raw) {
+    const s = String(raw || '').trim();
+    if (!s) {
+      return '';
+    }
+    switch (provider) {
+      case 'facebook':
+        // Facebook App IDs are numeric only
+        return /^\d+$/.test(s) ? s : '';
+      case 'google':
+        return this.normalizeGoogleClientId(s);
+      case 'line':
+        return /^\d+$/.test(s) ? s : '';
+      case 'telegram':
+        return s.replace(/^@/, '');
+      default:
+        return s;
+    }
+  },
+
+  /**
    * Initialize component
    * @param {Object} options - Configuration options
    * @returns {SocialLoginComponent}
@@ -132,11 +161,11 @@ const SocialLoginComponent = {
    * @returns {Object|null} Instance object or null
    */
   create(element, options = {}) {
-    const provider = element.dataset.socialProvider;
-    const config = element.dataset.username;
+    const provider = String(element.dataset.socialProvider || '').toLowerCase();
+    const config = this.normalizeProviderConfig(provider, element.dataset.username);
 
-    // No config = hide element
-    if (!config || config.trim() === '') {
+    // No/invalid config = hide element
+    if (!config) {
       element.style.display = 'none';
       return null;
     }
@@ -151,7 +180,7 @@ const SocialLoginComponent = {
     const instance = {
       id: `social_${provider}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       element,
-      provider: provider.toLowerCase(),
+      provider,
       config,
       options: {...this.config, ...options},
       isActive: false,
@@ -343,34 +372,44 @@ const SocialLoginComponent = {
   /**
    * Handle Facebook login
    */
-  async handleFacebookLogin(instance) {
+  handleFacebookLogin(instance) {
     if (!window.FB) {
       NotificationManager.error('Facebook SDK not loaded. Please refresh the page.');
       return;
     }
 
-    FB.login(async (response) => {
-      if (!response.authResponse?.accessToken) {
+    // FB.login() type-checks its callback and rejects an AsyncFunction
+    // ("Expression is of type asyncfunction, not function"), so hand it a
+    // plain function and do the async work inside.
+    FB.login((response) => {
+      const accessToken = response?.authResponse?.accessToken;
+      if (!accessToken) {
         return;
       }
-
-      try {
-        const authResponse = await this.sendAuthRequest(
-          {
-            provider: 'facebook',
-            access_token: response.authResponse.accessToken
-          }
-        );
-
-        if (authResponse.success) {
-          await this.handleAuthSuccess(authResponse.data.data);
-        } else {
-          throw new Error(authResponse.data.message || 'Authentication failed');
-        }
-      } catch (error) {
-        this.handleAuthError(error, instance);
-      }
+      this.completeFacebookLogin(accessToken, instance);
     }, {scope: this.config.facebook.scope});
+  },
+
+  /**
+   * Exchange a Facebook access token for a GCMS session
+   * @param {string} accessToken
+   * @param {Object} instance
+   */
+  async completeFacebookLogin(accessToken, instance) {
+    try {
+      const authResponse = await this.sendAuthRequest({
+        provider: 'facebook',
+        access_token: accessToken
+      });
+
+      if (authResponse.success) {
+        await this.handleAuthSuccess(authResponse.data.data);
+      } else {
+        throw new Error(authResponse.data.message || 'Authentication failed');
+      }
+    } catch (error) {
+      this.handleAuthError(error, instance);
+    }
   },
 
   // ========== GOOGLE PROVIDER ==========

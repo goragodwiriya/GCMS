@@ -1,5 +1,4 @@
 <?php
-
 namespace Kotchasan;
 
 use Kotchasan\Http\Request;
@@ -312,16 +311,41 @@ class Login extends KBase
         if (empty($login)) {
             return null;
         }
-        if ($login->status === 1) {
+
+        $status = isset($login->status) ? (int) $login->status : null;
+        if ($status === null) {
+            return null;
+        }
+
+        if ($status === 1) {
             // Admin
             return $login;
-        } elseif (is_array($config->$statuses)) {
-            if (in_array($login->status, $config->$statuses)) {
+        }
+
+        $keys = is_array($statuses) ? $statuses : [$statuses];
+        foreach ($keys as $key) {
+            if (!is_string($key) || $key === '') {
+                continue;
+            }
+
+            $allowed = null;
+            if (is_object($config) && property_exists($config, $key)) {
+                $allowed = $config->{$key};
+            } elseif (is_array($config) && array_key_exists($key, $config)) {
+                $allowed = $config[$key];
+            }
+
+            if (is_array($allowed)) {
+                foreach ($allowed as $allowedStatus) {
+                    if ((int) $allowedStatus === $status) {
+                        return $login;
+                    }
+                }
+            } elseif ($allowed !== null && (int) $allowed === $status) {
                 return $login;
             }
-        } elseif ($login->status === $config->$statuses) {
-            return $login;
         }
+
         // No privileges
         return null;
     }

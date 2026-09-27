@@ -29,9 +29,9 @@ class View extends \Web\View
      */
     public function render($index)
     {
-        // template module/module.html owner/module.html module.html
+        // template <module>/main.html <owner>/main.html module.html
         try {
-            $template = Template::create($index->owner, $index->module, $index->module);
+            $template = Template::create($index->owner, $index->module, 'main');
         } catch (\Kotchasan\Exception\TemplateNotFoundException $e) {
             $template = Template::create('', '', 'main');
         }
@@ -46,7 +46,7 @@ class View extends \Web\View
         // add template
         $template->add([
             // content
-            '/{DETAIL}/' => Gcms::showDetail(str_replace(['&#x007B;', '&#x007D;'], ['{', '}'], $index->detail), false),
+            '/{DETAIL}/' => Gcms::highlighter($index->detail),
             // topic, description
             '/{TOPIC}/' => $index->topic,
             '/{DESCRIPTION}/' => $index->description,

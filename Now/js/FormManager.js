@@ -72,6 +72,16 @@ const FormManager = {
     validators: new Map()
   },
 
+  /**
+   * Initializes the manager: merges the configuration, registers the standard
+   * validators, hooks SecurityManager and starts the form observer.
+   *
+   * Calling it again once initialized is a no-op.
+   *
+   * @param {Object} [options={}] - Configuration merged over the defaults
+   * @param {Object} [options.observerConfig] - Observer settings
+   * @returns {Promise<Object>} The manager instance
+   */
   async init(options = {}) {
     if (this.state.initialized) return this;
 
@@ -96,6 +106,12 @@ const FormManager = {
     return this;
   },
 
+  /**
+   * Registers the validators every form can use by name: required, email, url,
+   * length and range checks, pattern matching and the comparison rules.
+   *
+   * @returns {void}
+   */
   registerStandardValidators() {
     this.registerValidator('required', (value, element) => {
       if (element.type === 'checkbox' || element.type === 'radio') {
@@ -149,6 +165,14 @@ const FormManager = {
     }, 'Fields do not match');
   },
 
+  /**
+   * Registers a validator that fields can request through data-validate.
+   *
+   * @param {string} name - Name used in data-validate
+   * @param {Function} fn - Called with (value, element); truthy means valid
+   * @param {string} defaultMessage - Message shown when it fails
+   * @returns {void}
+   */
   registerValidator(name, fn, defaultMessage) {
     this.state.validators.set(name, {
       validate: fn,
@@ -156,10 +180,28 @@ const FormManager = {
     });
   },
 
+  /**
+   * Registers a formatter that fields can request through data-format.
+   *
+   * @param {string} name - Name used in data-format
+   * @param {Function} fn - Called with the value, returns the formatted value
+   * @returns {void}
+   */
   registerFormatter(name, fn) {
     this.config.formatterRegistry.set(name, fn);
   },
 
+  /**
+   * Initializes a form: reads its configuration, enhances its fields, binds its
+   * events, and loads whatever data-load-api, data-load-options and the URL
+   * parameters supply.
+   *
+   * Requires the opt-in data-form attribute, and returns the existing instance
+   * when the element already has one.
+   *
+   * @param {HTMLFormElement} form - Form carrying data-form
+   * @returns {Promise<Object|null>} The instance, or null when skipped
+   */
   async initForm(form) {
     if (!form) return null;
 
@@ -335,6 +377,14 @@ const FormManager = {
     return Number.isFinite(parsed) && parsed >= 0 ? parsed : fallback;
   },
 
+  /**
+   * Reads the cache settings for a load request from the form configuration,
+   * falling back to the manager defaults.
+   *
+   * @param {Object} instance - Form instance
+   * @param {string} [type='data'] - 'data' or 'options'
+   * @returns {Object} {enabled, time}
+   */
   getLoadRequestCacheSettings(instance, type = 'data') {
     const enabledKey = type === 'options' ? 'loadOptionsCache' : 'loadCache';
     const timeKey = type === 'options' ? 'loadOptionsCacheTime' : 'loadCacheTime';
@@ -345,6 +395,27 @@ const FormManager = {
     };
   },
 
+  /**
+   * Report whether CSRF protection is switched on anywhere.
+   *
+   * A page that never turned it on has no token endpoint to ask, so the
+   * fallback fetch is pointless there and only yields a 404.
+   *
+   * @returns {boolean} True when SecurityManager or Now enables CSRF
+   */
+  isCsrfEnabled() {
+    return window.SecurityManager?.config?.csrf?.enabled === true ||
+      window.Now?.config?.security?.csrf?.enabled === true;
+  },
+
+  /**
+   * Builds the ApiService options for a load request, turning the cache on with
+   * the requested lifetime or off entirely.
+   *
+   * @param {Object} [options={}] - Options to extend
+   * @param {Object} [cacheSettings={}] - Result of getLoadRequestCacheSettings()
+   * @returns {Object} Options for ApiService.get()
+   */
   buildApiGetOptions(options = {}, cacheSettings = {}) {
     const baseCache = window.ApiService?.config?.cache && typeof window.ApiService.config.cache === 'object'
       ? window.ApiService.config.cache
@@ -392,6 +463,14 @@ const FormManager = {
     };
   },
 
+  /**
+   * Builds the fetch options for a load request, choosing the cache mode from
+   * the cache settings.
+   *
+   * @param {Object} [options={}] - Options to extend
+   * @param {Object} [cacheSettings={}] - Result of getLoadRequestCacheSettings()
+   * @returns {Object} Options for fetch
+   */
   buildFetchOptions(options = {}, cacheSettings = {}) {
     if (cacheSettings.enabled === true) {
       return {
@@ -414,6 +493,12 @@ const FormManager = {
     };
   },
 
+  /**
+   * Fills a form from the endpoint in data-load-api, when it has one.
+   *
+   * @param {Object} instance - Form instance
+   * @returns {Promise<void>}
+   */
   async loadFormDataIfNeeded(instance) {
     const {element} = instance;
     const loadApi = element.dataset.loadApi;
@@ -431,6 +516,12 @@ const FormManager = {
       // Extract query params from URL if data-load-query-params="true"
       if (element.dataset.loadQueryParams === 'true') {
         const urlParams = new URLSearchParams(window.location.search);
+        // 'module', 'method' and 'action' are reserved by the API router
+        // (see Kotchasan/ApiController.php) to resolve which controller/action
+        // to dispatch. Forwarding the current page's own query string as-is
+        // would let a page's routing params (e.g. ?module=xxx) hijack the
+        // dispatch of the data-load-api endpoint, so they are stripped here.
+        ['module', 'method', 'action'].forEach(key => urlParams.delete(key));
         const paramObj = Object.fromEntries(urlParams);
 
         if (Object.keys(paramObj).length > 0) {
@@ -1055,6 +1146,13 @@ const FormManager = {
     return config;
   },
 
+  /**
+   * Registers the fields of a form and hands each to ElementManager for
+   * enhancement, skipping the ones marked data-form-exclude.
+   *
+   * @param {Object} instance - Form instance
+   * @returns {void}
+   */
   initFormElements(instance) {
     const {element, elements} = instance;
 
@@ -1220,7 +1318,7 @@ const FormManager = {
 
           if (submitButton.textContent.trim()) {
             submitButton._originalText = submitButton.textContent;
-            submitButton.textContent = instance.config.loadingText || 'Operating';
+            submitButton.textContent = Now.translate(instance.config.loadingText || 'Operating');
           }
         }
 
@@ -1392,6 +1490,12 @@ const FormManager = {
     }
   },
 
+  /**
+   * Normalizes a field list written as an array or a comma-separated string.
+   *
+   * @param {string|Array} value - Field list
+   * @returns {string[]} Field names, blanks removed
+   */
   normalizeFieldList(value) {
     if (Array.isArray(value)) {
       return value
@@ -1405,6 +1509,16 @@ const FormManager = {
       .filter(Boolean);
   },
 
+  /**
+   * Reports whether a change to a field should trigger the watch request.
+   *
+   * data-watch-trigger narrows the set when present, otherwise
+   * data-watch-fields does; with neither, every field triggers it.
+   *
+   * @param {Object} instance - Form instance
+   * @param {string} fieldName - Name or id of the field that changed
+   * @returns {boolean} True when the change should trigger a sync
+   */
   shouldWatchField(instance, fieldName) {
     if (!instance?.config?.watchApi || !fieldName) {
       return false;
@@ -1421,6 +1535,14 @@ const FormManager = {
     return allowedFields.includes(fieldName);
   },
 
+  /**
+   * Reads the current value of a watched field, by name first and then by id,
+   * escaping the selector so field names with punctuation still resolve.
+   *
+   * @param {Object} instance - Form instance
+   * @param {string} fieldName - Name or id of the field
+   * @returns {*} Field value, or an empty string when not found
+   */
   getWatchedFieldValue(instance, fieldName) {
     if (!instance?.element || !fieldName) {
       return '';
@@ -1468,6 +1590,13 @@ const FormManager = {
     return targetField.value ?? '';
   },
 
+  /**
+   * Collects the values the watch request sends: the fields named in
+   * data-watch-fields, or the whole form when none are named.
+   *
+   * @param {Object} instance - Form instance
+   * @returns {Object} Values keyed by field name
+   */
   getWatchedFieldData(instance) {
     const watchFields = this.normalizeFieldList(instance?.config?.watchFields);
 
@@ -1482,6 +1611,13 @@ const FormManager = {
     }, {});
   },
 
+  /**
+   * Queues a watch sync when the field that changed is one the form watches.
+   *
+   * @param {Object} instance - Form instance
+   * @param {HTMLElement} field - Field that changed
+   * @returns {Promise<void>}
+   */
   handleWatchedFieldChange(instance, field) {
     const fieldName = field?.name || field?.id || '';
     if (!this.shouldWatchField(instance, fieldName)) {
@@ -1492,6 +1628,15 @@ const FormManager = {
     return Promise.resolve();
   },
 
+  /**
+   * Debounces the watch request by data-watch-debounce, so typing sends one
+   * request rather than one per keystroke.
+   *
+   * @param {Object} instance - Form instance
+   * @param {Object} [options={}] - Schedule options
+   * @param {boolean} [options.immediate] - Skip the debounce
+   * @returns {void}
+   */
   scheduleWatchedDataSync(instance, options = {}) {
     if (!instance?.config?.watchApi) {
       return;
@@ -1511,6 +1656,14 @@ const FormManager = {
     }, debounce);
   },
 
+  /**
+   * Applies a watch response to the form: refreshes the select options it
+   * carries and writes the field values.
+   *
+   * @param {Object} instance - Form instance
+   * @param {Object} payload - Response body, or its data property
+   * @returns {void}
+   */
   applyWatchedData(instance, payload) {
     if (!instance || !payload || typeof payload !== 'object') {
       return;
@@ -1534,6 +1687,17 @@ const FormManager = {
     this.setFormData(instance, bindData, true);
   },
 
+  /**
+   * Sends the watched field values to data-watch-api and applies the response.
+   *
+   * A request whose values match the last applied ones is skipped unless
+   * forced, and a stale response is discarded when a newer request has started.
+   *
+   * @param {Object} instance - Form instance
+   * @param {Object} [options={}] - Sync options
+   * @param {boolean} [options.force] - Send even when nothing changed
+   * @returns {Promise<Object|null>} Applied payload, or null when skipped
+   */
   async syncWatchedData(instance, options = {}) {
     if (!instance?.config?.watchApi) {
       return null;
@@ -1615,6 +1779,14 @@ const FormManager = {
     }
   },
 
+  /**
+   * Finds the validation message for a field, trying the element instance, the
+   * native validationMessage, and the data-error-validate attributes.
+   *
+   * @param {HTMLElement} field - Field to inspect
+   * @param {Object} [elementInstance] - Its ElementManager instance
+   * @returns {string|null} Message, or null when the field is valid
+   */
   getElementValidationError(field, elementInstance) {
     if (!field) return null;
 
@@ -1634,6 +1806,13 @@ const FormManager = {
     return typeof message === 'string' && message.trim() !== '' ? message : null;
   },
 
+  /**
+   * Returns the translated message to show when a field failed but supplied no
+   * message of its own.
+   *
+   * @param {HTMLElement} field - Field that failed
+   * @returns {string} Message to display
+   */
   getFieldValidationFallbackMessage(field) {
     if (!field) return 'Validation failed';
 
@@ -1644,6 +1823,14 @@ const FormManager = {
     );
   },
 
+  /**
+   * Resolves the human-readable label of a field, from its label element, its
+   * aria-label, its placeholder or its name, with the required marker stripped.
+   *
+   * @param {HTMLElement} field - Field to label
+   * @param {HTMLFormElement} [form=null] - Form to search; the field's own by default
+   * @returns {string} Label text, empty when none was found
+   */
   getFieldLabel(field, form = null) {
     if (!field) return '';
 
@@ -1683,6 +1870,12 @@ const FormManager = {
     return normalize(field.getAttribute('aria-label') || field.placeholder || '');
   },
 
+  /**
+   * Builds a selector that identifies a field in a log message.
+   *
+   * @param {HTMLElement} field - Field to identify
+   * @returns {string} Selector, empty when there is no field
+   */
   getFieldDebugSelector(field) {
     if (!field) return '';
 
@@ -1701,6 +1894,14 @@ const FormManager = {
     return field.tagName ? field.tagName.toLowerCase() : '';
   },
 
+  /**
+   * Builds the record of one failed field: its key, label, message, type and
+   * selector.
+   *
+   * @param {Object} instance - Form instance
+   * @param {HTMLElement} field - Field that failed
+   * @returns {Object|null} The record, or null when there is no field
+   */
   getInvalidFieldDetail(instance, field) {
     if (!field) return null;
 
@@ -1728,6 +1929,14 @@ const FormManager = {
     };
   },
 
+  /**
+   * Logs the failed fields of a form as a table, so a validation failure names
+   * the fields and their messages instead of just failing.
+   *
+   * @param {Object} instance - Form instance
+   * @param {Object[]} [invalidFieldDetails=[]] - Records from getInvalidFieldDetail()
+   * @returns {void}
+   */
   logInvalidFieldDetails(instance, invalidFieldDetails = []) {
     if (!invalidFieldDetails || invalidFieldDetails.length === 0) {
       return;
@@ -1762,6 +1971,18 @@ const FormManager = {
     }
   },
 
+  /**
+   * Validates one field against its data-validate rules and shows or clears its
+   * message.
+   *
+   * A server-side error is kept until the user edits the field, so submitting
+   * again does not erase what the server said.
+   *
+   * @param {Object} instance - Form instance
+   * @param {HTMLElement} field - Field to validate
+   * @param {boolean} [forceValidate=false] - Validate even when untouched
+   * @returns {Promise<boolean>} True when the field is valid
+   */
   async validateField(instance, field, forceValidate = false) {
     const fieldName = field.name;
     if (!fieldName) return true;
@@ -1968,6 +2189,12 @@ const FormManager = {
     return true;
   },
 
+  /**
+   * Validates every field of a form in parallel and records what failed.
+   *
+   * @param {Object} instance - Form instance
+   * @returns {Promise<boolean>} True when the whole form is valid
+   */
   async validateForm(instance) {
     FormError.clearAll();
     instance.state.errors = {};
@@ -2072,6 +2299,16 @@ const FormManager = {
     return isValid;
   },
 
+  /**
+   * Reads the value of a field according to its type: the checked state of a
+   * checkbox, the selected radio, the values of a multiple select, the files of
+   * a file input, and the value of everything else.
+   *
+   * A checkbox whose name ends in [] is read as a group.
+   *
+   * @param {HTMLElement} field - Field to read
+   * @returns {*} Field value
+   */
   getFieldValue(field) {
     switch (field.type) {
       case 'checkbox':
@@ -2102,11 +2339,30 @@ const FormManager = {
     }
   },
 
+  /**
+   * Collects the values of the checked boxes in a checkbox group.
+   *
+   * @param {HTMLFormElement} form - Form holding the group
+   * @param {string} name - Group name, ending in []
+   * @returns {string[]} Values of the checked boxes
+   */
   getCheckboxGroupValues(form, name) {
     const checkboxes = form.querySelectorAll(`input[name="${name}"]:checked`);
     return Array.from(checkboxes).map(cb => cb.value);
   },
 
+  /**
+   * Collects the values of a form as both FormData and a plain object.
+   *
+   * Reads form.elements directly, the way a native submit does, so an AJAX
+   * submit matches it exactly and dynamically added inputs are included without
+   * being registered first.
+   *
+   * @param {Object} instance - Form instance
+   * @param {boolean} [loading=false] - Collecting for a load or watch request
+   *   rather than a submit
+   * @returns {Object} {formData, jsonData}
+   */
   getFormData(instance, loading = false) {
     const {element} = instance;
     const formData = new FormData();
@@ -2200,10 +2456,12 @@ const FormManager = {
           }
 
           if (nativeEl.tagName.toLowerCase() === 'select' && nativeEl.multiple) {
-            // Handle multi-select
+            // Handle multi-select. name="tags" and name="tags[]" submit the same
+            // way, like checkbox groups: JSON under "tags", FormData as "tags[]"
+            const baseName = name.endsWith('[]') ? name.slice(0, -2) : name;
             const values = Array.from(nativeEl.selectedOptions).map(opt => opt.value);
-            values.forEach(v => formData.append(`${name}[]`, v));
-            jsonData[name] = values;
+            values.forEach(v => formData.append(`${baseName}[]`, v));
+            jsonData[baseName] = values;
             processedNames.add(name);
             continue;
           }
@@ -2264,31 +2522,44 @@ const FormManager = {
           formData.append('_token', csrfToken);
           jsonData._token = csrfToken;
         }
-      } else {
-        // Try to fetch a new CSRF token
-        if (window.simpleFetch) {
-          setTimeout(() => {
-            const csrfEndpoint = window.SecurityManager?.config?.csrf?.tokenUrl ||
-              window.Now?.config?.security?.csrf?.tokenUrl ||
-              'api/auth/csrf-token';
-            simpleFetch.get(csrfEndpoint)
-              .then(response => {
-                if (response.data && response.data.token) {
-                  // Update meta tag
-                  let metaToken = document.querySelector('meta[name="csrf-token"]');
-                  if (!metaToken) {
-                    metaToken = document.createElement('meta');
-                    metaToken.name = 'csrf-token';
-                    document.head.appendChild(metaToken);
-                  }
-                  metaToken.setAttribute('content', response.data.token);
-                }
-              })
-              .catch(error => {
-                console.error('Failed to fetch CSRF token:', error);
-              });
-          }, 0);
-        }
+      } else if (this.isCsrfEnabled() && window.simpleFetch) {
+        // Fetch a token for the *next* submit.
+        //
+        // This runs in a timeout, so it cannot supply a token for the request
+        // being built right now — it only fills the meta tag so the following
+        // submit finds one. It is skipped entirely when CSRF protection is off,
+        // because then no endpoint is expected to exist and the request would
+        // only produce a 404 the user cannot act on.
+        setTimeout(() => {
+          const csrfEndpoint = window.SecurityManager?.config?.csrf?.tokenUrl ||
+            window.Now?.config?.security?.csrf?.tokenUrl ||
+            'api/auth/csrf-token';
+          simpleFetch.get(csrfEndpoint)
+            .then(response => {
+              // Accept either shape: {token} or {data: {csrf_token}}, which is
+              // what SecurityManager.refreshCSRFToken() reads from the same URL.
+              const body = response.data;
+              const token = body?.token || body?.data?.csrf_token;
+
+              if (!response.success || !token) {
+                console.warn('FormManager: no CSRF token in the response from', csrfEndpoint,
+                  body?.message || response.statusText || '');
+                return;
+              }
+
+              // Update meta tag
+              let metaToken = document.querySelector('meta[name="csrf-token"]');
+              if (!metaToken) {
+                metaToken = document.createElement('meta');
+                metaToken.name = 'csrf-token';
+                document.head.appendChild(metaToken);
+              }
+              metaToken.setAttribute('content', token);
+            })
+            .catch(error => {
+              console.error('Failed to fetch CSRF token:', error);
+            });
+        }, 0);
       }
     }
 
@@ -2455,6 +2726,17 @@ const FormManager = {
     return ['text', 'search', 'email', 'number', 'password', 'tel', 'url'].includes(field.type || 'text');
   },
 
+  /**
+   * Writes a value into a field according to its type.
+   *
+   * A field the user is currently editing is left alone, so an arriving
+   * response does not overwrite what they are typing.
+   *
+   * @param {HTMLElement} field - Field to write
+   * @param {*} value - Value to write
+   * @param {boolean} [silent=false] - Skip the change event
+   * @returns {void}
+   */
   setFieldValue(field, value, silent = false) {
     if (!field) return;
 
@@ -2464,7 +2746,8 @@ const FormManager = {
 
     switch (field.type) {
       case 'checkbox':
-        field.checked = Boolean(value);
+        // '0' from an enum('1','0') column must read as unchecked
+        field.checked = Utils.string.toBoolean(value);
         break;
 
       case 'radio':
@@ -2538,6 +2821,17 @@ const FormManager = {
     }
   },
 
+  /**
+   * Submits a form over AJAX, switching to an XHR upload with progress when the
+   * form carries files.
+   *
+   * Files are detected on the native inputs and in the FileElementFactory
+   * state, so drag-and-drop selections count too.
+   *
+   * @param {Object} instance - Form instance
+   * @param {Object} data - Result of getFormData()
+   * @returns {Promise<Object>} Response body
+   */
   async submitAjax(instance, data) {
     const {element, config} = instance;
     const hasFiles = Array.from(element.elements).some(el => {
@@ -2580,10 +2874,18 @@ const FormManager = {
         const methodLower = method.toLowerCase();
 
         const buildHeaders = () => {
+          const headers = {};
           if (instance.config.csrf === false) {
-            return {'X-Skip-CSRF': 'true'};
+            headers['X-Skip-CSRF'] = 'true';
           }
-          return undefined;
+          if (instance.config.sanitizeInput === false) {
+            // Form opted out of client-side body sanitization
+            // (data-sanitize-input="false") — the server encodes these fields
+            // itself, and the client-side script-stripping would destroy
+            // legitimate content (e.g. a post ABOUT <script> tags).
+            headers['X-Skip-Sanitize'] = 'true';
+          }
+          return Object.keys(headers).length ? headers : undefined;
         };
 
         // Use HttpClient (window.http) as primary client with CSRF protection
@@ -2642,6 +2944,14 @@ const FormManager = {
     }
   },
 
+  /**
+   * Uploads a form with XMLHttpRequest so the progress bar can follow it.
+   *
+   * @param {Object} instance - Form instance
+   * @param {string} url - Endpoint to post to
+   * @param {FormData} formData - Body to send
+   * @returns {Promise<Object>} Response body
+   */
   submitWithProgress(instance, url, formData) {
     return new Promise((resolve, reject) => {
       const {element, config} = instance;
@@ -2732,6 +3042,13 @@ const FormManager = {
     });
   },
 
+  /**
+   * Returns the upload progress element of a form, creating it from the
+   * configured template on first use.
+   *
+   * @param {HTMLFormElement} form - Form being uploaded
+   * @returns {HTMLElement} Progress container
+   */
   createProgressElement(form) {
     let progress = form.querySelector('.upload-progress');
 
@@ -2745,6 +3062,14 @@ const FormManager = {
     return progress;
   },
 
+  /**
+   * Updates the bar and the text of an upload progress element.
+   *
+   * @param {HTMLElement} container - Progress container
+   * @param {number} loaded - Bytes sent
+   * @param {number} total - Bytes to send
+   * @returns {void}
+   */
   updateProgress(container, loaded, total) {
     const percent = Math.round((loaded / total) * 100);
 
@@ -2768,6 +3093,14 @@ const FormManager = {
     });
   },
 
+  /**
+   * Resolves a target given as an element or a selector, searching inside the
+   * form first and then the document.
+   *
+   * @param {HTMLElement|string} target - Element or selector
+   * @param {Object} [instance=null] - Form instance to search within
+   * @returns {HTMLElement|null} The element, or null
+   */
   resolveTargetElement(target, instance = null) {
     if (!target) {
       return null;
@@ -2798,6 +3131,14 @@ const FormManager = {
     return null;
   },
 
+  /**
+   * Returns a hidden field of the form, creating it when it does not exist yet.
+   *
+   * @param {Object} instance - Form instance
+   * @param {string} fieldName - Field name
+   * @param {string} [defaultValue=''] - Value for a field being created
+   * @returns {HTMLInputElement|null} The field, or null on bad input
+   */
   ensureHiddenField(instance, fieldName, defaultValue = '') {
     if (!instance?.element || !fieldName) {
       return null;
@@ -2822,6 +3163,13 @@ const FormManager = {
     return field;
   },
 
+  /**
+   * Makes sure the page field exists before a submit that renders into a
+   * target, so pagination has somewhere to write the requested page.
+   *
+   * @param {Object} instance - Form instance
+   * @returns {void}
+   */
   prepareSubmitRequest(instance) {
     if (!instance?.config?.submitTarget) {
       return;
@@ -2846,6 +3194,15 @@ const FormManager = {
     instance.state.data[pageFieldName] = '1';
   },
 
+  /**
+   * Builds the pagination model from the meta of a submit response: the page
+   * numbers to show, centred on the current page, plus the previous and next
+   * links.
+   *
+   * @param {Object} meta - {page, pageSize, total, totalPages} from the response
+   * @param {number} [windowSize=null] - How many page numbers to show
+   * @returns {Object} Pagination model for the template
+   */
   buildSubmitPagination(meta, windowSize = null) {
     const currentPage = Math.max(1, parseInt(meta?.page, 10) || 1);
     const totalPages = Math.max(1, parseInt(meta?.totalPages, 10) || 1);
@@ -2887,6 +3244,14 @@ const FormManager = {
     };
   },
 
+  /**
+   * Normalizes a submit response into the {data, meta} shape the target
+   * template expects, treating a bare array as a single unpaginated page.
+   *
+   * @param {*} payload - Response body
+   * @param {Object} [instance=null] - Form instance, for its configuration
+   * @returns {Object} {data, meta}
+   */
   normalizeSubmitBindingPayload(payload, instance = null) {
     const source = payload ?? {};
 
@@ -2962,6 +3327,14 @@ const FormManager = {
     };
   },
 
+  /**
+   * Renders a submit response into the element named by data-submit-target,
+   * through TemplateManager, and renders the pagination alongside it.
+   *
+   * @param {Object} instance - Form instance
+   * @param {*} payload - Response body
+   * @returns {Object|null} The binding, or null when there is no target
+   */
   bindSubmitTarget(instance, payload) {
     if (!instance?.config?.submitTarget || !window.TemplateManager) {
       return null;
@@ -2995,6 +3368,14 @@ const FormManager = {
     return normalized;
   },
 
+  /**
+   * Handles a click on a pagination link: writes the page into the hidden page
+   * field and submits the form again.
+   *
+   * @param {Object} instance - Form instance
+   * @param {number} page - Page to load
+   * @returns {void}
+   */
   handleSubmitPaginationClick(instance, page) {
     if (!instance?.element) {
       return;
@@ -3021,6 +3402,14 @@ const FormManager = {
     }
   },
 
+  /**
+   * Renders the pagination of a submit response into the element named by
+   * data-submit-pagination-target.
+   *
+   * @param {Object} instance - Form instance
+   * @param {Object} binding - Binding from bindSubmitTarget()
+   * @returns {void}
+   */
   renderSubmitPagination(instance, binding) {
     const targetRef = instance?.config?.submitPaginationTarget;
     if (!targetRef) {
@@ -3081,6 +3470,13 @@ const FormManager = {
     target.appendChild(wrapper);
   },
 
+  /**
+   * Mirrors the submitted values into the address bar with replaceState, so the
+   * result of a search survives a reload and can be shared as a link.
+   *
+   * @param {Object} instance - Form instance
+   * @returns {void}
+   */
   syncSubmitQueryParams(instance) {
     if (!instance?.config?.submitQueryParams || !window.history?.replaceState) {
       return;
@@ -3121,9 +3517,15 @@ const FormManager = {
       }
     });
 
-    window.history.replaceState({}, '', `${url.pathname}${url.search}${url.hash}`);
+    window.history.replaceState(window.history.state, '', `${url.pathname}${url.search}${url.hash}`);
   },
 
+  /**
+   * Renders a byte count as a human-readable size.
+   *
+   * @param {number} bytes - Size in bytes
+   * @returns {string} Size with its unit
+   */
   formatFileSize(bytes) {
     const units = ['B', 'KB', 'MB', 'GB'];
     let size = bytes;
@@ -3137,6 +3539,14 @@ const FormManager = {
     return `${Math.round(size * 10) / 10} ${units[unit]}`;
   },
 
+  /**
+   * Fills the intended_url field of a login form with where the user was
+   * heading, taken from the redirect or return_to query parameter or from the
+   * route RedirectManager stored.
+   *
+   * @param {HTMLFormElement} form - Login form
+   * @returns {void}
+   */
   autoFillIntendedUrl(form) {
     const urlParams = new URLSearchParams(window.location.search);
     // prefer explicit `redirect` or `return_to` in query
@@ -3348,6 +3758,14 @@ const FormManager = {
   },
 
   // cookie helpers
+  /**
+   * Writes a cookie, used to remember credentials the user asked to keep.
+   *
+   * @param {string} name - Cookie name
+   * @param {string} value - Value to store
+   * @param {number} days - Lifetime in days; a session cookie without one
+   * @returns {void}
+   */
   _setCookie(name, value, days) {
     try {
       if (!name || typeof name !== 'string') return;
@@ -3362,6 +3780,12 @@ const FormManager = {
     } catch (e) {}
   },
 
+  /**
+   * Reads a cookie by name.
+   *
+   * @param {string} name - Cookie name
+   * @returns {string|null} Value, or null when not set
+   */
   _getCookie(name) {
     try {
       const cookies = document.cookie ? document.cookie.split(';') : [];
@@ -3373,6 +3797,13 @@ const FormManager = {
     } catch (e) {return null;}
   },
 
+  /**
+   * Navigates to a URL, through the router when it is running and with a full
+   * page load otherwise.
+   *
+   * @param {string} url - Destination
+   * @returns {void}
+   */
   performRedirect(url) {
     // Try using RouterManager first if available and properly initialized
     if (window.RouterManager?.state?.initialized && typeof window.RouterManager.navigate === 'function') {
@@ -3388,6 +3819,15 @@ const FormManager = {
     window.location.href = url;
   },
 
+  /**
+   * Handles a successful submit: clears the errors, resets the form when asked,
+   * runs the actions in the response, renders it into the submit target, and
+   * redirects.
+   *
+   * @param {Object} instance - Form instance
+   * @param {Object} response - Response body
+   * @returns {Promise<void>}
+   */
   async handleSuccessfulSubmit(instance, response) {
     const {element, config} = instance;
 
@@ -3515,6 +3955,18 @@ const FormManager = {
     });
   },
 
+  /**
+   * Decides where to go after a successful submit: the response, the form
+   * configuration, or the intended URL when data-use-intended-url asks for it.
+   *
+   * Login forms never reach here; RedirectManager.afterLogin() owns their
+   * redirect.
+   *
+   * @param {HTMLFormElement} element - Form element
+   * @param {Object} response - Response body
+   * @param {Object} config - Form configuration
+   * @returns {string|null} Destination, or null when there is none
+   */
   determineRedirectUrl(element, response, config) {
     // Note: login forms never reach here — their redirect is owned by
     // RedirectManager.afterLogin() (see handleSuccess).
@@ -3587,6 +4039,13 @@ const FormManager = {
     return null;
   },
 
+  /**
+   * Checks that a redirect target is safe: a same-site path, or a URL on an
+   * origin the configuration allows. Protocol-relative URLs are rejected.
+   *
+   * @param {string} url - Destination to check
+   * @returns {boolean} True when the redirect may proceed
+   */
   isValidRedirectUrl(url) {
     if (!url || typeof url !== 'string') return false;
 
@@ -3603,6 +4062,14 @@ const FormManager = {
     }
   },
 
+  /**
+   * Handles a rejected submit: shows the per-field errors the server returned,
+   * runs the actions in the response, and reports the overall message.
+   *
+   * @param {Object} instance - Form instance
+   * @param {Object} response - Response body
+   * @returns {Promise<void>}
+   */
   async handleFailedSubmit(instance, response) {
     const {element, config} = instance;
     const hasFieldErrorMap = !!(response?.errors
@@ -3714,6 +4181,13 @@ const FormManager = {
     });
   },
 
+  /**
+   * Handles a submit blocked by client-side validation: logs the failed fields,
+   * notifies the user and focuses the first one.
+   *
+   * @param {Object} instance - Form instance
+   * @returns {void}
+   */
   handleInvalidSubmit(instance) {
     const invalidFieldDetails = Array.isArray(instance?.state?.invalidFieldDetails)
       ? instance.state.invalidFieldDetails
@@ -3737,6 +4211,14 @@ const FormManager = {
     });
   },
 
+  /**
+   * Handles a submit that threw rather than returning a response: notifies the
+   * user and reports the error.
+   *
+   * @param {Object} instance - Form instance
+   * @param {Error} error - Error that was thrown
+   * @returns {void}
+   */
   handleSubmitError(instance, error) {
     if (window.NotificationManager) {
       NotificationManager.error(error.message || 'An unexpected error occurred');
@@ -3756,6 +4238,13 @@ const FormManager = {
     });
   },
 
+  /**
+   * Resets a form to its initial values and clears its errors and validation
+   * state.
+   *
+   * @param {Object} instance - Form instance
+   * @returns {void}
+   */
   resetForm(instance) {
     const {element, elements} = instance;
 
@@ -3970,6 +4459,13 @@ const FormManager = {
   },
 
   // Cleanly destroy a form instance: remove from maps and perform any cleanup
+  /**
+   * Destroys a form instance: stops its watch timer, releases its listeners and
+   * its enhanced fields, and forgets it.
+   *
+   * @param {Object} instance - Form instance
+   * @returns {void}
+   */
   destroyForm(instance) {
     try {
       if (!instance) return;
@@ -4017,6 +4513,12 @@ const FormManager = {
   },
 
   // Determine whether an element should be enhanced by FormManager
+  /**
+   * Reports whether an element opted in through data-form or data-element.
+   *
+   * @param {HTMLElement} element - Element to test
+   * @returns {boolean} True when the element should be enhanced
+   */
   shouldEnhance(element) {
     if (!element) return false;
     // Opt-in only: must have data-form or data-element
@@ -4024,7 +4526,13 @@ const FormManager = {
     return false;
   },
 
-  // Destroy forms in a specific container
+  /**
+   * Destroys the form instances inside a container, used before its markup is
+   * replaced.
+   *
+   * @param {ParentNode} container - Subtree to clear
+   * @returns {void}
+   */
   destroyContainer(container) {
     if (!container) return;
 
@@ -4038,6 +4546,13 @@ const FormManager = {
   },
 
   // Scan a container for forms (opt-in via data-form) and init them
+  /**
+   * Initializes the form[data-form] elements in a container that have no
+   * instance yet.
+   *
+   * @param {ParentNode} [container=document] - Subtree to scan
+   * @returns {HTMLFormElement[]} Forms that were found
+   */
   scan(container = document) {
     if (!container || !container.querySelectorAll) return [];
     const found = Array.from(container.querySelectorAll('form[data-form]'));
@@ -4048,6 +4563,13 @@ const FormManager = {
   },
 
   // Destroy form by element reference (convenience wrapper)
+  /**
+   * Destroys the instance belonging to an element, looking it up by identity
+   * first and by data-form second.
+   *
+   * @param {HTMLElement} el - Form element
+   * @returns {void}
+   */
   destroyFormByElement(el) {
     if (!el) return;
     const inst = this.state.elementIndex.get(el);
@@ -4056,19 +4578,36 @@ const FormManager = {
     if (id && this.state.forms.has(id)) this.destroyForm(this.state.forms.get(id));
   },
 
-  // Start/stop observer control (wrappers around setup/stop functions)
+  /**
+   * Starts the form observer, optionally rooted at a specific element.
+   *
+   * @param {HTMLElement} [root] - Subtree to observe instead of the default
+   * @returns {void}
+   */
   startObserver(root) {
     if (root) this.observerConfig.observeRoot = root;
     this.setupFormObserver();
   },
 
+  /**
+   * Stops the form observer.
+   *
+   * @returns {void}
+   */
   stopObserver() {
     this._stopFormObserver && this._stopFormObserver();
   },
 
-  // Setup a scoped, batched MutationObserver to auto-init/destroy forms when necessary.
-  // This observer is selective: it only processes added/removed nodes that match
-  // form[data-form] or contain such descendants. It batches processing to reduce CPU.
+  /**
+   * Starts the MutationObserver that initializes and destroys forms as they
+   * enter and leave the DOM.
+   *
+   * It is deliberately selective and batched: only nodes that are, or contain,
+   * a form[data-form] are queued, and the queue is processed in one pass to
+   * keep the cost off the critical path.
+   *
+   * @returns {void}
+   */
   setupFormObserver() {
     // If already created, do nothing
     if (this._formObserver) return;
@@ -4171,6 +4710,11 @@ const FormManager = {
     this._formObserver = observer;
   },
 
+  /**
+   * Disconnects the observer, clears its queues and cancels the pending batch.
+   *
+   * @returns {void}
+   */
   _stopFormObserver() {
     try {
       if (!this._formObserver) return;
@@ -4187,10 +4731,23 @@ const FormManager = {
     }
   },
 
+  /**
+   * Returns a form instance by its data-form id.
+   *
+   * @param {string} id - Form id
+   * @returns {Object|undefined} The instance
+   */
   getInstance(id) {
     return this.state.forms.get(id);
   },
 
+  /**
+   * Returns the instance belonging to a form element, by identity first and by
+   * data-form second.
+   *
+   * @param {HTMLFormElement} form - Form element
+   * @returns {Object|undefined} The instance
+   */
   getInstanceByElement(form) {
     for (const [id, instance] of this.state.forms.entries()) {
       if (instance.element === form) {
@@ -4205,10 +4762,23 @@ const FormManager = {
     return null;
   },
 
+  /**
+   * Emits a form event through EventManager.
+   *
+   * @param {string} eventName - Event name
+   * @param {Object} data - Event payload
+   * @returns {void}
+   */
   emitEvent(eventName, data) {
     EventManager.emit(eventName, data);
   },
 
+  /**
+   * Removes the listeners of a form and forgets its instance.
+   *
+   * @param {string} formId - Form id
+   * @returns {void}
+   */
   destroy(formId) {
     const instance = this.state.forms.get(formId);
     if (!instance) return;
@@ -4226,12 +4796,23 @@ const FormManager = {
     this.emitEvent('form:destroy', {formId});
   },
 
+  /**
+   * Resets every registered form.
+   *
+   * @returns {void}
+   */
   reset() {
     this.state.forms.forEach((instance, id) => {
       this.resetForm(instance);
     });
   },
 
+  /**
+   * Destroys every form, drops the registered validators and marks the manager
+   * uninitialized.
+   *
+   * @returns {void}
+   */
   cleanup() {
     for (const [id] of this.state.forms) {
       this.destroy(id);

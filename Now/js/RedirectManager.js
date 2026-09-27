@@ -441,18 +441,42 @@ const RedirectManager = {
     return this.redirect(this.types.AUTH_REQUIRED, options);
   },
 
+  /**
+   * Redirect for a forbidden resource.
+   *
+   * @param {Object} [options={}] - Passed through to `redirect`.
+   * @returns {Promise<*>} - Result of the redirect.
+   */
   async forbidden(options = {}) {
     return this.redirect(this.types.FORBIDDEN, options);
   },
 
+  /**
+   * Redirect to wherever the user belongs after signing in.
+   *
+   * @param {Object} [options={}] - Passed through to `redirect`.
+   * @returns {Promise<*>} - Result of the redirect.
+   */
   async afterLogin(options = {}) {
     return this.redirect(this.types.AFTER_LOGIN, options);
   },
 
+  /**
+   * Redirect to wherever the user belongs after signing out.
+   *
+   * @param {Object} [options={}] - Passed through to `redirect`.
+   * @returns {Promise<*>} - Result of the redirect.
+   */
   async afterLogout(options = {}) {
     return this.redirect(this.types.AFTER_LOGOUT, options);
   },
 
+  /**
+   * Redirect a signed-in user away from a guest-only page.
+   *
+   * @param {Object} [options={}] - Passed through to `redirect`.
+   * @returns {Promise<*>} - Result of the redirect.
+   */
   async guestOnly(options = {}) {
     return this.redirect(this.types.GUEST_ONLY, options);
   }

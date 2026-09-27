@@ -253,14 +253,6 @@ class Config extends \Kotchasan\Config
      */
     public $stored_img_type = '.webp';
     /**
-     * กำหนดให้สมาชิกต้องยอมรับเงื่อนไขก่อนสมัครสมาชิกหรือไม่
-     * ควรตั้งค่าเป็น true หากต้องการให้สมาชิกยอมรับเงื่อนไขก่อนสมัครสมาชิก
-     * ควรตั้งค่าเป็น false หากไม่ต้องการให้สมาชิกยอมรับเงื่อนไขก่อนสมัครสมาชิก
-     * ค่าเริ่มต้นคือ true
-     * @var bool
-     */
-    public $require_terms_acceptance = true;
-    /**
      * เวลาหมดอายุของ Token ในกระบวนการ login (วินาที)
      * 0 = ตรวจสอบกับฐานข้อมูลเสมอ
      * 3600 = 1 ชม.
@@ -324,6 +316,35 @@ class Config extends \Kotchasan\Config
      * @var string
      */
     public $api_cors = '';
+
+    /**
+     * Timeline Provider — ชื่อไม่ซ้ำของระบบนี้ในสายตา Hub
+     *
+     * ต้องตรงกับ slug ที่ตั้งไว้ฝั่ง Hub · ค่าว่าง = ยังไม่เปิดใช้ provider
+     *
+     * @see TIMELINE-PROTOCOL.md
+     *
+     * @var string
+     */
+    public $timeline_slug = '';
+
+    /**
+     * Timeline Provider — ชื่อที่แสดงบนหน้าจอ Hub (ว่างไว้จะใช้ web_title)
+     *
+     * @var string
+     */
+    public $timeline_name = '';
+
+    /**
+     * Timeline Provider — คลาสที่แปลงข้อมูลของแต่ละโมดูลเป็น timeline item
+     *
+     * ต้อง implement \Gcms\Timeline\MapperInterface และควรอยู่ในโมดูลของตัวเอง
+     * (เช่น \Ar\Timeline\Model จาก modules/ar/models/timeline.php) ไม่ใช่ใน
+     * modules/timeline ซึ่งเป็นโค้ดกลางที่ก๊อปทับจาก adminframework ได้ตรง ๆ
+     *
+     * @var array
+     */
+    public $timeline_mappers = [];
     /**
      * กำหนดค่าคีย์ของ Login session ระบุให้แตกต่างกันในแต่ละแอพพลิเคชั่น หากต้องการให้แยกจากกัน
      * ค่าเริ่มต้นคือ 'login'
@@ -344,6 +365,14 @@ class Config extends \Kotchasan\Config
      * Default lockout duration in minutes
      */
     public $lockout_duration = 30;
+    /**
+     * 0 means display the website normally.
+     * Values greater than 0 set the intensity of the black and white mode.
+     * The higher the value, the more black and white
+     *
+     * @var integer
+     */
+    public $bw_mode = 0;
 
     // -------------------------------------------------------------------------
     // AI connector settings
@@ -417,6 +446,7 @@ class Config extends \Kotchasan\Config
         'groq' => 'llama-3.3-70b-versatile',
         'deepseek' => 'deepseek-v4-flash',
         'openrouter' => 'openrouter/auto',
+        'glm' => 'glm-5.2',
         'ollama' => 'llama3.2',
         'lmstudio' => 'llama3.2'
     ];
@@ -434,6 +464,7 @@ class Config extends \Kotchasan\Config
         'groq' => 'https://api.groq.com/openai/v1',
         'deepseek' => 'https://api.deepseek.com/v1',
         'openrouter' => 'https://openrouter.ai/api/v1',
+        'glm' => 'https://api.z.ai/api/paas/v4',
         'ollama' => 'http://localhost:11434/v1',
         'lmstudio' => 'http://localhost:1234/v1'
     ];

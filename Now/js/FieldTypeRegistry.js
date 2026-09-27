@@ -102,7 +102,7 @@ const FieldTypeRegistry = {
     },
     properties: [
       {name: 'label', type: 'text', label: 'Field Label', required: true},
-      {name: 'icon', type: 'icon-select', label: 'Field Icon'},
+      {name: 'icon', type: 'icons', label: 'Field Icon'},
       {name: 'placeholder', type: 'text', label: 'Placeholder Text'},
       {name: 'maxLength', type: 'number', label: 'Maximum Length', min: 1},
       {name: 'pattern', type: 'text', label: 'Validation Pattern (Regex)'},
@@ -127,7 +127,7 @@ const FieldTypeRegistry = {
     },
     properties: [
       {name: 'label', type: 'text', label: 'Field Label', required: true},
-      {name: 'icon', type: 'icon-select', label: 'Field Icon'},
+      {name: 'icon', type: 'icons', label: 'Field Icon'},
       {name: 'placeholder', type: 'text', label: 'Placeholder Text'},
       {name: 'required', type: 'checkbox', label: 'Required Field'},
       {name: 'readonly', type: 'checkbox', label: 'Read Only'},
@@ -149,7 +149,7 @@ const FieldTypeRegistry = {
     },
     properties: [
       {name: 'label', type: 'text', label: 'Field Label', required: true},
-      {name: 'icon', type: 'icon-select', label: 'Field Icon'},
+      {name: 'icon', type: 'icons', label: 'Field Icon'},
       {name: 'placeholder', type: 'text', label: 'Placeholder Text'},
       {name: 'minLength', type: 'number', label: 'Minimum Length', min: 1},
       {name: 'required', type: 'checkbox', label: 'Required Field'},
@@ -171,7 +171,7 @@ const FieldTypeRegistry = {
     },
     properties: [
       {name: 'label', type: 'text', label: 'Field Label', required: true},
-      {name: 'icon', type: 'icon-select', label: 'Field Icon'},
+      {name: 'icon', type: 'icons', label: 'Field Icon'},
       {name: 'placeholder', type: 'text', label: 'Placeholder Text'},
       {name: 'min', type: 'number', label: 'Minimum Value'},
       {name: 'max', type: 'number', label: 'Maximum Value'},
@@ -196,7 +196,7 @@ const FieldTypeRegistry = {
     },
     properties: [
       {name: 'label', type: 'text', label: 'Field Label', required: true},
-      {name: 'icon', type: 'icon-select', label: 'Field Icon'},
+      {name: 'icon', type: 'icons', label: 'Field Icon'},
       {name: 'placeholder', type: 'text', label: 'Placeholder Text'},
       {name: 'pattern', type: 'text', label: 'Validation Pattern'},
       {name: 'required', type: 'checkbox', label: 'Required Field'}
@@ -217,7 +217,7 @@ const FieldTypeRegistry = {
     },
     properties: [
       {name: 'label', type: 'text', label: 'Field Label', required: true},
-      {name: 'icon', type: 'icon-select', label: 'Field Icon'},
+      {name: 'icon', type: 'icons', label: 'Field Icon'},
       {name: 'placeholder', type: 'text', label: 'Placeholder Text'},
       {name: 'required', type: 'checkbox', label: 'Required Field'}
     ]
@@ -254,7 +254,7 @@ const FieldTypeRegistry = {
     },
     properties: [
       {name: 'label', type: 'text', label: 'Field Label', required: true},
-      {name: 'icon', type: 'icon-select', label: 'Field Icon'},
+      {name: 'icon', type: 'icons', label: 'Field Icon'},
       {name: 'placeholder', type: 'text', label: 'Placeholder Text'},
       {name: 'rows', type: 'number', label: 'Number of Rows', min: 1, max: 20},
       {name: 'maxLength', type: 'number', label: 'Maximum Length', min: 1},
@@ -278,7 +278,7 @@ const FieldTypeRegistry = {
     },
     properties: [
       {name: 'label', type: 'text', label: 'Field Label', required: true},
-      {name: 'icon', type: 'icon-select', label: 'Field Icon'},
+      {name: 'icon', type: 'icons', label: 'Field Icon'},
       {name: 'placeholder', type: 'text', label: 'Placeholder Text'},
       {name: 'options', type: 'options-editor', label: 'Options'},
       {name: 'dataSource', type: 'datasource-editor', label: 'Data Source'},
@@ -347,7 +347,7 @@ const FieldTypeRegistry = {
     },
     properties: [
       {name: 'label', type: 'text', label: 'Field Label', required: true},
-      {name: 'icon', type: 'icon-select', label: 'Field Icon'},
+      {name: 'icon', type: 'icons', label: 'Field Icon'},
       {name: 'format', type: 'select', label: 'Date Format', options: ['YYYY-MM-DD', 'DD/MM/YYYY', 'MM/DD/YYYY']},
       {name: 'minDate', type: 'date', label: 'Minimum Date'},
       {name: 'maxDate', type: 'date', label: 'Maximum Date'},
@@ -369,7 +369,7 @@ const FieldTypeRegistry = {
     },
     properties: [
       {name: 'label', type: 'text', label: 'Field Label', required: true},
-      {name: 'icon', type: 'icon-select', label: 'Field Icon'},
+      {name: 'icon', type: 'icons', label: 'Field Icon'},
       {name: 'format', type: 'select', label: 'DateTime Format', options: ['YYYY-MM-DD HH:mm', 'DD/MM/YYYY HH:mm']},
       {name: 'minDateTime', type: 'datetime-local', label: 'Minimum DateTime'},
       {name: 'maxDateTime', type: 'datetime-local', label: 'Maximum DateTime'},
@@ -390,7 +390,7 @@ const FieldTypeRegistry = {
     },
     properties: [
       {name: 'label', type: 'text', label: 'Field Label', required: true},
-      {name: 'icon', type: 'icon-select', label: 'Field Icon'},
+      {name: 'icon', type: 'icons', label: 'Field Icon'},
       {name: 'format', type: 'select', label: 'Time Format', options: ['HH:mm', 'HH:mm:ss']},
       {name: 'minTime', type: 'time', label: 'Minimum Time'},
       {name: 'maxTime', type: 'time', label: 'Maximum Time'},
@@ -414,7 +414,7 @@ const FieldTypeRegistry = {
     },
     properties: [
       {name: 'label', type: 'text', label: 'Field Label', required: true},
-      {name: 'icon', type: 'icon-select', label: 'Field Icon'},
+      {name: 'icon', type: 'icons', label: 'Field Icon'},
       {name: 'maxFileSize', type: 'number', label: 'Max File Size (bytes)', min: 1},
       {name: 'allowedTypes', type: 'tags', label: 'Allowed MIME Types'},
       {name: 'multiple', type: 'checkbox', label: 'Allow Multiple Files'},
@@ -461,7 +461,7 @@ const FieldTypeRegistry = {
     },
     properties: [
       {name: 'label', type: 'text', label: 'Field Label', required: true},
-      {name: 'icon', type: 'icon-select', label: 'Field Icon'},
+      {name: 'icon', type: 'icons', label: 'Field Icon'},
       {name: 'placeholder', type: 'text', label: 'Placeholder Text'},
       {name: 'options', type: 'options-editor', label: 'Options'},
       {name: 'dataSource', type: 'datasource-editor', label: 'Data Source'},
@@ -485,7 +485,7 @@ const FieldTypeRegistry = {
     },
     properties: [
       {name: 'label', type: 'text', label: 'Field Label', required: true},
-      {name: 'icon', type: 'icon-select', label: 'Field Icon'},
+      {name: 'icon', type: 'icons', label: 'Field Icon'},
       {name: 'placeholder', type: 'text', label: 'Placeholder Text'},
       {name: 'separator', type: 'text', label: 'Tag Separator'},
       {name: 'allowCustom', type: 'checkbox', label: 'Allow Custom Tags'},

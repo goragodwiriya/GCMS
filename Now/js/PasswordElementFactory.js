@@ -1,3 +1,11 @@
+/**
+ * PasswordElementFactory
+ *
+ * Extends the text element with password affordances: a show/hide toggle, a live
+ * strength indicator, and a checklist of the rules in `config.passwordCriteria`.
+ * Fields are marked `autocomplete="new-password"` so browsers do not autofill a
+ * stored password into a field meant for choosing a new one.
+ */
 class PasswordElementFactory extends TextElementFactory {
   static config = {
     ...TextElementFactory.config,
@@ -18,6 +26,15 @@ class PasswordElementFactory extends TextElementFactory {
   };
 
   // Helper: try to locate an already-created strength container for this element
+  /**
+   * Find the strength indicator already rendered for this field, if any.
+   *
+   * Looks at the immediate sibling first, then widens the search, so a strength
+   * bar created earlier is reused instead of being duplicated.
+   *
+   * @param {HTMLElement} element - The password input.
+   * @returns {HTMLElement|null} - The existing container, or null when there is none.
+   */
   static locateStrengthContainer(element) {
     if (!element) return null;
 
@@ -65,6 +82,16 @@ class PasswordElementFactory extends TextElementFactory {
     return null;
   }
 
+  /**
+   * Prepare a password field on top of the text element behaviour.
+   *
+   * Forces `autocomplete="new-password"` so browsers do not autofill a saved
+   * password into a field meant for choosing one, and marks the element so the
+   * rest of this factory can recognise it.
+   *
+   * @param {Object} instance - Element instance carrying `element` and `config`.
+   * @returns {void}
+   */
   static setupElement(instance) {
     super.setupElement(instance);
     const {element, config} = instance;
@@ -332,6 +359,16 @@ class PasswordElementFactory extends TextElementFactory {
     return instance;
   }
 
+  /**
+   * Add the show/hide button next to the field.
+   *
+   * The button is kept out of the tab order (`tabindex="-1"`) so tabbing moves
+   * between fields rather than stopping on it, and its label goes through
+   * `Now.translate` for i18n.
+   *
+   * @param {Object} instance - Element instance to attach the toggle to.
+   * @returns {void}
+   */
   static setupPasswordToggle(instance) {
     const {element} = instance;
 
@@ -382,6 +419,15 @@ class PasswordElementFactory extends TextElementFactory {
     instance.toggleButton = toggleButton;
   }
 
+  /**
+   * Render the live checklist of password rules.
+   *
+   * One list item per enabled entry in `config.passwordCriteria`. The list is
+   * marked `aria-live="polite"` so screen readers announce rules as they are met.
+   *
+   * @param {Object} instance - Element instance to attach the list to.
+   * @returns {void}
+   */
   static setupCriteriaList(instance) {
     const {element, config} = instance;
 
@@ -437,6 +483,15 @@ class PasswordElementFactory extends TextElementFactory {
     instance.updateCriteriaList();
   }
 
+  /**
+   * Bind the handlers that update strength, criteria and matching as the user types.
+   *
+   * Extends the text element listeners, and makes sure the strength bar exists
+   * before the first keystroke is handled.
+   *
+   * @param {Object} instance - Element instance to bind to.
+   * @returns {void}
+   */
   static setupEventListeners(instance) {
     super.setupEventListeners(instance);
     const {element, config} = instance;

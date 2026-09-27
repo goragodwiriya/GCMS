@@ -5,6 +5,8 @@
  * @author Goragod Wiriya
  * @version 1.0
  */
+import {toPlaceholders} from './EmbedPlaceholder.js';
+
 class SelectionManager {
   /**
    * @param {RichTextEditor} editor - Editor instance
@@ -227,6 +229,8 @@ class SelectionManager {
     range.deleteContents();
 
     const fragment = document.createRange().createContextualFragment(html);
+    // Swap iframes for placeholders before they reach the page (and start loading)
+    toPlaceholders(fragment);
     const lastNode = fragment.lastChild;
 
     range.insertNode(fragment);

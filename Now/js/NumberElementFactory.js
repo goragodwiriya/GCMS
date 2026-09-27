@@ -1,3 +1,11 @@
+/**
+ * NumberElementFactory
+ *
+ * Builds a formatted numeric input. Renders as `type="text"` rather than a
+ * native number input, because native number inputs cannot show thousand
+ * separators or a fixed number of decimals — the trade-off is that this
+ * factory does its own keystroke and paste filtering to keep the value numeric.
+ */
 class NumberElementFactory extends ElementFactory {
   static config = {
     type: 'text',
@@ -139,6 +147,18 @@ class NumberElementFactory extends ElementFactory {
     }
   };
 
+  /**
+   * Read the numeric options a single element declares.
+   *
+   * Falls back to `this.config` rather than `def` alone, since `def` can arrive
+   * empty from `enhance()`. `data-decimals` is accepted as an alias for
+   * `data-precision`.
+   *
+   * @param {HTMLElement} element - The input being configured.
+   * @param {Object} def - Default configuration for this element type.
+   * @param {DOMStringMap} dataset - The element's `data-*` attributes.
+   * @returns {Object} - Configuration for this element.
+   */
   static extractCustomConfig(element, def, dataset) {
     // Use this.config as fallback instead of def (which may be empty from enhance())
     const baseConfig = {...this.config, ...def};
@@ -164,6 +184,16 @@ class NumberElementFactory extends ElementFactory {
     };
   }
 
+  /**
+   * Prepare a number field, switching its rendered type to text.
+   *
+   * Uses `getAttribute('type')` rather than the `type` property, because the
+   * browser normalises unknown type values to `'text'` on the property but not
+   * on the attribute — and only `<input>` allows the property to be set at all.
+   *
+   * @param {Object} instance - Element instance carrying `element` and `config`.
+   * @returns {void}
+   */
   static setupElement(instance) {
     const {element, config} = instance;
 
@@ -219,6 +249,14 @@ class NumberElementFactory extends ElementFactory {
     return instance;
   }
 
+  /**
+   * Bind the keydown, paste and input handlers that keep the value numeric.
+   *
+   * Validation runs debounced, same as the base ElementFactory.
+   *
+   * @param {Object} instance - Element instance to bind.
+   * @returns {void}
+   */
   static setupEventListeners(instance) {
     const {element, config} = instance;
 
@@ -302,6 +340,15 @@ class NumberElementFactory extends ElementFactory {
     return handlers;
   }
 
+  /**
+   * Reformat the field's current value, e.g. after blur.
+   *
+   * Does nothing when the field is empty, so an untouched required field is not
+   * turned into a formatted "0".
+   *
+   * @param {Object} instance - Element instance to reformat.
+   * @returns {void}
+   */
   static applyFormatting(instance) {
     const {element, config} = instance;
     const value = element.value;
@@ -315,6 +362,13 @@ class NumberElementFactory extends ElementFactory {
     element.value = formatted;
   }
 
+  /**
+   * Let navigation and editing keys through regardless of the numeric filter.
+   *
+   * @param {KeyboardEvent} e - The keydown event.
+   * @param {Object} instance - Element instance the key was pressed in.
+   * @returns {boolean} - True when the key was a special key and was handled.
+   */
   static handleSpecialKeys(e, instance) {
     const {element, config} = instance;
 
@@ -362,6 +416,16 @@ class NumberElementFactory extends ElementFactory {
     return false;
   }
 
+  /**
+   * Whether a typed character is legal for the current numeric config.
+   *
+   * A digit is always allowed; the decimal separator and minus sign are only
+   * allowed when config permits them and one is not already present.
+   *
+   * @param {KeyboardEvent} e - The keydown event.
+   * @param {Object} config - Element config, read for precision and sign rules.
+   * @returns {boolean} - True when the key should be let through.
+   */
   static isAllowedKey(e, config) {
     const key = e.key;
 
@@ -383,6 +447,13 @@ class NumberElementFactory extends ElementFactory {
     return false;
   }
 
+  /**
+   * Filter a pasted value down to its numeric content before it lands in the field.
+   *
+   * @param {ClipboardEvent} e - The paste event.
+   * @param {Object} instance - Element instance being pasted into.
+   * @returns {void}
+   */
   static handlePaste(e, instance) {
     const {element, config} = instance;
 
@@ -422,6 +493,16 @@ class NumberElementFactory extends ElementFactory {
     return true;
   }
 
+  /**
+   * Format a number for display, applying grouping and precision.
+   *
+   * A string input is parsed first via `parseNumber`, so this accepts either a
+   * raw number or already-typed text.
+   *
+   * @param {*} value - Number or numeric string to format.
+   * @param {Object} config - Element config, read for precision and grouping.
+   * @returns {string} - Formatted text, empty when `value` is empty.
+   */
   static formatNumber(value, config) {
     if (value === '' || value === null || value === undefined) {
       return '';
@@ -485,6 +566,14 @@ class NumberElementFactory extends ElementFactory {
     return formatted;
   }
 
+  /**
+   * Validate and format a value for the element, reporting a required-field error.
+   *
+   * @param {*} value - Value to format.
+   * @param {HTMLElement} element - Element the value belongs to, checked for `required`.
+   * @param {Object} config - Element config.
+   * @returns {Object} - `{value, error}` — formatted value and any validation message.
+   */
   static formatValue(value, element, config) {
     let error = null;
 
@@ -522,6 +611,17 @@ class NumberElementFactory extends ElementFactory {
     return {formatted, error};
   }
 
+  /**
+   * Parse a formatted string back into a plain number.
+   *
+   * A number is passed through as-is (NaN stays NaN); an empty, null or
+   * undefined value yields NaN rather than 0, so "no value" and "zero" stay
+   * distinguishable.
+   *
+   * @param {*} value - Raw or formatted value.
+   * @param {Object} config - Element config, read for the grouping/decimal separators.
+   * @returns {number} - The parsed number, or NaN.
+   */
   static parseNumber(value, config) {
     if (typeof value === 'number') {
       return isNaN(value) ? NaN : value;
