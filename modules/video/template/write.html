@@ -1,0 +1,60 @@
+<aside data-component="sidebar"></aside>
+<div class="main-content">
+  <div>
+    <header data-component="topbar"></header>
+    <main class="content">
+      <form data-form="videoWrite" data-validate="true" data-reset="false" action="../api/video/write/save" method="post" data-ajax-submit="true" data-load-query-params="true"
+            data-load-api="../api/video/write/get" autocomplete="off">
+        <div class="card-groups">
+          <header>
+            <div>
+              <h1 class="icon-video" data-text="id ? '{LNG_Edit} {LNG_Video}' : '{LNG_Add} {LNG_Video}'"></h1>
+              <p data-i18n>Manage YouTube video details</p>
+            </div>
+            <div class="header-actions">
+              <a class="btn icon-arrow-left" href="/video-list" data-params="module_id" data-i18n>Back</a>
+              <button type="submit" class="btn btn-primary icon-save" data-i18n>Save</button>
+            </div>
+          </header>
+          <div class="content-body">
+            <fieldset>
+              <legend data-i18n>{LNG_Details of} {LNG_Video}</legend>
+              <div>
+                <label for="youtube" data-i18n>Youtube ID</label>
+                <span class="form-control icon-youtube">
+                  <input type="text" id="youtube" name="youtube" maxlength="11" pattern="[a-zA-Z0-9_\-]{11}" placeholder="17IKhjQWT9M" data-attr="value:youtube">
+                </span>
+                <div class="comment" id="result_youtube" data-i18n> Enter the ID of the video from Youtube 11 characters eg 17IKhjQWT9M (Without a complete URL) </div>
+              </div>
+              <div class="item center">
+                <img class="video-thumbnail-preview" data-attr="src:thumbnail" alt="thumbnail">
+              </div>
+              <div>
+                <label for="topic" data-i18n>Topic</label>
+                <span class="form-control icon-edit">
+                  <input type="text" id="topic" name="topic" maxlength="255" data-attr="value:topic">
+                </span>
+                <div class="comment" id="result_topic" data-i18n> The name of the video. (If not, proceed to take the title from Youtube). </div>
+              </div>
+              <div>
+                <label for="description" data-i18n>Description</label>
+                <span class="form-control icon-file">
+                  <textarea id="description" name="description" rows="5" data-text="description"></textarea>
+                </span>
+                <div class="comment" id="result_description" data-i18n> A short description about the video. (If you do not fill in the details from Youtube). </div>
+              </div>
+            </fieldset>
+          </div>
+          <div class="form-submit">
+            <button type="submit" class="btn btn-primary icon-save" data-i18n>Save</button>
+            <input type="hidden" name="id" data-attr="value:id">
+            <input type="hidden" name="module_id" data-attr="value:module_id">
+          </div>
+        </div>
+      </form>
+    </main>
+  </div>
+  <footer class="footer">
+    <p class="center">&copy; 2026 GCMS - Powered by <a href="https://nowjs.net">Now.js</a></p>
+  </footer>
+</div>

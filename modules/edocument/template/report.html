@@ -1,0 +1,39 @@
+<aside data-component="sidebar"></aside>
+<div class="main-content">
+  <div>
+    <header data-component="topbar"></header>
+    <main class="content">
+      <div class="card-groups">
+        <form data-form="edocumentReport" data-load-api="../api/edocument/report/get" data-load-query-params="true">
+          <header>
+            <div>
+              <h1 class="icon-report"><span data-i18n>{LNG_Download Details}</span> <span data-text="document_no"></span></h1>
+              <p data-text="topic"></p>
+            </div>
+            <a class="btn icon-arrow-left" href="/edocument-setup" data-params="module_id" data-i18n>Back</a>
+          </header>
+        </form>
+
+        <div class="content-body">
+          <div class="tablebody">
+            <table class="table border fullwidth" data-table="edocumentReport" data-source="../api/edocument/report" data-search-columns="name"
+                   data-page-size="30" data-default-sort="last_update desc">
+              <thead>
+                <tr>
+                  <th data-field="name" data-sort="name" data-i18n>{LNG_Name}</th>
+                  <th data-field="status" class="center" data-cell-class="center" data-sort="status" data-i18n>{LNG_Member status}</th>
+                  <th data-field="last_update" class="center" data-cell-class="center" data-sort="last_update" data-format="datetime" data-i18n>{LNG_Last download}</th>
+                  <th data-field="downloads" class="center" data-cell-class="center" data-sort="downloads" data-i18n>{LNG_Download}</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+  <footer class="footer">
+    <p class="center">&copy; 2026 GCMS - Powered by <a href="https://nowjs.net">Now.js</a></p>
+  </footer>
+</div>

@@ -1,0 +1,129 @@
+<aside data-component="sidebar"></aside>
+<div class="main-content">
+  <div>
+    <header data-component="topbar"></header>
+    <main class="content">
+      <form data-form="menu" data-validate="true" action="../api/index/adminpage/save" method="post" data-ajax-submit="true" data-load-query-params="true"
+            data-load-api="../api/index/adminpage/get" autocomplete="off" data-on-load="initPageForm">
+        <div class="card-groups">
+          <header>
+            <div>
+              <h1 class="icon-index" data-text="id ? '{LNG_Edit} {LNG_Page}' : '{LNG_Create} {LNG_Page}'"></h1>
+              <p data-text="id ? '{LNG_Edit existing} {LNG_Page}' : '{LNG_Create new} {LNG_Page}'"></p>
+            </div>
+          </header>
+
+          <div class="content-body">
+
+            <!-- Page Details -->
+            <fieldset>
+              <legend class="icon-index" data-i18n>{LNG_Details of} {LNG_Page}</legend>
+
+              <div>
+                <div class="form-group bottom">
+                  <div>
+                    <label for="language" data-i18n>Language</label>
+                    <span class="form-control icon-language">
+                      <select id="language" name="language" data-options-key="language" data-attr="value:language,disabled:!canManage">
+                      </select>
+                    </span>
+                  </div>
+                  <div data-if="canManage">
+                    <button type="button" id="copy_menu" class="btn btn-info icon-copy" data-i18n>Copy</button>
+                  </div>
+                </div>
+                <div class="comment" id="result_language" data-i18n>
+                  Select the language of this item (selecting the first option makes it available in all languages)
+                </div>
+              </div>
+
+              <div>
+                <label for="module" data-i18n>Module</label>
+                <span class="form-control icon-modules">
+                  <input type="text" id="module" name="module" maxlength="64" required autofocus data-attr="value:module,disabled:!canManage">
+                </span>
+                <div class="comment" id="result_module" data-i18n>
+                  Name of this module. English lowercase and number only, short. (Can not use a reserved or a duplicate name)
+                </div>
+              </div>
+
+              <div>
+                <label for="topic" data-i18n>Topic</label>
+                <span class="form-control icon-edit">
+                  <input type="text" id="topic" name="topic" maxlength="255" data-attr="value:topic">
+                </span>
+                <div class="comment" id="result_topic" data-i18n>
+                  Text displayed on the Title Bar of the browser (3 - 255 characters)
+                </div>
+              </div>
+
+              <div>
+                <label for="keywords" data-i18n>Keywords</label>
+                <span class="form-control icon-tags">
+                  <input type="tags" id="keywords" name="keywords" data-attr="value:keywords">
+                </span>
+                <div class="comment" id="result_keywords" data-i18n>
+                  Text keywords for SEO or Search Engine to search
+                </div>
+              </div>
+
+              <div>
+                <label for="description" data-i18n>Description</label>
+                <span class="form-control icon-file">
+                  <textarea id="description" name="description" maxlength="255" data-text="description"></textarea>
+                </span>
+                <div class="comment" id="result_description" data-i18n>
+                  Text short summary of your story. Which can be used to show in your theme. (If not, Program will fill in the contents of the first paragraph)
+                </div>
+              </div>
+
+              <div>
+                <label for="detail" data-i18n>Detail</label>
+                <textarea id="detail" name="detail" data-element="richtext" data-attr="value:detail" data-rte-profile="basic" data-rte-min-height="250"></textarea>
+              </div>
+
+              <div data-if="canManage">
+                <label for="member_id" data-i18n>Writer</label>
+                <span class="form-control icon-user">
+                  <select id="member_id" name="member_id" data-options-key="member_id" data-attr="value:member_id">
+                  </select>
+                </span>
+                <div class="comment" id="result_member_id" data-i18n>
+                  Members with the permission to write web pages who can edit this page. All writers = every member with this permission
+                </div>
+              </div>
+
+              <div>
+                <label for="published_date" data-i18n>Published date</label>
+                <span class="form-control icon-calendar">
+                  <input type="date" id="published_date" name="published_date" data-attr="value:published_date">
+                </span>
+                <div class="comment" id="result_published_date" data-i18n>
+                  The date of publication of this information. The publisher will start automatically when you log on due date
+                </div>
+              </div>
+
+
+              <div>
+                <input type="checkbox" class="switch" id="published" name="published" value="1" data-attr="checked:published">
+                <label for="published" data-i18n>Published</label>
+                <div class="comment" id="result_published" data-i18n>Publish this item</div>
+              </div>
+            </fieldset>
+
+            <!-- Submit -->
+            <fieldset class="submit">
+              <button type="submit" class="btn btn-primary icon-save" data-i18n>Save</button>
+              <input type="hidden" name="id" data-attr="value:id">
+              <input type="hidden" name="owner" data-attr="value:owner">
+            </fieldset>
+
+          </div>
+        </div>
+      </form>
+    </main>
+  </div>
+  <footer class="footer">
+    <p class="center">&copy; 2026 GCMS - Powered by <a href="https://nowjs.net">Now.js</a></p>
+  </footer>
+</div>

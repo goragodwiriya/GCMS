@@ -1,0 +1,24 @@
+<article class="main-page event-month-page">
+  <header class="page-header hero">
+    <div class="container">
+      <nav class="breadcrumbs one_line">
+        <ul>{BREADCRUMBS}</ul>
+      </nav>
+      <h1 class="page__title">{TOPIC}</h1>
+    </div>
+  </header>
+  <div class="page-body">
+    <div class="container">
+      <div class="page-content">
+        <!-- Detail Section (optional) -->
+        <section class="page-detail">{DETAIL}</section>
+        <!-- Calendar: the Now.js EventCalendar component loads the events from
+             api/event/calendar; modules/event/script.js opens the clicked one -->
+        <section class="event-calendar-wrap">
+          <div id="event-calendar" data-event-calendar data-view="month" data-views="month,week,day" data-api="{WEBURL}api/event/calendar?module_id={MODULE_ID}" data-on-event-click="eventCalendarNavigate"></div>
+        </section>
+      </div>
+    </div>
+  </div>
+</article>
+<script src="{WEBURL}Now/dist/eventcalendar.min.js"></script>

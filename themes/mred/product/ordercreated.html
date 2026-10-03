@@ -1,0 +1,25 @@
+<!-- An order paid on delivery was placed: nothing to transfer or notify -->
+<article class="main-page lists-page">
+  <header class="page-header hero">
+    <div class="container">
+      <nav class="breadcrumbs one_line">
+        <ul>{BREADCRUMBS}</ul>
+      </nav>
+      <h1 class="page__title">{LNG_Order created successfully}</h1>
+    </div>
+  </header>
+  <div class="page-body">
+    <div class="container">
+      <div class="page-content">
+        <aside class="success">
+          <p>{LNG_Order No}: <strong>{ORDER_NO}</strong></p>
+          <p>{LNG_Cash on delivery}: <strong>{AMOUNT}</strong> {LNG_THB}</p>
+        </aside>
+        <nav class="section-actions">
+          <a class="btn btn-primary icon-shop" href="{SHOP_URL}">{LNG_Shop Now}</a>
+          <a class="btn btn-secondary icon-list" href="{MYORDERS_URL}" {MYORDERS_HIDDEN}>{LNG_My Orders}</a>
+        </nav>
+      </div>
+    </div>
+  </div>
+</article>

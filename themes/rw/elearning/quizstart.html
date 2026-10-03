@@ -1,0 +1,26 @@
+<section class="section-bg">
+  <div class="section__body">
+    <div class="gcms-stats-bar">
+      <div class="gcms-stat-item">
+        <strong>{QUESTIONS}</strong>
+        <span class="gcms-stat-label">{LNG_Number of questions}</span>
+      </div>
+      <div class="gcms-stat-item">
+        <strong>{TIME}</strong>
+        <span class="gcms-stat-label">{LNG_Time limit}</span>
+      </div>
+      <div class="gcms-stat-item">
+        <strong>{ATTEMPTS}</strong>
+        <span class="gcms-stat-label">{LNG_Attempts used}</span>
+      </div>
+      <div class="gcms-stat-item" {PASS_HIDDEN}>
+        <strong>{PASS}%</strong>
+        <span class="gcms-stat-label">{LNG_Passing score}</span>
+      </div>
+    </div>
+    <form data-form="elearningStart" class="text-center" action="{WEBURL}api/elearning/learn/start" method="post" data-ajax-submit="true">
+      <input type="hidden" name="quiz_id" value="{QUIZ_ID}">
+      <button type="submit" class="btn btn-primary large icon-play">{LNG_Start the quiz}</button>
+    </form>
+  </div>
+</section>

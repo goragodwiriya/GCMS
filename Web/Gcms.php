@@ -1,0 +1,565 @@
+<?php
+/**
+ * @filesource Web/Gcms.php
+ *
+ * @copyright 2016 Goragod.com
+ * @license https://www.kotchasan.com/license/
+ *
+ * @see https://www.kotchasan.com/
+ */
+
+namespace Web;
+
+use Kotchasan\Language;
+
+/**
+ * GCMS utility class
+ *
+ * @author Goragod Wiriya <admin@goragod.com>
+ *
+ * @since 1.0
+ */
+class Gcms extends \Kotchasan\KBase
+{
+    /**
+     * Reserved module names.
+     *
+     * @var array
+     */
+    public static $MODULE_RESERVE = [
+        'admin',
+        'register',
+        'forgot',
+        'profile',
+        'sendpm',
+        'sendmail',
+        'email',
+        'member',
+        'members',
+        'activate',
+        'login',
+        'dologin'
+    ];
+
+    /**
+     * List of all breadcrumbs.
+     *
+     * @var array
+     */
+    public static $breadcrumbs = [];
+
+    /**
+     * Tabs for member profile.
+     *
+     * @var array
+     */
+    public static $member_tabs = [
+        'profile' => ['Profile', 'Index\Profile\View', 'icon-profile'],
+        'password' => ['Change your password', 'Index\Password\View', 'icon-password'],
+        'address' => ['Address details', 'Index\Address\View', 'icon-address']
+    ];
+
+    /**
+     * Frontend Menu Controller.
+     *
+     * @var \Index\Menu\Controller
+     */
+    public static $menu;
+
+    /**
+     * Frontend Module Controller.
+     *
+     * @var \Index\Module\Controller
+     */
+    public static $module;
+
+    /**
+     * List of available menu items.
+     *
+     * @var array
+     */
+    public static $module_menus = [
+        'index' => [
+            'search' => ['{LNG_Search}', '{WEBURL}index.php?module=search', 'search']
+        ],
+        'member' => [
+            'login' => ['{LNG_Sign in}', '{WEBURL}index.php?module=dologin', 'dologin'],
+            'logout' => ['{LNG_Sign out}', '{WEBURL}index.php?action=logout', 'logout'],
+            'register' => ['{LNG_Register}', '{WEBURL}index.php?module=register', 'register'],
+            'forgot' => ['{LNG_Forgot}', '{WEBURL}index.php?module=forgot', 'forgot'],
+            'profile' => ['{LNG_Editing your account}', '{WEBURL}index.php?module=profile', 'profile'],
+            'admin' => ['{LNG_Administrator Area}', '{WEBURL}admin/index.php', 'admin']
+        ]
+    ];
+
+    /**
+     * ข้อมูลเว็บไซต์ สำหรับใส่ลงใน JSON-LD
+     *
+     * @var array
+     */
+    public static $site;
+    /**
+     * รูปแบบของ URL สัมพันธ์กันกับ router_rules
+     *
+     * @var array
+     */
+    public static $urls = [
+        'index.php?module={module}-{document}&cat={catid}&id={id}',
+        '{module}/{catid}/{id}/{document}'
+    ];
+    /**
+     * View
+     *
+     * @var \Web\View
+     */
+    public static $view;
+    /**
+     * ส่วนเสริมที่ติดตั้งแล้ว
+     *
+     * @var \Index\Widget\Controller
+     */
+    public static $widget;
+
+    /**
+     * ฟังก์ชั่นตรวจสอบข้อความ ใช้เป็น alias name
+     * ตัวพิมพ์เล็ก ลบ {}[]() ออก แทนช่องว่างและอักขระพิเศษด้วย -
+     * คืนค่าข้อความ
+     *
+     * @param string $text ข้อความ
+     * @param int $len ความยาวสูงสุดของ alias name (ตัวอักษร)
+     *
+     * @return string
+     */
+    public static function aliasName($text, $len = 64)
+    {
+        $text = preg_replace(['/[\{\}\[\]\(\)]{1,}/isu', '/[_\:\$\@~,;\%\-\+\#\r\n\s\"\'<>\.\/\\\?&]{1,}/isu', '/^(_)?(.*?)(_)?$/'], ['', '_', '\\2'], strtolower(trim(strip_tags($text))));
+        return mb_substr($text, 0, $len);
+    }
+
+    /**
+     * URL ของเพจ Facebook ของเว็บไซต์ (ใช้ใน sameAs ของ JSON-LD และ {FACEBOOK_URL})
+     *
+     * $cfg->facebook เป็น array การตั้งค่าของ widget facebook (มี key `user`)
+     * ส่วน $cfg->facebook_appId เป็น App ID ตัวเลขสำหรับ login เท่านั้น ห้ามใช้เป็น URL
+     *
+     * @param object $cfg
+     *
+     * @return string '' ถ้าไม่ได้ตั้งค่า
+     */
+    public static function facebookPageUrl($cfg)
+    {
+        $facebook = $cfg->facebook ?? '';
+        if (is_array($facebook)) {
+            $facebook = trim((string) ($facebook['user'] ?? ''));
+        } else {
+            $facebook = trim((string) $facebook);
+        }
+        if ($facebook === '') {
+            return '';
+        }
+        if (preg_match('#^https?://#i', $facebook)) {
+            return $facebook;
+        }
+        return 'https://www.facebook.com/'.ltrim($facebook, '@/');
+    }
+
+    /**
+     * ไฟล์ favicon ของเว็บไซต์ (path ต่อจาก DATA_FOLDER) เรียงตามลำดับความสำคัญ
+     * - images/favicon.ico, images/favicon.png = อัปโหลดจากหน้าตั้งค่าทั่วไป
+     * - image/favicon.ico = ไฟล์จาก GCMS รุ่นเดิม (ข้อมูลที่ย้ายมา)
+     *
+     * @var array
+     */
+    const FAVICON_FILES = ['images/favicon.ico', 'images/favicon.png', 'image/favicon.ico'];
+
+    /**
+     * Favicon ที่ใช้งานอยู่ของเว็บไซต์
+     * ถ้าไม่ได้อัปโหลดไว้จะใช้ favicon.ico ที่ root ของเว็บไซต์
+     * URL ต่อท้ายด้วยเวลาแก้ไขไฟล์ เพื่อให้เบราว์เซอร์โหลดใหม่เมื่อเปลี่ยนไฟล์
+     *
+     * @return array ['url' => string, 'type' => string, 'custom' => bool]
+     */
+    public static function favicon()
+    {
+        foreach (self::FAVICON_FILES as $file) {
+            $path = ROOT_PATH.DATA_FOLDER.$file;
+            if (is_file($path)) {
+                return [
+                    'url' => WEB_URL.DATA_FOLDER.$file.'?'.filemtime($path),
+                    'type' => substr($file, -4) === '.png' ? 'image/png' : 'image/x-icon',
+                    'custom' => true
+                ];
+            }
+        }
+        return [
+            'url' => WEB_URL.'favicon.ico',
+            'type' => 'image/x-icon',
+            'custom' => false
+        ];
+    }
+
+    /**
+     * ฟังก์ชั่น ตรวจสอบสถานะที่กำหนด และ แอดมิน
+     * คืนค่า true ถ้าสมาชิกที่ login มีสถานะที่กำหนดอยู่ใน $cfg->$key หรือ $cfg[$key]
+     *
+     * @param array  $login
+     * @param object $cfg   ตัวแปรที่มีคีย์ที่ต้องการตรวจสอบเช่น $config
+     * @param string $key   คีย์ของ $cfg ที่ต้องการตรวจสอบ, $cfg->$key
+     *
+     * @return bool
+     */
+    public static function canConfig($login, $cfg, $key)
+    {
+        if (isset($login['status'])) {
+            if ($login['status'] == 1) {
+                return true;
+            } elseif (is_array($key)) {
+                foreach ($key as $item) {
+                    if (isset($cfg->$item) && is_array($cfg->$item) && in_array($login['status'], $cfg->$item)) {
+                        return true;
+                    }
+                }
+            } elseif (isset($cfg->$key) && is_array($cfg->$key)) {
+                return in_array($login['status'], $cfg->$key);
+            }
+        }
+        return false;
+    }
+
+    /**
+     * ฟังก์ชั่นสร้าง URL จากโมดูล
+     * คืนค่า URL ที่สร้าง
+     *
+     * @param string $module   URL ชื่อโมดูล
+     * @param string $document (option)
+     * @param int    $catid    id ของหมวดหมู่ (default 0)
+     * @param int    $id       (option) id ของข้อมูล (default 0)
+     * @param string|array $query    (option) query string อื่นๆ (default ค่าว่าง)
+     * @param bool   $encode   (option) true=เข้ารหัสด้วย rawurlencode ด้วย (default true)
+     *
+     * @return string
+     */
+    public static function createUrl($module, $document = '', $catid = 0, $id = 0, $query = '', $encode = true)
+    {
+        $patt = [];
+        $replace = [];
+        if (empty($document)) {
+            $patt[] = '/[\/-]{document}/';
+            $replace[] = '';
+        } else {
+            $patt[] = '/{document}/';
+            $replace[] = $encode ? rawurlencode($document) : $document;
+        }
+        $patt[] = '/{module}/';
+        $replace[] = $encode ? rawurlencode($module) : $module;
+        if (empty($catid)) {
+            $patt[] = '/((cat={catid}&)|([\/-]{catid}))/';
+            $replace[] = '';
+        } else {
+            $patt[] = '/{catid}/';
+            $replace[] = (int) $catid;
+        }
+        if (empty($id)) {
+            $patt[] = '/(((&|\?)id={id})|([\/-]{id}))/';
+            $replace[] = '';
+        } else {
+            $patt[] = '/{id}/';
+            $replace[] = (int) $id;
+        }
+        $link = preg_replace($patt, $replace, self::$urls[self::$cfg->module_url]);
+        if (!empty($query)) {
+            if (is_array($query)) {
+                $query = http_build_query($query);
+            }
+            if ($query !== '') {
+                $link .= (strpos($link, '?') === false ? '?' : '&').$query;
+            }
+        }
+        return WEB_URL.$link;
+    }
+
+    /**
+     * ฟังก์ชั่น ทำ highlight ข้อความ
+     * คืนค่าข้อความ ข้อความที่ highlight จะอยู่ภายใต้ tag mark
+     *
+     * @param string $text   ข้อความ
+     * @param string $needle ข้อความที่ต้องการทำ highlight
+     *
+     * @return string
+     */
+    public static function doHighlight($text, $needle)
+    {
+        $newtext = '';
+        $i = -1;
+        $len_needle = mb_strlen($needle);
+        while (mb_strlen($text) > 0) {
+            $i = mb_stripos($text, $needle, $i + 1);
+            if ($i == false) {
+                $newtext .= $text;
+                $text = '';
+            } else {
+                $a = self::lastIndexOf($text, '>', $i) >= self::lastIndexOf($text, '<', $i);
+                $a = $a && (self::lastIndexOf($text, '}', $i) >= self::lastIndexOf($text, '{LNG_', $i));
+                $a = $a && (self::lastIndexOf($text, '/script>', $i) >= self::lastIndexOf($text, '<script', $i));
+                $a = $a && (self::lastIndexOf($text, '/style>', $i) >= self::lastIndexOf($text, '<style', $i));
+                if ($a) {
+                    $newtext .= mb_substr($text, 0, $i).'<mark>'.mb_substr($text, $i, $len_needle).'</mark>';
+                    $text = mb_substr($text, $i + $len_needle);
+                    $i = -1;
+                }
+            }
+        }
+        return $newtext;
+    }
+
+    /**
+     * ฟังก์ชั่นคืนค่าข้อความ placeholder ของช่อง login
+     *
+     * @return string
+     */
+    public static function getLoginPlaceholder()
+    {
+        $login_fields = [
+            'email' => '{LNG_Email}',
+            'username' => '{LNG_Username}',
+            'phone' => '{LNG_Phone}',
+            'id_card' => '{LNG_Identification No.}'
+        ];
+        $placeholder = [];
+        foreach (self::$cfg->login_fields as $item) {
+            if (isset($login_fields[$item])) {
+                $placeholder[] = $login_fields[$item];
+            }
+        }
+        return Language::trans(implode('/', $placeholder));
+    }
+
+    /**
+     * ฟังก์ชั่น highlight ข้อความค้นหา
+     * คืนค่าข้อความ
+     *
+     * @param string $text   ข้อความ
+     * @param string $search ข้อความค้นหา แยกแต่ละคำด้วย ,
+     *
+     * @return string
+     */
+    public static function highlightSearch($text, $search)
+    {
+        foreach (explode(' ', $search) as $i => $q) {
+            if ($q != '') {
+                $text = self::doHighlight($text, $q);
+            }
+        }
+        return $text;
+    }
+
+    /**
+     * ฟังก์ชั่น HTML highlighter
+     * ทำ highlight ข้อความส่วนที่เป็นโค้ด
+     * จัดการแปลง BBCode
+     * แปลงข้อความ http เป็นลิงก์
+     * คืนค่าข้อความ
+     *
+     * @param string $detail  ข้อความ
+     *
+     * @return string
+     */
+    public static function highlighter($detail)
+    {
+        // replace {}
+        $detail = str_replace(['&#x007B;', '&#x007D;'], ['{', '}'], $detail);
+        // [ul]/[ol] — use lazy (.*?) to avoid consuming multiple blocks
+        $detail = preg_replace_callback('/\[([uo]l)\](.*?)\[\/\\1\]/is', function ($match) {
+            return '<'.$match[1].'><li>'.preg_replace('/<br(\s\/)?>/is', '</li><li>', $match[2]).'</li></'.$match[1].'>';
+        }, $detail);
+        // [code] - inline code
+        $detail = preg_replace('/\[code\](.*?)\[\/code\]/i', '<code>\\1</code>', $detail);
+        // [code=lang] — nl2br cleanup; data-language for syntax highlighter
+        $detail = preg_replace_callback('#\[code(=([a-z]+))?\](.*?)\[\/code\]#is', function ($match) {
+            $lang = $match[2] ?? '';
+            $content = preg_replace('/<br\s*\/?>/i', '', $match[3]);
+            $attr = $lang !== '' ? ' data-language="'.htmlspecialchars($lang, ENT_QUOTES).'"' : '';
+            return '<pre><code'.$attr.'>'.$content.'</code></pre>';
+        }, $detail);
+        $patt[] = '/\[(i|dfn|b|strong|u|em|ins|del|sub|sup|small|big)\](.*)\[\/\\1\]/is';
+        $replace[] = '<\\1>\\2</\\1>';
+        $patt[] = '/\[color=([#a-z0-9]+)\]/i';
+        $replace[] = '<span style="color:\\1">';
+        $patt[] = '/\[\/(color|size)\]/i';
+        $replace[] = '</span>';
+        $patt[] = '#\[center\](.*?)\[\/center\]#is';
+        $replace[] = '<div class=center>\\1</div>';
+        $patt[] = '#\[img\](http[^\[\"\']+)\[\/img\]#is';
+        $replace[] = '<img src="\\1" alt="">';
+        $patt[] = '#\[url\]([^\"\'\[]+)\[\/url\]#is';
+        $replace[] = '<a href="\\1" target="_blank" rel="noopener noreferrer">\\1</a>';
+        $patt[] = '/\[url=(ftp|https?):\/\/([^\"\'\]]+)\]/iU';
+        $replace[] = '<a href="\\1://\\2" target="_blank" rel="noopener noreferrer">';
+        $patt[] = '/\[url=(\/)?([^\"\'\]]+)\]/iU';
+        $replace[] = '<a href="'.WEB_URL.'\\2" target="_blank" rel="noopener noreferrer">';
+        $patt[] = '/\[\/url\]/iU';
+        $replace[] = '</a>';
+        $patt[] = '/\[quote(\s+q=[0-9]+)?\]/i';
+        $replace[] = '<blockquote><b>'.Language::replace('Quotations by :name', [':name' => Language::get('Topic')]).'</b>';
+        $patt[] = '/\[quote\s+r=([0-9]+)\]/i';
+        $replace[] = '<blockquote><b>'.Language::replace('Quotations by :name', [':name' => Language::get('Comment')]).' <em>#\\1</em></b>';
+        $patt[] = '/\[\/quote\]/i';
+        $replace[] = '</blockquote>';
+        $patt[] = '/([^["]]|\r|\n|\s|\t|^)((ftp|https?):\/\/([a-z0-9\.\-_]+)\/([^\s<>\"\']{1,})([^\s<>\"\']{20,20}))/i';
+        $replace[] = '\\1<a href="\\2" target="_blank" rel="noopener noreferrer">\\3://\\4/...\\6</a>';
+        $patt[] = '/([^["]]|\r|\n|\s|\t|^)((ftp|https?):\/\/([^\s<>\"\']+))/i';
+        $replace[] = '\\1<a href="\\2" target="_blank" rel="noopener noreferrer">\\2</a>';
+        $patt[] = '/(<a[^>]+>)(https?:\/\/[^\%<]+)([\%][^\.\&<]+)([^<]{5,})(<\/a>)/i';
+        $replace[] = '\\1\\2...\\4\\5';
+        $patt[] = '/\[youtube\]([a-z0-9-_]+)\[\/youtube\]/i';
+        $replace[] = '<div class="youtube"><iframe src="//www.youtube.com/embed/\\1?wmode=transparent" allowfullscreen></iframe></div>';
+        $patt[] = '/\[WEBURL\]/';
+        $replace[] = WEB_URL;
+        return \Kotchasan\Template::pregReplace($patt, $replace, $detail);
+    }
+
+    /**
+     * ฟังก์ชั่น แปลง html เป็น text
+     * สำหรับตัด tag หรือเอา BBCode ออกจากเนื้อหาที่เป็น HTML ให้เหลือแต่ข้อความล้วน
+     * คืนค่าข้อความ
+     *
+     * @param string $text ข้อความ
+     *
+     * @return string
+     */
+    public static function html2txt($text, $len = 0)
+    {
+        $patt = [];
+        $replace = [];
+        // ตัด style
+        $patt[] = '@<style[^>]*?>.*?</style>@siu';
+        $replace[] = '';
+        // ตัด comment
+        $patt[] = '@<![\s\S]*?--[ \t\n\r]*>@u';
+        $replace[] = '';
+        // ตัด tag
+        $patt[] = '@<[\/\!]*?[^<>]*?>@iu';
+        $replace[] = '';
+        // ตัด keywords
+        $patt[] = '/{(WIDGET|LNG)_[a-zA-Z0-9_]+}/su';
+        $replace[] = '';
+        // ลบ BBCode
+        $patt[] = '/(\[code(.+)?\]|\[\/code\]|\[ex(.+)?\])/ui';
+        $replace[] = '';
+        // ลบ BBCode ทั่วไป [b],[i]
+        $patt[] = '/\[([a-z]+)([\s=].*)?\](.*?)\[\/\\1\]/ui';
+        $replace[] = '\\3';
+        $replace[] = ' ';
+        // ตัดตัวอักษรที่ไม่ต้องการออก
+        $patt[] = '/(&amp;|&quot;|&nbsp;|[_\(\)\-\+\r\n\s\"\'<>\.\/\\\?&\{\}]){1,}/isu';
+        $replace[] = ' ';
+        $text = trim(preg_replace($patt, $replace, $text));
+        if ($len > 0) {
+            $text = \Kotchasan\Text::cut($text, $len);
+        }
+        return $text;
+    }
+
+    /**
+     * อ่านภาษาที่ติดตั้งตามลำดับการตั้งค่า
+     *
+     * @return array
+     */
+    public static function installedLanguage()
+    {
+        $languages = [];
+        foreach (self::$cfg->languages as $item) {
+            $languages[$item] = $item;
+        }
+        foreach (Language::installedLanguage() as $item) {
+            $languages[$item] = $item;
+        }
+        return array_keys($languages);
+    }
+
+    /**
+     * ฟังก์ชั่น แปลงข้อความสำหรับการ quote
+     * คืนค่าข้อความ
+     *
+     * @param string $text ข้อความ
+     * @param bool   $u    true=ถอดรหัสอักขระพิเศษด้วย (default false)
+     *
+     * @return string
+     */
+    public static function quote($text, $u = false)
+    {
+        $text = preg_replace('/<br(\s\/)?>/isu', '', $text);
+        if ($u) {
+            $text = str_replace(['&lt;', '&gt;', '&#92;', '&nbsp;', '&#x007B;', '&#x007D;'], ['<', '>', '\\', ' ', '{', '}'], $text);
+        }
+        return $text;
+    }
+
+    /**
+     * คืนค่าลิงก์รูปแบบโทรศัพท์
+     *
+     * @param string $phone_number
+     *
+     * @return string
+     */
+    public static function showPhone($phone_number)
+    {
+        if (preg_match('/^([0-9\-\s]{9,})(.*)$/', $phone_number, $match)) {
+            return '<a href="tel:'.trim($match[1]).'">'.$phone_number.'</a>';
+        }
+        return $phone_number;
+    }
+
+    /**
+     * ฟังก์ชั่น แสดง ip แบบซ่อนหลักหลัง ถ้าเป็น admin จะแสดงทั้งหมด
+     * คืนค่า ที่อยู่ IP ที่แปลงแล้ว
+     *
+     * @param string $ip    ที่อยู่ IP ที่ต้องการแปลง (IPV4)
+     * @param array  $login
+     *
+     * @return string
+     */
+    public static function showip($ip, $login)
+    {
+        if ($login['status'] != 1 && preg_match('/([0-9]+\.[0-9]+\.)([0-9\.]+)/', $ip, $ips)) {
+            return $ips[1].preg_replace('/[0-9]/', 'x', $ips[2]);
+        } else {
+            return $ip;
+        }
+    }
+
+    /**
+     * คืนค่าชื่อไอคอนสำหรับช่อง username
+     * เข้าระบบได้ทั้ง email และ phone คืนค่า user
+     * เข้าระบบได้เฉพาะ email คืนค่า email
+     * เข้าระบบได้เฉพาะ phone คืนค่า phone
+     *
+     * @return string
+     */
+    public static function usernameIcon()
+    {
+        $email = in_array('email', self::$cfg->login_fields);
+        $phone = in_array('phone', self::$cfg->login_fields);
+        if ($email && $phone) {
+            return 'user';
+        } else {
+            return $email ? 'email' : 'phone';
+        }
+    }
+
+    /**
+     * ฟังก์ชั่น ค้นหาข้อความย้อนหลัง
+     * คืนค่าตำแหน่งของตัวอักษรที่พบ ตัวแรกคือ หากไม่พบคืนค่า -1
+     *
+     * @param string $text   ข้อความ
+     * @param string $needle ข้อความค้นหา
+     * @param int    $offset ตำแหน่งเริ่มต้นที่ต้องการค้นหา
+     *
+     * @return int
+     */
+    private static function lastIndexOf($text, $needle, $offset)
+    {
+        $pos = mb_strripos(mb_substr($text, 0, $offset), $needle);
+        return $pos == false ? -1 : $pos;
+    }
+}

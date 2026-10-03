@@ -1,0 +1,192 @@
+<aside data-component="sidebar"></aside>
+<div class="main-content">
+  <div>
+    <header data-component="topbar"></header>
+    <main class="content">
+      <div class="card-groups">
+        <header>
+          <div>
+            <h1 class="icon-cog" data-i18n>{LNG_Board} {LNG_Settings}</h1>
+            <p data-i18n>Set up a board (discussion) module</p>
+          </div>
+        </header>
+        <div class="content-body">
+          <!-- Board Settings Form -->
+          <form data-form="boardSettings" action="../api/board/settings/save" method="POST" data-ajax-submit="true" data-load-api="../api/board/settings/get"
+                data-load-query-params="true" data-confirm="Confirm save">
+            <fieldset>
+              <legend class="icon-comments" data-i18n>Board</legend>
+              <div>
+                <label for="default_icon" data-i18n>Thumbnail</label>
+                <span class="form-control icon-image">
+                  <input type="file" id="default_icon" name="default_icon" data-files="default_icon" data-preview="true" data-allow-remove-existing="true"
+                         data-action-url="../api/index/profile/remove-default_icon" data-file-reference="url" accept="image/*"
+                         data-attr="placeholder:'{LNG_Browse image uploaded, type} ' + img_typies">
+                </span>
+                <div class="comment" id="result_image" data-i18n> Upload icons (default) as defined above. Can be used as thumbnail if no thumbnail of story. </div>
+              </div>
+              <div>
+                <label for="list_per_page" data-i18n>Items per page</label>
+                <span class="form-control icon-number">
+                  <input type="number" id="list_per_page" name="list_per_page" data-attr="value:list_per_page" min="1">
+                </span>
+                <div id="result_list_per_page" class="comment" data-i18n>Determine how many items to display per page</div>
+              </div>
+              <div>
+                <label for="new_date" data-i18n>New mark</label>
+                <span class="form-control icon-event">
+                  <select name="new_date" id="new_date" data-attr="value:new_date">
+                    <option value="0" data-i18n>0 {LNG_days}</option>
+                    <option value="1" data-i18n>1 {LNG_days}</option>
+                    <option value="2" data-i18n>2 {LNG_days}</option>
+                    <option value="3" data-i18n>3 {LNG_days}</option>
+                    <option value="4" data-i18n>4 {LNG_days}</option>
+                    <option value="5" data-i18n>5 {LNG_days}</option>
+                    <option value="6" data-i18n>6 {LNG_days}</option>
+                    <option value="7" data-i18n>7 {LNG_days}</option>
+                    <option value="8" data-i18n>8 {LNG_days}</option>
+                    <option value="9" data-i18n>9 {LNG_days}</option>
+                    <option value="10" data-i18n>10 {LNG_days}</option>
+                    <option value="11" data-i18n>11 {LNG_days}</option>
+                    <option value="12" data-i18n>12 {LNG_days}</option>
+                    <option value="13" data-i18n>13 {LNG_days}</option>
+                    <option value="14" data-i18n>14 {LNG_days}</option>
+                    <option value="15" data-i18n>15 {LNG_days}</option>
+                    <option value="16" data-i18n>16 {LNG_days}</option>
+                    <option value="17" data-i18n>17 {LNG_days}</option>
+                    <option value="18" data-i18n>18 {LNG_days}</option>
+                    <option value="19" data-i18n>19 {LNG_days}</option>
+                    <option value="20" data-i18n>20 {LNG_days}</option>
+                    <option value="21" data-i18n>21 {LNG_days}</option>
+                    <option value="22" data-i18n>22 {LNG_days}</option>
+                    <option value="23" data-i18n>23 {LNG_days}</option>
+                    <option value="24" data-i18n>24 {LNG_days}</option>
+                    <option value="25" data-i18n>25 {LNG_days}</option>
+                    <option value="26" data-i18n>26 {LNG_days}</option>
+                    <option value="27" data-i18n>27 {LNG_days}</option>
+                    <option value="28" data-i18n>28 {LNG_days}</option>
+                    <option value="29" data-i18n>29 {LNG_days}</option>
+                    <option value="30" data-i18n>30 {LNG_days}</option>
+                  </select>
+                </span>
+                <div class="comment" data-i18n>Setting the number of days an item will show up as New (0 to disable)</div>
+              </div>
+              <div>
+                <label for="viewing" data-i18n>Viewing</label>
+                <span class="form-control icon-visited">
+                  <select id="viewing" name="viewing" data-options-key="member_only_list" data-attr="value:viewing"></select>
+                </span>
+                <div class="comment" data-i18n>Determine how to view the content for the page is reserved for members only</div>
+              </div>
+            </fieldset>
+            <fieldset>
+              <legend class="icon-documents" data-i18n>Category</legend>
+              <div>
+                <label for="category_display" data-i18n>Style</label>
+                <span class="form-control icon-category">
+                  <select id="category_display" name="category_display" data-attr="value:category_display">
+                    <option value="" data-i18n>not shown</option>
+                    <option value="listview" data-i18n>List view</option>
+                    <option value="iconview" data-i18n>Icon view</option>
+                    <option value="thumbview" data-i18n>Thumb view</option>
+                  </select>
+                </span>
+                <div class="comment" id="result_category_display" data-i18n> Set the Display category list. If you choose not shown, system will jump to display the list of
+                  articles. </div>
+              </div>
+              <div>
+                <label for="category_cols" data-i18n>Columns</label>
+                <span class="form-control icon-cols">
+                  <select name="category_cols" id="category_cols" data-attr="value:category_cols">
+                    <option value="1" data-i18n>1</option>
+                    <option value="2" data-i18n>2</option>
+                    <option value="3" data-i18n>3</option>
+                    <option value="4" data-i18n>4</option>
+                  </select>
+                </span>
+              </div>
+            </fieldset>
+            <fieldset>
+              <legend class="icon-upload" data-i18n>Upload</legend>
+              <div>
+                <label data-i18n>Type of file uploads</label>
+                <div class="btn-group checkboxes" style="margin-top:6px">
+                  <input type="checkbox" id="img_upload_type_jpg" name="img_upload_type[]" value="jpg" data-attr="checked:img_upload_type_jpg">
+                  <label for="img_upload_type_jpg" class="btn">jpg</label>
+                  <input type="checkbox" id="img_upload_type_jpeg" name="img_upload_type[]" value="jpeg" data-attr="checked:img_upload_type_jpeg">
+                  <label for="img_upload_type_jpeg" class="btn">jpeg</label>
+                  <input type="checkbox" id="img_upload_type_gif" name="img_upload_type[]" value="gif" data-attr="checked:img_upload_type_gif">
+                  <label for="img_upload_type_gif" class="btn">gif</label>
+                  <input type="checkbox" id="img_upload_type_png" name="img_upload_type[]" value="png" data-attr="checked:img_upload_type_png">
+                  <label for="img_upload_type_png" class="btn">png</label>
+                  <input type="checkbox" id="img_upload_type_webp" name="img_upload_type[]" value="webp" data-attr="checked:img_upload_type_webp">
+                  <label for="img_upload_type_webp" class="btn">webp</label>
+                </div>
+                <div class="comment" data-i18n>Type of files allowed to upload it, if not select any item can not be uploaded.</div>
+              </div>
+              <div>
+                <label for="img_law" data-i18n>Upload rules</label>
+                <span class="form-control icon-image">
+                  <select id="img_law" name="img_law" data-options-key="img_law" data-attr="value:img_law"></select>
+                </span>
+              </div>
+            </fieldset>
+            <fieldset>
+              <legend class="icon-bell" data-i18n>{LNG_Notifications}</legend>
+              <div>
+                <label for="line_notifications" data-i18n>Send a message when</label>
+                <span class="form-control icon-comments">
+                  <select id="line_notifications" name="line_notifications" data-attr="value:line_notifications" placeholder="Please select" multiple>
+                    <option value="1" data-i18n>post a new topic</option>
+                    <option value="2" data-i18n>post a new reply</option>
+                  </select>
+                </span>
+              </div>
+            </fieldset>
+            <fieldset>
+              <legend class="icon-shield" data-i18n>Permissions</legend>
+              <div>
+                <label for="can_post" data-i18n>Can post</label>
+                <span class="form-control icon-user">
+                  <select id="can_post" name="can_post" data-options-key="user_status_with_guest" data-attr="value:can_post" multiple></select>
+                </span>
+              </div>
+              <div>
+                <label for="can_reply" data-i18n>Can reply</label>
+                <span class="form-control icon-valid">
+                  <select id="can_reply" name="can_reply" data-options-key="user_status_with_guest" data-attr="value:can_reply" multiple></select>
+                </span>
+              </div>
+              <div>
+                <label for="can_view" data-i18n>Can view</label>
+                <span class="form-control icon-visited">
+                  <select id="can_view" name="can_view" data-options-key="user_status_with_guest" data-attr="value:can_view" multiple></select>
+                </span>
+              </div>
+              <div>
+                <label for="moderator" data-i18n>Moderator</label>
+                <span class="form-control icon-user">
+                  <select id="moderator" name="moderator" data-options-key="user_status" data-attr="value:moderator" multiple></select>
+                </span>
+              </div>
+              <div>
+                <label for="can_config" data-i18n>Can configure</label>
+                <span class="form-control icon-user">
+                  <select id="can_config" name="can_config" data-options-key="user_status" data-attr="value:can_config" multiple></select>
+                </span>
+              </div>
+            </fieldset>
+            <!-- Submit Button -->
+            <fieldset class="submit">
+              <button type="submit" class="btn btn-primary icon-save" data-i18n>Save</button>
+              <input type="hidden" name="module_id" data-attr="value:module_id">
+            </fieldset>
+          </form>
+        </div>
+      </div>
+    </main>
+  </div>
+  <footer class="footer">
+    <p class="center">&copy; 2026 GCMS - Powered by <a href="https://nowjs.net">Now.js</a></p>
+  </footer>
+</div>

@@ -1,0 +1,71 @@
+<!-- My Orders Page -->
+<article class="main-page my-orders-page" data-component="api" data-endpoint="{WEBURL}api/product/myorders?module_id={MODULE_ID}" data-method="GET" data-url-params="true">
+  <header class="page-header hero">
+    <div class="container">
+      <nav class="breadcrumbs one_line">
+        <ul>{BREADCRUMBS}</ul>
+      </nav>
+      <h1 class="page__title">{TOPIC}</h1>
+    </div>
+  </header>
+  <div class="page-body">
+    <div class="container">
+      <div class="page-content">
+        <!-- Status Filter -->
+        <nav class="cat-links text-center" data-for="item of order_statuses">
+          <template>
+            <a href="{MYORDERS_Q}status={{item.value}}" data-class="active:status == item.value" data-text="item.text"></a>
+          </template>
+        </nav>
+        <!-- Orders List -->
+        <div class="orders-list" data-for="order of orders">
+          <template>
+            <div class="order-card">
+              <div class="order-header">
+                <div class="order-info">
+                  <h3 class="order-number">#<span data-text="order.order_no"></span></h3>
+                  <span class="order-date" data-text="order.created_at" data-format="datetime"></span>
+                </div>
+                <span class="order-status-badge" data-text="order.order_status_text" data-attr="class:'order-status-badge status-' + order.order_status"></span>
+              </div>
+              <div class="order-body">
+                <div class="order-details">
+                  <div class="detail-item">
+                    <span class="label">{LNG_Order Date}</span>
+                    <span class="value" data-text="order.created_at" data-format="date"></span>
+                  </div>
+                  <div class="detail-item">
+                    <span class="label">{LNG_Total}</span>
+                    <span class="value order-total" data-text="order.total" data-format="currency:THB"></span>
+                  </div>
+                  <div class="detail-item">
+                    <span class="label">{LNG_Payment Method}</span>
+                    <span class="value" data-text="order.payment_method"></span>
+                  </div>
+                </div>
+              </div>
+              <div class="order-footer">
+                <a class="btn btn-primary" data-attr="href:'{ORDERDETAIL_Q}id=' + order.id">{LNG_View Details}</a>
+              </div>
+            </div>
+          </template>
+        </div>
+        <!-- Empty State -->
+        <div class="list-empty" data-if="!orders || orders.length === 0">
+          <div class="list-empty-icon icon-cart"></div>
+          <h3>{LNG_No Orders}</h3>
+          <p>{LNG_You don't have any orders yet}</p>
+          <a href="{SHOP_URL}" class="btn btn-primary icon-shop">{LNG_Shop Now}</a>
+        </div>
+        <!-- Pagination -->
+        <div class="pagination-wrapper" data-if="pagination && pagination.pages > 1">
+          <nav class="pagination" data-for="i of pagination.page_numbers">
+            <template>
+              <a href="{MYORDERS_Q}status={{status}}&amp;page={{i}}" data-class="current:i === pagination.page" data-text="i"></a>
+            </template>
+          </nav>
+        </div>
+      </div>
+    </div>
+  </div>
+</article>

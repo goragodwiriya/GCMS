@@ -1,0 +1,41 @@
+<aside data-component="sidebar"></aside>
+<div class="main-content">
+  <div>
+    <header data-component="topbar"></header>
+    <main class="content">
+      <div class="card-groups">
+        <header>
+          <div>
+            <h1 class="icon-cog" data-i18n>{LNG_Personnel} {LNG_Settings}</h1>
+            <p data-i18n>Configure personnel display options</p>
+          </div>
+        </header>
+
+        <div class="content-body">
+          <form data-form="personnelSettings" action="../api/personnel/settings/save" method="POST" data-ajax-submit="true" data-load-api="../api/personnel/settings/get"
+                data-load-query-params="true" data-confirm="Confirm save">
+            <fieldset>
+              <legend class="icon-shield" data-i18n>Permissions</legend>
+
+              <div>
+                <label for="can_manage" data-i18n>{LNG_Can manage} {LNG_Personnel}</label>
+                <span class="form-control icon-user">
+                  <select id="can_manage" name="can_manage" data-options-key="user_status" data-attr="value:can_manage" multiple></select>
+                </span>
+              </div>
+            </fieldset>
+
+            <!-- Submit Button -->
+            <fieldset class="submit">
+              <button type="submit" class="btn btn-primary icon-save" data-i18n>Save</button>
+              <input type="hidden" name="module_id" data-attr="value:module_id">
+            </fieldset>
+          </form>
+        </div>
+      </div>
+    </main>
+  </div>
+  <footer class="footer">
+    <p class="center">&copy; 2026 GCMS - Powered by <a href="https://nowjs.net">Now.js</a></p>
+  </footer>
+</div>

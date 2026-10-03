@@ -1,0 +1,114 @@
+<aside data-component="sidebar"></aside>
+<div class="main-content">
+  <div>
+    <header data-component="topbar"></header>
+    <main class="content">
+      <form data-form="eventWrite" data-validate="true" data-reset="false" action="../api/event/write/save" method="post" data-ajax-submit="true" data-load-query-params="true"
+            data-load-api="../api/event/write/get" autocomplete="off">
+        <div class="card-groups">
+          <header>
+            <div>
+              <h1 class="icon-calendar" data-text="id ? '{LNG_Edit} {LNG_Event}' : '{LNG_Add} {LNG_Event}'"></h1>
+              <p data-i18n>Manage calendar event details</p>
+            </div>
+            <div class="header-actions">
+              <a class="btn icon-arrow-left" href="/event-list" data-params="module_id" data-i18n>Back</a>
+              <button type="submit" class="btn btn-primary icon-save" data-i18n>Save</button>
+            </div>
+          </header>
+          <div class="content-body">
+            <fieldset>
+              <legend data-i18n>{LNG_Details of} {LNG_Event}</legend>
+              <div class="form-group">
+                <div class="width75">
+                  <label for="topic" data-i18n>Topic</label>
+                  <span class="form-control icon-edit">
+                    <input type="text" id="topic" name="topic" maxlength="255" data-attr="value:topic">
+                  </span>
+                  <div class="comment" id="result_topic" data-i18n>Title or topic 3 to 255 characters</div>
+                </div>
+                <div class="width25">
+                  <label for="color" data-i18n>Color of Event</label>
+                  <span class="form-control">
+                    <input type="color" id="color" name="color" data-attr="value:color">
+                  </span>
+                </div>
+              </div>
+              <div>
+                <label data-i18n>Date and time of event</label>
+                <div class="form-group bottom">
+                  <div class="width50">
+                    <span class="form-control icon-calendar">
+                      <input type="date" id="begin_date" name="begin_date" required data-attr="value:begin_date">
+                    </span>
+                  </div>
+                  <div class="width50">
+                    <input type="checkbox" class="switch" id="forever" name="forever" value="1" data-attr="checked:forever">
+                    <label for="forever" data-i18n>all days</label>
+                  </div>
+                </div>
+                <div class="form-group">
+                  <div class="width50">
+                    <label for="begin_time" class="inline" data-i18n>from time</label>
+                    <span class="form-control icon-clock">
+                      <input type="time" id="begin_time" name="begin_time" data-attr="value:begin_time">
+                    </span>
+                  </div>
+                  <div class="width50">
+                    <label for="to_time" class="inline" data-i18n>to time</label>
+                    <span class="form-control icon-clock">
+                      <input type="time" id="to_time" name="to_time" data-attr="value:to_time">
+                    </span>
+                  </div>
+                </div>
+                <div class="comment" data-i18n>Specify the start and end of the event. Check "all days" to omit the end time.</div>
+              </div>
+              <div>
+                <label for="keywords" data-i18n>Keywords</label>
+                <span class="form-control icon-tags">
+                  <input type="text" id="keywords" name="keywords" data-element="tags" data-attr="value:keywords">
+                </span>
+                <div class="comment" id="result_keywords" data-i18n>Text keywords for SEO or Search Engine to search</div>
+              </div>
+              <div>
+                <label for="description" data-i18n>Description</label>
+                <span class="form-control icon-file">
+                  <textarea id="description" name="description" rows="3" data-text="description"></textarea>
+                </span>
+                <div class="comment" id="result_description" data-i18n>Text short summary of your story. (If not, Program will fill in the contents of the first paragraph)</div>
+              </div>
+              <div>
+                <label for="detail" data-i18n>Detail</label>
+                <textarea id="detail" name="detail" data-element="richtext" data-attr="value:detail" data-rte-profile="basic" data-rte-min-height="250"></textarea>
+              </div>
+            </fieldset>
+            <fieldset>
+              <legend class="icon-published1" data-i18n>{LNG_Published}</legend>
+              <div>
+                <label for="published_date" data-i18n>Published date</label>
+                <span class="form-control icon-calendar">
+                  <input type="date" id="published_date" name="published_date" data-attr="value:published_date">
+                </span>
+                <div class="comment" id="result_published_date" data-i18n>The date of publication of this information. The publisher will start automatically when you log on due
+                  date</div>
+              </div>
+              <div>
+                <input type="checkbox" class="switch" id="published" name="published" value="1" data-attr="checked:published">
+                <label for="published" data-i18n>Published</label>
+                <div class="comment" id="result_published" data-i18n>Publish this item</div>
+              </div>
+            </fieldset>
+          </div>
+          <div class="form-submit">
+            <button type="submit" class="btn btn-primary icon-save" data-i18n>Save</button>
+            <input type="hidden" name="id" data-attr="value:id">
+            <input type="hidden" name="module_id" data-attr="value:module_id">
+          </div>
+        </div>
+      </form>
+    </main>
+  </div>
+  <footer class="footer">
+    <p class="center">&copy; 2026 GCMS - Powered by <a href="https://nowjs.net">Now.js</a></p>
+  </footer>
+</div>

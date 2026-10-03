@@ -1,0 +1,107 @@
+<aside data-component="sidebar"></aside>
+<div class="main-content">
+  <div>
+    <header data-component="topbar"></header>
+    <main class="content" data-script="initDatabaseBackupPage">
+      <div class="card-groups">
+        <header>
+          <div>
+            <h1 class="icon-database" data-i18n>Database Import/Export Management</h1>
+            <p data-i18n>Backup and restore prefixed database tables safely</p>
+          </div>
+        </header>
+        <div class="content-body">
+          <section class="table table-responsive" id="db_tables_container" data-component="api" data-endpoint="../api/index/database/tables" data-method="GET" data-cache="false"
+                   data-on-load="bindDatabaseBackupTables">
+            <header>
+              <h3 data-i18n>Detected Tables</h3>
+              <p class="comment"><span data-i18n>Prefix</span>: <strong id="db_prefix">-</strong></p>
+            </header>
+            <div class="tablebody">
+              <table class="table data fullwidth">
+                <thead>
+                  <tr>
+                    <th class="center"></th>
+                    <th data-i18n>Table</th>
+                    <th class="center"><label for="db_select_all_structure" data-i18n>Structure</label></th>
+                    <th class="center"><label for="db_select_all_data" data-i18n>Data</label></th>
+                    <th class="center" data-i18n>Rows</th>
+                    <th class="center" data-i18n>Size</th>
+                  </tr>
+                  <tr>
+                    <th class="center"><input type="checkbox" id="db_select_all" title="{LNG_Check all}/{LNG_Uncheck}" checked></th>
+                    <th></th>
+                    <th class="center"><input type="checkbox" id="db_select_all_structure" title="{LNG_Check all}/{LNG_Uncheck}" checked></th>
+                    <th class="center"><input type="checkbox" id="db_select_all_data" title="{LNG_Check all}/{LNG_Uncheck}" checked></th>
+                    <th></th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody id="db_table_list">
+                  <tr>
+                    <td colspan="6" class="center" data-i18n>Loading...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+          <form id="db_export_form" class="margin-top">
+            <fieldset>
+              <legend class="icon-download" data-i18n>Export</legend>
+              <div class="submit">
+                <button type="button" class="btn btn-primary icon-download" id="db_export_btn" data-i18n>Generate Backup</button>
+              </div>
+            </fieldset>
+          </form>
+          <form id="db_import_form" class="margin-top">
+            <fieldset>
+              <legend class="icon-upload" data-i18n>Import</legend>
+              <div>
+                <label for="db_import_file" data-i18n>Backup File</label>
+                <span class="form-control icon-upload">
+                  <input type="file" id="db_import_file" name="backup_file" accept=".sql,.json">
+                </span>
+              </div>
+              <div>
+                <label for="db_import_scope" data-i18n>Import Scope</label>
+                <span class="form-control icon-list">
+                  <select id="db_import_scope" name="scope">
+                    <option value="selected" data-i18n>Selected tables only</option>
+                    <option value="all" data-i18n>All prefixed tables</option>
+                  </select>
+                </span>
+              </div>
+              <div>
+                <label for="db_import_format" data-i18n>Format</label>
+                <span class="form-control icon-list">
+                  <select id="db_import_format" name="format">
+                    <option value="sql" selected>SQL</option>
+                    <option value="json">JSON</option>
+                  </select>
+                </span>
+              </div>
+              <div>
+                <input type="checkbox" class="switch" id="db_import_overwrite" name="overwrite">
+                <label for="db_import_overwrite" data-i18n>Overwrite existing data (truncate before import)</label>
+              </div>
+              <div>
+                <input type="checkbox" class="switch" id="db_import_confirm" name="confirm_overwrite">
+                <label for="db_import_confirm" data-i18n>Confirm overwrite operation</label>
+              </div>
+              <div class="submit">
+                <button type="button" class="btn btn-warning icon-upload" id="db_import_btn" data-i18n>Import Backup</button>
+              </div>
+            </fieldset>
+          </form>
+          <div class="margin-top">
+            <progress id="db_progress" value="0" max="100" style="width: 100%"></progress>
+            <div class="comment" id="db_progress_text" data-i18n>Idle</div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+  <footer class="footer">
+    <p class="center">&copy; 2026 GCMS - Powered by <a href="https://nowjs.net">Now.js</a></p>
+  </footer>
+</div>

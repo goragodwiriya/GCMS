@@ -1,0 +1,43 @@
+<aside data-component="sidebar"></aside>
+<div class="main-content">
+  <div>
+    <header data-component="topbar"></header>
+    <main class="content">
+      <div class="card-groups">
+        <header>
+          <div>
+            <h1 class="icon-image" data-i18n>Gallery Albums</h1>
+            <p data-i18n>Manage photo albums</p>
+          </div>
+          <a class="btn btn-primary icon-new" href="/gallery-album" data-params="module_id" data-i18n>{LNG_Add} {LNG_Album}</a>
+        </header>
+
+        <div class="content-body">
+          <div class="tablebody">
+            <table class="table border fullwidth" data-table="galleryAlbums" data-source="../api/gallery/setup" data-search-columns="topic" data-show-checkbox="true"
+                   data-page-size="10" data-actions='{"delete":"Delete"}' data-action-url="../api/gallery/setup/action" data-action-params="module_id" data-row-actions='{
+                       "edit": {
+                         "label": "Edit",
+                         "className": "btn btn-success icon-edit"
+                       }
+                   }'>
+              <thead>
+                <tr>
+                  <th data-field="image" data-formatter="formatImage" class="center" data-cell-class="center" data-i18n>{LNG_Image}</th>
+                  <th data-field="topic" data-template="<a href='../gallery/id/${id}' target='_blank' class='two_line'>${topic}</a>" data-i18n>{LNG_Topic}</th>
+                  <th data-field="detail" data-template="<span class='two_line'>${detail}</span>" data-i18n>{LNG_Description}</th>
+                  <th data-field="published_date" data-sort="published_date" class="center" data-cell-class="center" data-format="date" data-i18n>{LNG_Published date}</th>
+                  <th data-field="updated_at" data-sort="updated_at" class="center" data-cell-class="center" data-format="datetime" data-i18n>{LNG_Last Update}</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+  <footer class="footer">
+    <p class="center">&copy; 2026 GCMS - Powered by <a href="https://nowjs.net">Now.js</a></p>
+  </footer>
+</div>

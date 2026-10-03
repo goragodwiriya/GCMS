@@ -1,0 +1,164 @@
+<!-- Domain storefront: availability check, pricing, cart and checkout.
+     Rendered by Domain\Index\View::render() -->
+<article class="main-page domain-page">
+  <header class="page-header hero">
+    <div class="container">
+      <nav class="breadcrumbs one_line">
+        <ul>{BREADCRUMBS}</ul>
+      </nav>
+      <h1 class="page__title">{TOPIC}</h1>
+      <p class="page__subtitle">{DESCRIPTION}</p>
+    </div>
+  </header>
+  <div class="page-body">
+    <div class="container">
+      <div class="page-content">
+        <input type="hidden" id="domain_module_id" value="{MODULE_ID}">
+        <section class="section-bg domain-search">
+          <div class="section__header">
+            <h2 class="icon-search">{LNG_Check domain availability}</h2>
+          </div>
+          <div class="section__body">
+            <form data-form="checkDomain" data-validate="true" action="{WEBURL}api/domain/checkdomain" method="post" data-ajax-submit="true" data-load-options-api="{WEBURL}api/domain/products/tlds?module_id={MODULE_ID}" data-submit-target="#domainCheckResult" data-show-success-inline="false" data-show-success-in-notification="false">
+              <fieldset>
+                <div class="form-group">
+                  <div class="width50">
+                    <label for="cd_domain">{LNG_Domain name}</label>
+                    <span class="form-control">
+                      <input type="text" id="cd_domain" name="domain" required autocomplete="off" placeholder="example">
+                    </span>
+                  </div>
+                  <div class="width50">
+                    <label for="cd_tld">{LNG_Extension}</label>
+                    <span class="form-control">
+                      <select id="cd_tld" name="tld" required data-options-key="tlds">
+                        <option value="">.</option>
+                      </select>
+                    </span>
+                  </div>
+                </div>
+              </fieldset>
+              <fieldset class="submit">
+                <button type="submit" class="btn btn-primary icon-search">{LNG_Check}</button>
+              </fieldset>
+            </form>
+            <div id="domainCheckResult" data-for="check of data">
+              <template>
+                <aside class="success" data-if="check.available">
+                  <p><strong data-text="check.name"></strong> <span data-text="check.message"></span></p>
+                  <button type="button" class="btn btn-primary icon-cart" data-action="click.prevent:requestApi" data-api-url="{WEBURL}api/domain/cart/save?module_id={MODULE_ID}" data-api-method="post" data-param-category-id="1" data-attr="data-param-detail-id:check.detail_id, data-param-domain:check.domain" data-param-period-index="0" data-param-action="register" data-response-target="#domainCart" data-response-bind="template" data-notify-success="true">{LNG_Add to Cart}</button>
+                </aside>
+                <aside class="danger" data-if="!check.available">
+                  <p><strong data-text="check.name"></strong> <span data-text="check.message"></span></p>
+                </aside>
+              </template>
+            </div>
+          </div>
+        </section>
+        <section class="section-bg domain-pricing">
+          <div class="section__header">
+            <h2 class="icon-world">{LNG_Domain pricing}</h2>
+          </div>
+          <div class="section__body" data-component="api" data-endpoint="{WEBURL}api/domain/products?module_id={MODULE_ID}" data-cache="true" data-cache-time="60000">
+            <div class="tablebody">
+              <table class="fullwidth border">
+                <thead>
+                  <tr>
+                    <th>{LNG_Extension}</th>
+                    <th>{LNG_Period}</th>
+                    <th>{LNG_New registration}</th>
+                    <th>{LNG_Renew}</th>
+                    <th>{LNG_Domain transfer}</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody data-for="row in domains">
+                  <template>
+                    <tr>
+                      <td data-text="'.' + row.tld"></td>
+                      <td data-text="row.price[0].period_text"></td>
+                      <td data-text="row.price[0].register" data-format="number"></td>
+                      <td data-text="row.price[0].renew" data-format="number"></td>
+                      <td data-text="row.price[0].transfer" data-format="number"></td>
+                      <td>
+                        <button type="button" class="btn btn-primary icon-cart" data-action="click.prevent:requestApi" data-api-url="{WEBURL}api/domain/cart/save?module_id={MODULE_ID}" data-api-method="post" data-param-category-id="1" data-attr="data-param-detail-id:row.id" data-param-period-index="0" data-param-action="register" data-param-domain="{domain}" data-response-target="#domainCart" data-response-bind="template" data-notify-success="true">{LNG_Add to Cart}</button>
+                      </td>
+                    </tr>
+                  </template>
+                </tbody>
+              </table>
+            </div>
+            <div data-if="addons && addons.length > 0">
+              <h3>{LNG_Hosting and add-ons}</h3>
+              <div data-for="group in addons">
+                <template>
+                  <h4 data-text="group.category"></h4>
+                  <div class="tablebody">
+                    <table class="fullwidth border">
+                      <tbody data-for="item in group.items">
+                        <template>
+                          <tr>
+                            <td data-text="item.topic"></td>
+                            <td data-text="item.price[0].period_text"></td>
+                            <td data-text="item.price[0].register" data-format="number"></td>
+                            <td>
+                              <button type="button" class="btn btn-primary icon-cart" data-action="click.prevent:requestApi" data-api-url="{WEBURL}api/domain/cart/save?module_id={MODULE_ID}" data-api-method="post" data-attr="data-param-category-id:item.category_id, data-param-detail-id:item.id" data-param-period-index="0" data-response-target="#domainCart" data-response-bind="template" data-notify-success="true">{LNG_Add to Cart}</button>
+                            </td>
+                          </tr>
+                        </template>
+                      </tbody>
+                    </table>
+                  </div>
+                </template>
+              </div>
+            </div>
+          </div>
+        </section>
+        <section class="section-bg domain-cart">
+          <div class="section__header">
+            <h2 class="icon-cart">{LNG_Your selection}</h2>
+          </div>
+          <div id="domainCart" class="section__body" data-component="api" data-endpoint="{WEBURL}api/domain/cart?module_id={MODULE_ID}">
+            <div data-for="cart of carts">
+              <template>
+                <div class="tablebody" data-if="!cart.empty">
+                  <table class="fullwidth border">
+                    <thead>
+                      <tr>
+                        <th>{LNG_Item}</th>
+                        <th>{LNG_Period}</th>
+                        <th>{LNG_Price}</th>
+                        <th></th>
+                      </tr>
+                    </thead>
+                    <tbody data-for="item in cart.items">
+                      <template>
+                        <tr>
+                          <td data-text="item.topic"></td>
+                          <td data-text="item.period_text"></td>
+                          <td data-text="item.price" data-format="number"></td>
+                          <td>
+                            <button type="button" class="btn btn-danger icon-delete" data-action="click.prevent:requestApi" data-api-url="{WEBURL}api/domain/cart/remove?module_id={MODULE_ID}" data-api-method="post" data-attr="data-param-category-id:item.category_id" data-response-target="#domainCart" data-response-bind="template">{LNG_Remove}</button>
+                          </td>
+                        </tr>
+                      </template>
+                    </tbody>
+                  </table>
+                </div>
+                <p data-if="cart.empty">{LNG_Cart is empty}</p>
+              </template>
+            </div>
+          </div>
+        </section>
+        <section class="section-bg domain-checkout">
+          <div class="section__header">
+            <h2 class="icon-billing">{LNG_Checkout}</h2>
+          </div>
+          <div class="section__body">
+            {CHECKOUT}
+          </div>
+        </section>
+      </div>
+    </div>
+  </div>
+</article>

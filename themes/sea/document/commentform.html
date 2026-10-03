@@ -1,0 +1,36 @@
+<div class="document-comment-form">
+  <form data-form="documentCommentForm" novalidate action="{WEBURL}api/document/reply/save" method="post" data-ajax-submit="true" data-sanitize-input="false">
+    <fieldset>
+      <legend>
+        <h3 class="icon-comments" data-i18n>{LNG_Post a Comment}</h3>
+      </legend>
+      <div>
+        <label for="detail" data-i18n>{LNG_Detail}</label>
+        <span class="form-control icon-file">
+          <textarea id="detail" name="detail" rows="10" placeholder="{LNG_Write your comment}...."></textarea>
+        </span>
+        <div class="comment" id="result_detail" data-i18n>{LNG_Please check that it is correct before sending.} {LNG_BBCode can be used.}</div>
+      </div>
+      <div class="form-group" data-if="!member_id">
+        <div class="width50">
+          <label for="sender" data-i18n>{LNG_Name}</label>
+          <span class="form-control icon-user">
+            <input type="text" id="sender" name="sender" maxlength="150" placeholder="{LNG_Name}" data-attr="value:sender">
+          </span>
+        </div>
+        <div class="width50">
+          <label for="email" data-i18n>{LNG_Email}</label>
+          <span class="form-control icon-email">
+            <input type="email" id="email" name="email" maxlength="255" placeholder="{LNG_Email}" data-attr="value:email">
+          </span>
+        </div>
+      </div>
+    </fieldset>
+    <fieldset class="submit text-right">
+      <input type="hidden" name="module_id" value="{MODULE_ID}">
+      <input type="hidden" name="id" value="0">
+      <input type="hidden" name="index_id" value="{ID}">
+      <button type="submit" class="btn btn-primary icon-reply" data-i18n>{LNG_Post a Comment}</button>
+    </fieldset>
+  </form>
+</div>

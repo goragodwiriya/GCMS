@@ -1,0 +1,173 @@
+<aside data-component="sidebar"></aside>
+<div class="main-content">
+  <div>
+    <header data-component="topbar"></header>
+    <main class="content">
+      <form data-form="menu" data-validate="true" action="../api/index/adminmenu/save" method="post" data-ajax-submit="true" data-load-query-params="true"
+            data-load-api="../api/index/adminmenu/get" autocomplete="off" data-on-load="initMenuForm">
+        <div class="card-groups">
+          <header>
+            <div>
+              <h1 class="icon-menus" data-text="id ? '{LNG_Edit} {LNG_Menu}' : '{LNG_Create} {LNG_Menu}'" data-i18n></h1>
+              <p data-text="id ? '{LNG_Edit existing} {LNG_Menu}' : '{LNG_Create new} {LNG_Menu}'" data-i18n></p>
+            </div>
+          </header>
+          <div class="content-body">
+            <!-- Menu Details -->
+            <fieldset>
+              <legend class="icon-menus" data-i18n>Menu Details</legend>
+              <div>
+                <div class="form-group bottom">
+                  <div>
+                    <label for="language" data-i18n>Language</label>
+                    <span class="form-control icon-language">
+                      <select id="language" name="language" data-options-key="language" data-attr="value:language">
+                      </select>
+                    </span>
+                  </div>
+                  <div>
+                    <button type="button" id="copy_menu" class="btn btn-info icon-copy" data-i18n>Copy</button>
+                  </div>
+                </div>
+                <div class="comment" id="result_language" data-i18n> Select the language of this item (selecting the first option makes it available in all languages) </div>
+              </div>
+              <div>
+                <label for="menu_text" data-i18n>Text</label>
+                <span class="form-control icon-menus">
+                  <input type="text" id="menu_text" name="menu_text" maxlength="100" required autofocus data-attr="value:menu_text">
+                </span>
+                <div class="comment" id="result_menu_text" data-i18n>Text displayed on the menu</div>
+              </div>
+              <div>
+                <label for="menu_tooltip" data-i18n>Tooltip</label>
+                <span class="form-control icon-edit">
+                  <input type="text" id="menu_tooltip" name="menu_tooltip" maxlength="100" data-attr="value:menu_tooltip">
+                </span>
+                <div class="comment" id="result_menu_tooltip" data-i18n>Message shown when mouse hovers over the menu</div>
+              </div>
+              <div>
+                <label for="accesskey" data-i18n>Accesskey</label>
+                <span class="form-control icon-keyboard">
+                  <input type="text" id="accesskey" name="accesskey" maxlength="1" data-attr="value:accesskey">
+                </span>
+                <div class="comment" id="result_accesskey" data-i18n> Enter a lowercase letter or number as a keyboard shortcut for this menu (sub-menus do not support shortcuts —
+                  avoid duplicating system shortcuts) </div>
+              </div>
+              <div>
+                <label data-i18n>Icon</label>
+                <div id="icon_picker" data-component="icon-picker" data-name="icon"></div>
+              </div>
+              <div class="comment" id="result_icon" data-i18n>Select the icon for this menu.</div>
+          </div>
+          </fieldset>
+          <!-- Position -->
+          <fieldset>
+            <legend class="icon-config" data-i18n>Position &amp; Order</legend>
+            <div>
+              <label for="alias" data-i18n>Alias</label>
+              <span class="form-control icon-edit">
+                <input type="text" id="alias" name="alias" maxlength="100" data-attr="value:alias">
+              </span>
+              <div class="comment" id="result_alias" data-i18n> URL alias for this menu item (defaults to the module name when installed) </div>
+            </div>
+            <div>
+              <label for="parent" data-i18n>Menu Position</label>
+              <span class="form-control icon-config">
+                <select id="parent" name="parent" data-attr="value:parent">
+                  <option value="0_MAINMENU" data-i18n>Main Menu</option>
+                  <option value="1_SIDEMENU" data-i18n>Side Menu</option>
+                  <option value="2_BOTTOMMENU" data-i18n>Bottom Menu</option>
+                </select>
+              </span>
+              <div class="comment" id="result_parent" data-i18n> The area of the website where this menu will appear (depends on your active theme) </div>
+            </div>
+            <div>
+              <label for="type" data-i18n>Menu Type</label>
+              <span class="form-control icon-menus">
+                <select id="type" name="type" data-attr="value:type">
+                  <option value="0" data-i18n>First menu item (eg Front page)</option>
+                  <option value="1" data-i18n>Top level menu</option>
+                  <option value="2" data-i18n>1st Sub-menu level</option>
+                  <option value="3" data-i18n>2nd Sub-menu level</option>
+                </select>
+              </span>
+              <div class="comment" id="result_type" data-i18n>Select the hierarchy level for this menu item</div>
+            </div>
+            <div>
+              <label for="menu_order" data-i18n>Menu Order</label>
+              <span class="form-control icon-config">
+                <select id="menu_order" name="menu_order" size="8">
+                </select>
+              </span>
+              <div class="comment" id="result_menu_order" data-i18n> This item will appear after the selected menu item </div>
+            </div>
+            <div>
+              <label for="published" data-i18n>Status</label>
+              <span class="form-control icon-visited">
+                <select id="published" name="published" data-attr="value:published">
+                  <option value="0" data-i18n>Do not show</option>
+                  <option value="1" data-i18n>Show</option>
+                  <option value="2" data-i18n>Display when logged in</option>
+                  <option value="3" data-i18n>Display when not logged in</option>
+                </select>
+              </span>
+              <div class="comment" id="result_published" data-i18n>Control the visibility of this menu item</div>
+            </div>
+          </fieldset>
+          <!-- Action -->
+          <fieldset>
+            <legend class="icon-forward" data-i18n>Action on Click</legend>
+            <div>
+              <label for="menu_action" data-i18n>When Clicked</label>
+              <span class="form-control icon-config">
+                <select id="menu_action" name="menu_action" data-attr="value:action">
+                  <option value="0" data-i18n>Do not take any action. (Eg, a menu with sub menus)</option>
+                  <option value="1" selected="" data-i18n>Modules already installed</option>
+                  <option value="2" data-i18n>Custom URL</option>
+                </select>
+              </span>
+              <div class="comment" id="result_menu_action" data-i18n>Choose what happens when a visitor clicks this menu item</div>
+            </div>
+            <!-- Shown when action = 1 (installed module) -->
+            <div id="field_index_id" class="hidden">
+              <label for="index_id" data-i18n>Installed Module</label>
+              <span class="form-control icon-modules">
+                <select id="index_id" name="index_id" data-options-key="index_id" data-attr="value:index_id">
+                </select>
+              </span>
+              <div class="comment" id="result_index_id" data-i18n> Choose the page or module to open when this menu item is clicked </div>
+            </div>
+            <!-- Shown when action = 2 (custom URL) -->
+            <div id="field_menu_url" class="hidden">
+              <label for="menu_url" data-i18n>URL</label>
+              <span class="form-control icon-world">
+                <input type="url" id="menu_url" name="menu_url" maxlength="255" placeholder="https://" data-attr="value:menu_url">
+              </span>
+              <div class="comment" id="result_menu_url" data-i18n>The URL to open when this menu item is clicked</div>
+            </div>
+            <!-- Shown when action = 1 or 2 -->
+            <div id="field_menu_target" class="hidden">
+              <label for="menu_target" data-i18n>Open Link In</label>
+              <span class="form-control icon-forward">
+                <select id="menu_target" name="menu_target" data-attr="value:menu_target">
+                  <option value="" data-i18n>Open link in same page (default)</option>
+                  <option value="_blank" data-i18n>Open link in new page (_blank)</option>
+                </select>
+              </span>
+              <div class="comment" id="result_menu_target" data-i18n>Determine how the link opens when clicked</div>
+            </div>
+          </fieldset>
+          <!-- Submit -->
+          <fieldset class="submit">
+            <button type="submit" class="btn btn-primary icon-save" data-i18n>Save</button>
+            <input type="hidden" name="id" data-attr="value:id">
+          </fieldset>
+        </div>
+  </div>
+  </form>
+  </main>
+</div>
+<footer class="footer">
+  <p class="center">&copy; 2026 GCMS - Powered by <a href="https://nowjs.net">Now.js</a></p>
+</footer>
+</div>

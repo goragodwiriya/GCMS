@@ -1,0 +1,88 @@
+{
+    "DATE_FORMAT": "d M Y, H:i",
+    "DATE_LONG": [
+        "Sunday",
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+        "Saturday"
+    ],
+    "DATE_SHORT": [
+        "Su",
+        "Mo",
+        "Tu",
+        "We",
+        "Th",
+        "Fr",
+        "Sa"
+    ],
+    "DOCUMENT_NOTIFICATIONS": {
+        "1": "write a new article",
+        "2": "edit the article",
+        "3": "new comments"
+    },
+    "DOMAIN_STATUS": {
+        "1": "Order confirmation",
+        "3": "Payment",
+        "6": "Active"
+    },
+    "FROM_TIME": "from H:i",
+    "IMG_LAW": [
+        "Photo uploads are optional.",
+        "Always upload (for question)."
+    ],
+    "MEMBER_ONLY_LIST": [
+        "The system displays a warning message (default)",
+        "Display some content, except within Code block ([code]..[/code])"
+    ],
+    "MONTH_LONG": {
+        "1": "January",
+        "2": "February",
+        "3": "March",
+        "4": "April",
+        "5": "May",
+        "6": "June",
+        "7": "July",
+        "8": "August",
+        "9": "September",
+        "10": "October",
+        "11": "November",
+        "12": "December"
+    },
+    "MONTH_SHORT": {
+        "1": "Jan",
+        "2": "Feb",
+        "3": "Mar",
+        "4": "Apr",
+        "5": "May",
+        "6": "Jun",
+        "7": "Jul",
+        "8": "Aug",
+        "9": "Sep",
+        "10": "Oct",
+        "11": "Nov",
+        "12": "Dec"
+    },
+    "PAYMENT_STATUS": {
+        "1": "Confirm order",
+        "2": "Quotation",
+        "3": "Payment notification",
+        "4": "Payment is not valid",
+        "5": "Shipping",
+        "6": "Complete"
+    },
+    "PUBLISHEDS": [
+        "Unpublished",
+        "Published"
+    ],
+    "TIME_FORMAT": "H:i",
+    "TO_TIME": "to H:i",
+    "WWW_PAYMENT_STATUS": {
+        "1": "Pending",
+        "3": "Payment",
+        "6": "Site complete"
+    },
+    "YEAR_OFFSET": 0
+}

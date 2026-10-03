@@ -1,0 +1,50 @@
+<aside data-component="sidebar"></aside>
+<div class="main-content">
+  <div>
+    <header data-component="topbar"></header>
+    <main class="content">
+      <div class="card-groups">
+        <header>
+          <div>
+            <h1 class="icon-edocument" data-i18n>{LNG_List of} {LNG_E-Document}</h1>
+            <p data-i18n>{LNG_Manage} {LNG_E-Document}</p>
+          </div>
+          <a class="btn btn-primary icon-new" href="/edocument-write" data-params="module_id" data-i18n>{LNG_Add} {LNG_E-Document}</a>
+        </header>
+
+        <div class="content-body">
+          <div class="tablebody">
+            <table class="table border fullwidth" data-table="edocumentSetup" data-source="../api/edocument/setup" data-search-columns="document_no,topic,detail"
+                   data-page-size="30" data-default-sort="last_update desc" data-show-checkbox="true" data-actions='{"delete":"Delete"}'
+                   data-action-url="../api/edocument/setup/action" data-action-params="module_id" data-row-actions='{
+                       "edit": {
+                         "label": "Edit",
+                         "className": "btn btn-success icon-edit"
+                       },
+                       "report": {
+                         "label": "Download Details",
+                         "className": "btn btn-warning icon-report"
+                       }
+                   }'>
+              <thead>
+                <tr>
+                  <th data-field="document_no" data-sort="document_no" data-i18n>{LNG_Document number}</th>
+                  <th data-field="topic" data-template="<a href='${file_url}' target='_blank'>${topic}.${ext}</a>" data-sort="topic" data-i18n>{LNG_Document title}</th>
+                  <th data-field="reciever" class="center" data-cell-class="center" data-i18n>{LNG_Recipient}</th>
+                  <th data-field="sender" class="center" data-cell-class="center" data-i18n>{LNG_Sender}</th>
+                  <th data-field="size" class="center" data-cell-class="center" data-sort="size" data-format="bytes" data-i18n>{LNG_File size}</th>
+                  <th data-field="last_update" class="center" data-cell-class="center" data-sort="last_update" data-format="datetime" data-i18n>{LNG_Last updated}</th>
+                  <th data-field="downloads" class="center" data-cell-class="center" data-sort="downloads" data-i18n>{LNG_Download}</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+  <footer class="footer">
+    <p class="center">&copy; 2026 GCMS - Powered by <a href="https://nowjs.net">Now.js</a></p>
+  </footer>
+</div>

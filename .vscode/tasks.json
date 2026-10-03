@@ -1,0 +1,49 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Copilot: Archive Current Session",
+            "type": "shell",
+            "command": "${workspaceFolder}/scripts/copilot/archive-session.sh",
+            "args": [
+                "${env:VSCODE_TARGET_SESSION_LOG}"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared",
+                "clear": true
+            },
+            "problemMatcher": [],
+            "detail": "Archive the active Copilot debug-log session using VSCODE_TARGET_SESSION_LOG."
+        },
+        {
+            "label": "Copilot: Archive Session From Path",
+            "type": "shell",
+            "command": "${workspaceFolder}/scripts/copilot/archive-session.sh",
+            "args": [
+                "${input:copilotSessionLogDir}"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared",
+                "clear": true
+            },
+            "problemMatcher": [],
+            "detail": "Archive a Copilot debug-log session by entering its folder path explicitly."
+        }
+    ],
+    "inputs": [
+        {
+            "id": "copilotSessionLogDir",
+            "type": "promptString",
+            "description": "Path to the Copilot debug-log session folder",
+            "default": "/home/poo/.config/Code/User/workspaceStorage/9146248a76bdc83782f746dc2258ef90/GitHub.copilot-chat/debug-logs/"
+        }
+    ]
+}

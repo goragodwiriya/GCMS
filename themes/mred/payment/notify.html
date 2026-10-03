@@ -1,0 +1,97 @@
+<!-- Payment: bank accounts + PromptPay QR + "notify payment" form. A partial —
+     Payment\Notify\View::page() places it in payment/page.html for the signup,
+     domain and store payment pages -->
+<div class="payment-notify" data-component="api" data-endpoint="{METHODS_ENDPOINT}" data-cache="true" data-cache-time="60000">
+  <div data-if="banks && banks.length > 0">
+    <h3>{LNG_Pay by bank transfer}</h3>
+    <ul class="payment-bank-list" data-for="bank in banks">
+      <template>
+        <li>
+          <strong class="bank-name" data-text="bank.bank_name"></strong>
+          <span class="bank-line" data-if="bank.branch" data-text="bank.branch"></span>
+          <span class="bank-line" data-if="bank.account_name">{LNG_Account name}: <span data-text="bank.account_name"></span></span>
+          <span class="bank-line" data-if="bank.account_no">{LNG_Account no.}: <span data-text="bank.account_no"></span></span>
+        </li>
+      </template>
+    </ul>
+  </div>
+  <div data-if="promptpay">
+    <h3>{LNG_Pay by PromptPay QR}</h3>
+    <img class="payment-qr" src="{QR_URL}" alt="PromptPay QR">
+  </div>
+</div>
+<form data-form="paymentNotify" data-validate="true" action="{ACTION_URL}" method="post" data-ajax-submit="true">
+  <fieldset>
+    <legend>{LNG_Notify payment}</legend>
+    <div>
+      <label for="order_no">{LNG_Order no.}</label>
+      <span class="form-control">
+        <input type="text" id="order_no" name="order_no" value="{ORDER_NO}" autocomplete="off">
+      </span>
+    </div>
+    <div class="form-group">
+      <div class="width50">
+        <label for="email">{LNG_Email}</label>
+        <span class="form-control icon-user">
+          <input type="email" id="email" name="email" value="{EMAIL}" autocomplete="off">
+        </span>
+      </div>
+      <div class="width50">
+        <label for="url">{LNG_Website address}</label>
+        <span class="form-control">
+          <input type="text" id="url" name="url" value="{URL}" autocomplete="off">
+        </span>
+      </div>
+    </div>
+    <div class="comment">{LNG_Fill in either the order number, or your email and website address.}</div>
+    <input type="hidden" name="package" value="{PACKAGE}">
+    <div class="form-group">
+      <div class="width50">
+        <label for="payment_date">{LNG_Payment date}</label>
+        <span class="form-control icon-calendar">
+          <input type="date" id="payment_date" name="payment_date" value="{DATE}" required>
+        </span>
+      </div>
+      <div class="width50">
+        <label for="payment_time">{LNG_Payment time}</label>
+        <span class="form-control">
+          <input type="time" id="payment_time" name="payment_time" value="{TIME}" required>
+        </span>
+      </div>
+    </div>
+    <div>
+      <label for="paid">{LNG_Amount paid}</label>
+      <span class="form-control">
+        <input type="number" id="paid" name="paid" step="0.01" min="0.01" value="{AMOUNT}" required>
+      </span>
+      <div class="comment" id="result_paid"></div>
+    </div>
+    <div>
+      <label for="payment_method">{LNG_Payment method}</label>
+      <span class="form-control">
+        <input type="text" id="payment_method" name="payment_method" autocomplete="off">
+      </span>
+    </div>
+    <div>
+      <label for="payment_ref">{LNG_Reference no.}</label>
+      <span class="form-control">
+        <input type="text" id="payment_ref" name="payment_ref" autocomplete="off">
+      </span>
+    </div>
+    <div>
+      <label for="comment">{LNG_Note}</label>
+      <span class="form-control">
+        <textarea id="comment" name="comment" rows="3"></textarea>
+      </span>
+    </div>
+    <div>
+      <label for="slip">{LNG_Payment slip}</label>
+      <span class="form-control">
+        <input type="file" id="slip" name="slip" data-files="slip" data-preview="true" accept="image/*">
+      </span>
+    </div>
+  </fieldset>
+  <fieldset class="submit">
+    <button type="submit" class="btn btn-primary icon-save">{LNG_Notify payment}</button>
+  </fieldset>
+</form>

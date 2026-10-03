@@ -1,0 +1,19 @@
+<!-- Payment page of a signup, domain or store order: notify.html goes in the
+     content slot, which may carry a modifier class (store orders:
+     product-payment) -->
+<article class="main-page payment-page">
+  <header class="page-header hero">
+    <div class="container">
+      <nav class="breadcrumbs one_line">
+        <ul>{BREADCRUMBS}</ul>
+      </nav>
+      <h1 class="page__title">{TOPIC}</h1>
+      <p class="page__subtitle">{DESCRIPTION}</p>
+    </div>
+  </header>
+  <div class="page-body">
+    <div class="container">
+      <div class="page-content {CLASS}">{CONTENT}</div>
+    </div>
+  </div>
+</article>

@@ -1,0 +1,188 @@
+<aside data-component="sidebar"></aside>
+<div class="main-content">
+  <div>
+    <header data-component="topbar"></header>
+    <main class="content dashboard">
+      <div class="card-groups">
+        <header>
+          <div>
+            <h1 class="icon-dashboard" data-i18n>Dashboard</h1>
+            <p data-i18n>Site overview</p>
+          </div>
+        </header>
+
+        <!-- ═══════════════════════════════════════════════════════════
+             CORE STATS — visitors & members
+             data-cache-time="60000" = refresh every 60 s
+             ═══════════════════════════════════════════════════════ -->
+        <div class="ggrid" data-component="api" data-endpoint="../api/index/dashboard" data-cache="true" data-cache-time="60000">
+
+          <!-- Visitors Today -->
+          <div class="block3 large6 stat-card positive">
+            <div class="stat-header icon-users">
+              <div class="stat-title" data-i18n>Visitors Today</div>
+            </div>
+            <div class="stat-value" data-text="data.core.visitors_today"></div>
+            <div class="stat-change">
+              <span data-i18n>Page Views</span>&nbsp;<span data-text="data.core.pageviews_today"></span>
+            </div>
+          </div>
+
+          <!-- Visitors This Month -->
+          <div class="block3 large6 stat-card">
+            <div class="stat-header icon-stats">
+              <div class="stat-title" data-i18n>Visitors This Month</div>
+            </div>
+            <div class="stat-value" data-text="data.core.unique_visitors_month"></div>
+            <div class="stat-change">
+              <span data-i18n>Page Views</span>&nbsp;<span data-text="data.core.pageviews_month"></span>
+            </div>
+          </div>
+
+          <!-- Total Page Views -->
+          <div class="block3 large6 stat-card">
+            <div class="stat-header icon-arrow-up-right">
+              <div class="stat-title" data-i18n>Total Page Views</div>
+            </div>
+            <div class="stat-value" data-text="data.core.total_pageviews"></div>
+            <div class="stat-change" data-i18n>All time</div>
+          </div>
+
+          <!-- Total Members -->
+          <div class="block3 large6 stat-card positive">
+            <div class="stat-header icon-register">
+              <div class="stat-title" data-i18n>Members</div>
+            </div>
+            <div class="stat-value" data-text="data.core.members_total"></div>
+            <div class="stat-change">
+              <span data-i18n>Active</span>&nbsp;<span data-text="data.core.members_active"></span>
+            </div>
+          </div>
+
+          <!-- New Members This Month -->
+          <div class="block3 large6 stat-card" data-cell-class="data.core.member_growth >= 0 ? 'positive' : 'negative'">
+            <div class="stat-header icon-verfied">
+              <div class="stat-title" data-i18n>New Members</div>
+            </div>
+            <div class="stat-value" data-text="data.core.new_members_this_month"></div>
+            <div class="stat-change">
+              <span data-cell-class="data.core.member_growth >= 0 ? 'icon-arrow-up' : 'icon-arrow-down'" data-text="data.core.member_growth + '%'"></span>&nbsp;<span data-i18n>vs
+                last month</span>
+            </div>
+          </div>
+
+          <!-- Board Posts (only shown when module is present) -->
+          <div class="block3 large6 stat-card" data-show="data.modules.board !== undefined">
+            <div class="stat-header icon-flag">
+              <div class="stat-title" data-i18n>Board Posts</div>
+            </div>
+            <div class="stat-value" data-text="(data.modules.board || {total:0}).total"></div>
+            <div class="stat-change">
+              <span data-i18n>Pending</span>&nbsp;<span data-text="(data.modules.board || {pending:0}).pending"></span>
+            </div>
+          </div>
+
+          <!-- Documents -->
+          <div class="block3 large6 stat-card" data-show="data.modules.document !== undefined">
+            <div class="stat-header icon-create">
+              <div class="stat-title" data-i18n>Documents</div>
+            </div>
+            <div class="stat-value" data-text="(data.modules.document || {total:0}).total"></div>
+            <div class="stat-change">
+              <span data-i18n>Published</span>&nbsp;<span data-text="(data.modules.document || {published:0}).published"></span>
+            </div>
+          </div>
+
+          <!-- Gallery -->
+          <div class="block3 large6 stat-card" data-show="data.modules.gallery !== undefined">
+            <div class="stat-header icon-image">
+              <div class="stat-title" data-i18n>Gallery</div>
+            </div>
+            <div class="stat-value" data-text="(data.modules.gallery || {albums:0}).albums"></div>
+            <div class="stat-change">
+              <span data-i18n>Images</span>&nbsp;<span data-text="(data.modules.gallery || {images:0}).images"></span>
+            </div>
+          </div>
+
+          <!-- Personnel -->
+          <div class="block3 large6 stat-card" data-show="data.modules.personnel !== undefined">
+            <div class="stat-header icon-users">
+              <div class="stat-title" data-i18n>Personnel</div>
+            </div>
+            <div class="stat-value" data-text="(data.modules.personnel || {total:0}).total"></div>
+            <div class="stat-change" data-i18n>Active staff</div>
+          </div>
+
+          <!-- Cache Size -->
+          <div class="block3 large6 stat-card">
+            <div class="stat-header icon-database">
+              <div class="stat-title" data-i18n>Cache Size</div>
+            </div>
+            <div class="stat-value one_line" data-text="data.system.cache_size"></div>
+            <div class="stat-change" data-i18n>Disk usage</div>
+          </div>
+
+          <!-- Log Size -->
+          <div class="block3 large6 stat-card">
+            <div class="stat-header icon-list">
+              <div class="stat-title" data-i18n>Log Size</div>
+            </div>
+            <div class="stat-value one_line" data-text="data.system.log_size"></div>
+            <div class="stat-change" data-i18n>Disk usage</div>
+          </div>
+
+          <!-- Data Folder Size -->
+          <div class="block3 large6 stat-card">
+            <div class="stat-header icon-folder">
+              <div class="stat-title" data-i18n>Data Size</div>
+            </div>
+            <div class="stat-value one_line" data-text="data.system.data_size"></div>
+            <div class="stat-change" data-i18n>Total data folder</div>
+          </div>
+
+        </div><!-- /.ggrid api -->
+
+        <!-- ═══════════════════════════════════════════════════════════
+             CHARTS
+             ═══════════════════════════════════════════════════════ -->
+        <div class="ggrid">
+          <section class="block8">
+            <h2 data-i18n>People visit the site</h2>
+            <div style="height:320px;" data-component="graph" data-type="bar" data-url="../api/index/chart/visitors" data-max-data-points="30"></div>
+          </section>
+          <section class="block4">
+            <h2 data-i18n>Content Distribution</h2>
+            <div style="height:320px;" data-component="graph" data-type="pie" data-url="../api/index/chart/content"></div>
+          </section>
+        </div>
+
+        <!-- ═══════════════════════════════════════════════════════════
+             RECENT ACTIVITY LOG
+             ═══════════════════════════════════════════════════════ -->
+        <div class="ggrid">
+          <section class="block12">
+            <h2 class="icon-list" data-i18n>Recent Activity</h2>
+            <div class="tablebody">
+              <table class="table border fullwidth" data-table="dashboard-logs" data-source="../api/index/dashboard/logs">
+                <thead>
+                  <tr>
+                    <th data-field="created_at" data-format="datetime" data-i18n>Date</th>
+                    <th data-field="name" data-i18n>User</th>
+                    <th data-field="module" class="center" data-cell-class="center" data-format="humanize" data-i18n>Module</th>
+                    <th data-field="action"  class="center" data-cell-class="center" data-format="humanize" data-i18n>Action</th>
+                    <th data-field="topic" data-i18n>Detail</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </section>
+        </div>
+
+      </div><!-- /.card-groups -->
+    </main>
+  </div>
+  <footer class="footer">
+    <p class="center">&copy; 2026 Powered by <a href="https://nowjs.net">Now.js</a></p>
+  </footer>
+</div>

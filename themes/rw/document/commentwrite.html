@@ -1,0 +1,38 @@
+<article class="board-newtopic-section">
+  <header class="page-header hero">
+    <div class="container">
+      <h1 class="page__title" data-i18n>{LNG_Edit comment}</h1>
+      <p class="page__subtitle">{TOPIC}</p>
+    </div>
+  </header>
+  <div class="page-body">
+    <div class="container">
+      <div class="page-content">
+        <div class="board-form-wrap">
+          <nav class="breadcrumbs one_line">
+            <ul>{BREADCRUMBS}</ul>
+          </nav>
+          <form data-form="documentCommentEdit" data-validate="true" data-reset="true" action="api/document/reply/save" method="post" data-ajax-submit="true"
+                data-sanitize-input="false" data-load-query-params="true" data-load-api="api/document/reply/get?module_id={MODULE_ID}" autocomplete="off">
+            <fieldset>
+              <div>
+                <label for="detail" data-i18n>{LNG_Detail}</label>
+                <span class="form-control icon-file">
+                  <textarea id="detail" name="detail" rows="10" placeholder="{LNG_Write your comment}....">{DETAIL}</textarea>
+                </span>
+                <div class="comment" id="result_detail" data-i18n>{LNG_Comment content is required}</div>
+              </div>
+            </fieldset>
+            <fieldset class="submit text-right">
+              <input type="hidden" name="module_id" value="{MODULE_ID}">
+              <input type="hidden" name="id" value="{ID}">
+              <input type="hidden" name="index_id" value="{ARTICLE_ID}">
+              <a class="btn btn-secondary icon-arrow-left" href="{ARTICLE_URL}" data-i18n>{LNG_Cancel}</a>
+              <button type="submit" class="btn btn-primary icon-save" data-i18n>{LNG_Save}</button>
+            </fieldset>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</article>

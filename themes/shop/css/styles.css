@@ -1,0 +1,139 @@
+:root {
+  /* Color System */
+  --color-primary: #FF0000;
+  --color-primary-text: #FFFFFF;
+  --color-surface-bg: #F9E9E9;
+  --color-accent: rgb(38, 38, 220);
+  --color-text-muted: #6b6560;
+  --color-primary-light: #FF0000;
+  --color-primary-main: #CC0000;
+  --color-primary-dark: #990000;
+  --color-page-bg: #FDFBF8;
+  --color-border: #EAE7E2;
+  --color-text-secondary: #6B645D;
+  --color-text: #2C2825;
+  --color-primary-hover: var(--color-primary-main);
+  --board-radius: 14px;
+  /* Home */
+  --home-radius: 24px;
+  --home-shadow: var(--card-shadow);
+  /* Sidebar Width */
+  --menu-width: 330px;
+  /* Accents */
+  --color-secondary: #ffb81c;
+  --accent-color: #34c759;
+  --info-color: #5ac8fa;
+  --warning-color: #ff9500;
+  --danger-color: #ff3b30;
+  --light-gray: #f8f9fa;
+  --medium-gray: #e9ecef;
+  --dark-gray: #343a40;
+  --card-border-radius: 8px;
+  --box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+}
+/* Header */
+.header {
+  background-color: var(--color-primary);
+  color: var(--color-primary-text);
+  box-shadow: var(--shadow);
+  position: sticky;
+  top: 0;
+  z-index: 1001;
+}
+.header-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-4) 0;
+}
+.header-content .logo {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  text-decoration: none;
+  line-height: 1.4;
+}
+.header-content .logo::before {
+  content: '';
+  background-image: var(--logo);
+  height: 3.6rem;
+  min-width: 3.6rem;
+  background-position: center;
+  background-size: cover;
+}
+.view-header > .container {
+  align-items: center;
+}
+.logo-text {
+  font-size: 1.5rem;
+  color: inherit !important;
+}
+.logo-subtitle {
+  opacity: 0.8;
+  margin: 0;
+}
+.topmenu > ul > li,
+.header .logo::before {
+  border-radius: var(--border-radius);
+}
+.sidemenu li:hover > a:not(.active),
+.topmenu li li:not(.menu-close):hover > button:not(.active),
+.topmenu li li:hover > a:not(.active) {
+  color: var(--color-primary-hover);
+  background-color: transparent;
+}
+.topmenu > ul > li:hover > button,
+.topmenu > ul > li:hover > a,
+.topmenu > ul > li.select > button,
+.topmenu > ul > li.select > a {
+  color: #FFFFFF !important;
+  background-color: rgba(0, 0, 0, 0.2) !important;
+  border-radius: var(--board-radius);
+}
+#main {
+  margin-top: 0;
+}
+.sidemenu li > a {
+  border-left: 5px solid var(--color-primary);
+}
+.hero {
+  background-image: linear-gradient(135deg, var(--color-primary-light) 0%, var(--color-primary-main) 50%, var(--color-primary-dark) 100%);
+  color: var(--color-primary-text);
+  padding: var(--space-16) 0;
+}
+.page-section__bg section {
+  padding: var(--space-8);
+  background-color: var(--home-bg);
+  box-shadow: var(--home-shadow);
+  border-radius: 24px;
+}
+.section-bg {
+  border: none;
+  border-radius: 0;
+  background: none;
+}
+.section__body,
+.home-content {
+  padding: 0;
+}
+.home-content {
+  gap: 0;
+}
+.home-content > section {
+  padding: var(--space-12) 0;
+}
+/* alternate the band colour so the one-column home page reads as sections */
+.home-content > section.section-bg:nth-of-type(even) {
+  background-color: var(--color-surface-bg);
+}
+.page-header > .container {
+  align-items: center;
+  border-bottom: none;
+}
+.image-links {
+  padding: var(--space-20) 0;
+}
+.page-header > .container,
+.page-body > .container {
+  padding: var(--space-4);
+}

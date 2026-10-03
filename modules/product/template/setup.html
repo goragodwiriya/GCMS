@@ -1,0 +1,46 @@
+<aside data-component="sidebar"></aside>
+<div class="main-content">
+  <div>
+    <header data-component="topbar"></header>
+    <main class="content">
+      <div class="card-groups">
+        <header>
+          <div>
+            <h1 class="icon-shop" data-i18n>Products</h1>
+            <p data-i18n>Manage store products</p>
+          </div>
+          <a class="btn btn-primary icon-new" href="/product" data-params="module_id" data-i18n>{LNG_Add} {LNG_Product}</a>
+        </header>
+
+        <div class="content-body">
+          <div class="tablebody">
+            <table class="table border fullwidth" data-table="productList" data-source="../api/product/setup" data-search-columns="topic,sku" data-page-size="25"
+                   data-show-checkbox="true" data-actions='{"delete":"Delete"}' data-action-url="../api/product/setup/action" data-action-params="module_id" data-row-actions='{
+                       "edit": {
+                         "label": "Edit",
+                         "className": "btn btn-success icon-edit"
+                       }
+                   }'>
+              <thead>
+                <tr>
+                  <th data-field="image" data-formatter="formatImage" class="center" data-cell-class="center" data-i18n>{LNG_Photo}</th>
+                  <th data-field="topic" data-i18n>{LNG_Name}</th>
+                  <th data-field="sku" class="center" data-cell-class="center" data-i18n>SKU</th>
+                  <th data-field="category_id" data-filter="true" data-type="select" class="center" data-cell-class="center" data-format="lookup" data-i18n>{LNG_Category}</th>
+                  <th data-field="base_price" class="right" data-cell-class="right" data-format="number" data-i18n>{LNG_Price}</th>
+                  <th data-field="stock_qty" class="center" data-cell-class="center" data-i18n>{LNG_Stock}</th>
+                  <th data-field="published" data-filter="true" data-type="select" class="center" data-cell-class="center" data-formatter="formatActiveStatus" data-i18n>{LNG_Published}</th>
+                  <th data-field="updated_at" class="center" data-cell-class="center" data-format="datetime" data-i18n>{LNG_Last Update}</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+  <footer class="footer">
+    <p class="center">&copy; 2026 GCMS - Powered by <a href="https://nowjs.net">Now.js</a></p>
+  </footer>
+</div>

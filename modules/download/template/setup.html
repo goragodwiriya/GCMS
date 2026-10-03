@@ -1,0 +1,47 @@
+<aside data-component="sidebar"></aside>
+<div class="main-content">
+  <div>
+    <header data-component="topbar"></header>
+    <main class="content">
+      <div class="card-groups">
+        <header>
+          <div>
+            <h1 class="icon-download" data-i18n>{LNG_List of} {LNG_Download file}</h1>
+            <p data-i18n>{LNG_Manage} {LNG_Download file}</p>
+          </div>
+          <a class="btn btn-primary icon-new" href="/download-write" data-params="module_id" data-i18n>{LNG_Add} {LNG_Download file}</a>
+        </header>
+
+        <div class="content-body">
+          <div class="tablebody">
+            <table class="table border fullwidth" data-table="downloadSetup" data-source="../api/download/setup" data-search-columns="name,ext,detail,file"
+                   data-page-size="30" data-default-sort="updated_at desc" data-show-checkbox="true" data-actions='{"delete":"Delete"}'
+                   data-action-url="../api/download/setup/action" data-action-params="module_id" data-row-actions='{
+                       "edit": {
+                         "label": "Edit",
+                         "className": "btn btn-success icon-edit"
+                       }
+                   }'>
+              <thead>
+                <tr>
+                  <th data-field="name" data-template="<a href='${file_url}' target='_blank'>${name}.${ext}</a>" data-sort="name" data-i18n>{LNG_File Name}</th>
+                  <th data-field="widget" class="center" data-cell-class="center" data-template="<code>${widget}</code>" data-i18n>{LNG_Widget}</th>
+                    <th data-field="category_id" class="center" data-cell-class="center" data-filter="true" data-filter-key="category_id" data-type="select" data-show-all="true"
+                      data-all-value="-1" data-format="lookup" data-i18n>{LNG_Category}</th>
+                  <th data-field="detail" data-i18n>{LNG_Description}</th>
+                  <th data-field="size" class="center" data-cell-class="center" data-sort="size" data-format="bytes" data-i18n>{LNG_File size}</th>
+                  <th data-field="updated_at" class="center" data-cell-class="center" data-sort="updated_at" data-format="datetime" data-i18n>{LNG_Last updated}</th>
+                  <th data-field="downloads" class="center" data-cell-class="center" data-sort="downloads" data-i18n>{LNG_Download}</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+  <footer class="footer">
+    <p class="center">&copy; 2026 GCMS - Powered by <a href="https://nowjs.net">Now.js</a></p>
+  </footer>
+</div>
