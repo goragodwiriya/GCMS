@@ -1,0 +1,88 @@
+<aside data-component="sidebar"></aside>
+<div class="main-content">
+  <div>
+    <header data-component="topbar"></header>
+    <main class="content">
+      <div class="card-groups">
+        <header>
+          <div>
+            <h1 class="icon-cog" data-i18n>{LNG_Portfolio} {LNG_Settings}</h1>
+            <p data-i18n>Configure portfolio display options</p>
+          </div>
+        </header>
+
+        <div class="content-body">
+          <form data-form="portfolioSettings" action="../api/portfolio/settings/save" method="POST" data-ajax-submit="true" data-load-api="../api/portfolio/settings/get"
+                data-load-query-params="true" data-confirm="Confirm save">
+            <fieldset>
+              <legend class="icon-list" data-i18n>Listing page</legend>
+
+              <div class="form-group">
+                <div class="width50">
+                  <label for="rows" data-i18n>Rows</label>
+                  <span class="form-control icon-rows">
+                    <select id="rows" name="rows" data-attr="value:rows">
+                      <option value="1" data-i18n>1</option>
+                      <option value="2" data-i18n>2</option>
+                      <option value="3" data-i18n>3</option>
+                      <option value="4" data-i18n>4</option>
+                      <option value="5" data-i18n>5</option>
+                      <option value="6" data-i18n>6</option>
+                      <option value="7" data-i18n>7</option>
+                      <option value="8" data-i18n>8</option>
+                      <option value="9" data-i18n>9</option>
+                      <option value="10" data-i18n>10</option>
+                      <option value="11" data-i18n>11</option>
+                      <option value="12" data-i18n>12</option>
+                      <option value="13" data-i18n>13</option>
+                      <option value="14" data-i18n>14</option>
+                    </select>
+                  </span>
+                </div>
+                <div class="width50">
+                  <label for="cols" data-i18n>Columns</label>
+                  <span class="form-control icon-cols">
+                    <select id="cols" name="cols" data-attr="value:cols">
+                      <option value="1" data-i18n>1</option>
+                      <option value="2" data-i18n>2</option>
+                      <option value="3" data-i18n>3</option>
+                      <option value="4" data-i18n>4</option>
+                      <option value="5" data-i18n>5</option>
+                      <option value="6" data-i18n>6</option>
+                    </select>
+                  </span>
+                </div>
+              </div>
+              <div class="comment" data-i18n>Items per page = rows &times; columns</div>
+            </fieldset>
+
+            <fieldset>
+              <legend class="icon-shield" data-i18n>Permissions</legend>
+
+              <div>
+                <label for="can_write" data-i18n>{LNG_Can write} {LNG_Portfolio}</label>
+                <span class="form-control icon-user">
+                  <select id="can_write" name="can_write" data-options-key="user_status_configurable" data-attr="value:can_write" multiple></select>
+                </span>
+              </div>
+              <div>
+                <label for="can_config" data-i18n>{LNG_Can configure} {LNG_Portfolio}</label>
+                <span class="form-control icon-user">
+                  <select id="can_config" name="can_config" data-options-key="user_status_configurable" data-attr="value:can_config" multiple></select>
+                </span>
+              </div>
+            </fieldset>
+
+            <fieldset class="submit">
+              <button type="submit" class="btn btn-primary icon-save" data-i18n>Save</button>
+              <input type="hidden" name="module_id" data-attr="value:module_id">
+            </fieldset>
+          </form>
+        </div>
+      </div>
+    </main>
+  </div>
+  <footer class="footer">
+    <p class="center">&copy; 2026 GCMS - Powered by <a href="https://nowjs.net">Now.js</a></p>
+  </footer>
+</div>

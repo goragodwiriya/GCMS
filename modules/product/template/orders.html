@@ -1,0 +1,43 @@
+<aside data-component="sidebar"></aside>
+<div class="main-content">
+  <div>
+    <header data-component="topbar"></header>
+    <main class="content">
+      <div class="card-groups">
+        <header>
+          <div>
+            <h1 class="icon-cart" data-i18n>Orders</h1>
+            <p data-i18n>Manage customer orders</p>
+          </div>
+        </header>
+
+        <div class="content-body">
+          <div class="tablebody">
+            <table class="table border fullwidth" data-table="productOrderList" data-source="../api/product/orders" data-search-columns="order_no,cust_name,cust_phone" data-page-size="25"
+                   data-row-actions='{
+                       "edit": {
+                         "label": "Detail",
+                         "className": "btn btn-success icon-view"
+                       }
+                   }'>
+              <thead>
+                <tr>
+                  <th data-field="order_no" data-i18n>{LNG_Order No}</th>
+                  <th data-field="created_at" class="center" data-cell-class="center" data-format="datetime" data-i18n>{LNG_Date}</th>
+                  <th data-field="cust_name" data-i18n>{LNG_Name}</th>
+                  <th data-field="grand_total" class="right" data-cell-class="right" data-format="number" data-i18n>{LNG_Total}</th>
+                  <th data-field="order_status" data-filter="true" data-type="select" class="center" data-cell-class="center" data-format="lookup" data-i18n>{LNG_Status}</th>
+                  <th data-field="payment_status" data-filter="true" data-type="select" class="center" data-cell-class="center" data-format="lookup" data-i18n>{LNG_Payment}</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+  <footer class="footer">
+    <p class="center">&copy; 2026 GCMS - Powered by <a href="https://nowjs.net">Now.js</a></p>
+  </footer>
+</div>

@@ -1,0 +1,45 @@
+<!-- Domain checkout form of a member, placed in domain/index.html;
+     a visitor gets domain/login.html instead — orders belong to an account -->
+<form data-form="domainCheckout" data-validate="true" action="{WEBURL}api/domain/checkout/save?module_id={MODULE_ID}" method="post" data-ajax-submit="true" data-load-api="{WEBURL}api/domain/checkout/get" data-load-cache="false">
+  <fieldset>
+    <legend>{LNG_Customer information}</legend>
+    <div>
+      <label for="chk_name">{LNG_Full name}</label>
+      <span class="form-control icon-user">
+        <input type="text" id="chk_name" name="name" required data-attr="value:name">
+      </span>
+    </div>
+    <div>
+      <label for="chk_phone">{LNG_Phone}</label>
+      <span class="form-control icon-phone">
+        <input type="tel" id="chk_phone" name="phone" required data-attr="value:phone">
+      </span>
+    </div>
+    <div>
+      <label for="chk_address">{LNG_Address}</label>
+      <span class="form-control icon-address">
+        <textarea id="chk_address" name="address" rows="2" data-attr="value:address"></textarea>
+      </span>
+    </div>
+    <div class="form-group">
+      <div class="width50">
+        <label for="chk_province">{LNG_Province}</label>
+        <span class="form-control icon-location">
+          <input type="text" id="chk_province" name="province" data-attr="value:province">
+        </span>
+      </div>
+      <div class="width50">
+        <label for="chk_zipcode">{LNG_Zip code}</label>
+        <span class="form-control icon-location">
+          <input type="text" id="chk_zipcode" name="zipcode" data-attr="value:zipcode">
+        </span>
+      </div>
+    </div>
+    <input type="hidden" name="country" value="TH" data-attr="value:country">
+    <input type="hidden" name="module_id" value="{MODULE_ID}">
+  </fieldset>
+  <fieldset class="submit">
+    <button type="submit" class="btn btn-primary icon-save">{LNG_Place order}</button>
+    <a class="btn btn-secondary icon-list" href="{HISTORY_URL}">{LNG_My Domain Orders}</a>
+  </fieldset>
+</form>

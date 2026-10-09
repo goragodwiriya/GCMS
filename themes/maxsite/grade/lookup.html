@@ -1,0 +1,156 @@
+<!-- Grade lookup: the form posts to api/grade/lookup/search and the result is
+     rendered below it by FormManager (data-submit-target) — no page reload -->
+<article class="main-page lists-page">
+  <header class="page-header hero">
+    <div class="container">
+      <nav class="breadcrumbs one_line">
+        <ul>{BREADCRUMBS}</ul>
+      </nav>
+      <h1 class="page__title">{TOPIC}</h1>
+      <p class="page__subtitle">{DESCRIPTION}</p>
+    </div>
+  </header>
+  <div class="page-body">
+    <div class="container">
+      <div class="page-content">
+        <section class="page-detail">{DETAIL}</section>
+        <div class="auth-container">
+          <div class="auth-card">
+            <form data-form="gradeLookup" class="auth-form" novalidate autocomplete="off" action="{WEBURL}api/grade/lookup/search" method="post" data-ajax-submit="true" data-submit-target="#grade-result" data-reset-after-submit="true" data-show-success-inline="false" data-show-success-in-notification="false">
+              <div class="auth-header">
+                <h2>{LNG_Check academic results}</h2>
+                <p class="login-message">{LNG_Enter the student's citizen ID and date of birth}</p>
+              </div>
+              <fieldset>
+                <div>
+                  <label for="grade_citizen_id">{LNG_Citizen ID}</label>
+                  <span class="form-control icon-profile">
+                    <input type="text" id="grade_citizen_id" name="citizen_id" required data-element="mask" data-pattern="X-9999-99999-99-9" placeholder="1-2345-67890-12-3">
+                  </span>
+                  <div class="comment">{LNG_Students without a citizen ID enter their G code}</div>
+                </div>
+                <div>
+                  <label for="grade_birthday">{LNG_Birthday}</label>
+                  <span class="form-control icon-calendar">
+                    <input type="text" id="grade_birthday" name="birthday" required data-element="mask" data-format="date" placeholder="{LNG_dd/mm/yyyy}">
+                  </span>
+                  <div class="comment">{LNG_Buddhist or Christian year, e.g. 15/03/2555}</div>
+                </div>
+                <input type="text" name="website" hidden tabindex="-1" autocomplete="off">
+              </fieldset>
+              <fieldset class="text-center">
+                <button type="submit" class="btn btn-primary fullwidth large icon-search">{LNG_Check results}</button>
+              </fieldset>
+              <p class="comment text-center">{LNG_The data entered is used only to verify identity and is not stored}</p>
+            </form>
+          </div>
+        </div>
+        <div id="grade-result" data-for="student of data">
+          <template>
+            <div class="flex column gap-4">
+              <section class="section-bg">
+                <div class="section__header">
+                  <h2 class="icon-user" data-text="student.name"></h2>
+                </div>
+                <div class="section__body">
+                  <p data-text="student.class"></p>
+                  <aside class="info" data-if="student.terms.length === 0">{LNG_No academic results have been announced yet}</aside>
+                  <div class="section-actions">
+                    <button type="button" class="btn btn-secondary icon-print" data-action="click:print" data-print-target="#grade-result">{LNG_Print}</button>
+                  </div>
+                </div>
+              </section>
+              <div class="flex column gap-4" data-for="term of student.terms">
+                <template>
+                  <section class="section-bg">
+                    <div class="section__header">
+                      <h2 class="icon-calendar" data-text="term.title"></h2>
+                    </div>
+                    <div class="section__body">
+                      <aside class="warning" data-if="!term.published">{LNG_Scores recorded during the term, not the official result}</aside>
+                      <aside class="danger" data-if="term.fix.length > 0">
+                        <strong>{LNG_Courses to be remedied}</strong>
+                        <ul data-for="item of term.fix">
+                          <template>
+                            <li data-text="item"></li>
+                          </template>
+                        </ul>
+                        <div data-for="line of student.remedial">
+                          <template>
+                            <p data-text="line"></p>
+                          </template>
+                        </div>
+                      </aside>
+                      <div class="comment" data-for="line of term.note">
+                        <template>
+                          <p data-text="line"></p>
+                        </template>
+                      </div>
+                      <div class="tablebody">
+                        <table class="fullwidth border">
+                          <thead>
+                            <tr>
+                              <th>{LNG_Course}</th>
+                              <th class="center">{LNG_Credit}</th>
+                              <th class="center" data-if="term.parts">{LNG_Before midterm}</th>
+                              <th class="center" data-if="term.parts">{LNG_Midterm}</th>
+                              <th class="center" data-if="term.parts">{LNG_After midterm}</th>
+                              <th class="center" data-if="term.parts">{LNG_Final exam}</th>
+                              <th class="center">{LNG_Total}</th>
+                              <th class="center" data-if="term.published">{LNG_Grade}</th>
+                            </tr>
+                          </thead>
+                          <tbody data-for="course of term.courses">
+                            <template>
+                              <tr>
+                                <td>
+                                  <span data-text="course.name"></span>
+                                  <div class="comment" data-if="course.assessment" data-text="course.assessment"></div>
+                                </td>
+                                <td class="center" data-text="course.credit"></td>
+                                <td class="center" data-if="term.parts" data-text="course.parts.before"></td>
+                                <td class="center" data-if="term.parts" data-text="course.parts.mid"></td>
+                                <td class="center" data-if="term.parts" data-text="course.parts.after"></td>
+                                <td class="center" data-if="term.parts" data-text="course.parts.final"></td>
+                                <td class="center" data-text="course.total"></td>
+                                <td class="center" data-if="term.published"><strong data-text="course.grade" data-class="danger:course.bad"></strong></td>
+                              </tr>
+                            </template>
+                          </tbody>
+                        </table>
+                      </div>
+                      <div class="gcms-stats-bar" data-if="term.published">
+                        <div class="gcms-stat-item">
+                          <strong data-text="term.summary.basic"></strong>
+                          <span class="gcms-stat-label">{LNG_Basic course credits}</span>
+                        </div>
+                        <div class="gcms-stat-item">
+                          <strong data-text="term.summary.extra"></strong>
+                          <span class="gcms-stat-label">{LNG_Additional course credits}</span>
+                        </div>
+                        <div class="gcms-stat-item" data-if="term.summary.activity">
+                          <strong data-text="term.summary.activity"></strong>
+                          <span class="gcms-stat-label">{LNG_Learner development activities} <span data-text="term.summary.activity_hours"></span></span>
+                        </div>
+                        <div class="gcms-stat-item" data-if="term.summary.gpa">
+                          <strong data-text="term.summary.gpa"></strong>
+                          <span class="gcms-stat-label">{LNG_GPA}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </section>
+                </template>
+              </div>
+              <div class="comment" data-for="line of student.contact">
+                <template>
+                  <p data-text="line"></p>
+                </template>
+              </div>
+              <p class="comment">{LNG_This page is for checking only and is not an official transcript}</p>
+            </div>
+          </template>
+        </div>
+      </div>
+    </div>
+  </div>
+</article>

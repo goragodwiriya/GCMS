@@ -1,0 +1,58 @@
+# Disable directory listing
+Options -Indexes
+
+RewriteEngine On
+
+# ส่งหัว Authorization ต่อให้ PHP
+#
+# Apache ที่รัน PHP ผ่าน php-fpm (mod_proxy_fcgi) ตัดหัว Authorization ทิ้งก่อนถึง PHP
+# เสมอ เพราะถือว่าเป็นของชั้นเว็บเซิร์ฟเวอร์ ไม่ใช่ของแอป — ผลคือ
+# ApiController::validateTokenBearer() ไม่มีทางผ่านเลยแม้ token จะถูกต้อง และไม่มี
+# ข้อความบอกสาเหตุ ได้แต่ 401 ที่หน้าตาเหมือน token ผิด
+#
+# CGIPassAuth ใช้ได้ตั้งแต่ Apache 2.4.13 ส่วนกฎ RewriteRule ด้านล่างเป็นทางสำรอง
+# ให้เครื่องที่เก่ากว่านั้น (PHP จะเห็นค่าที่ REDIRECT_HTTP_AUTHORIZATION แทน)
+<IfModule mod_setenvif.c>
+  SetEnvIfNoCase ^Authorization$ "(.+)" HTTP_AUTHORIZATION=$1
+</IfModule>
+CGIPassAuth On
+RewriteCond %{HTTP:Authorization} .
+RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+DirectoryIndex index.php index.html
+
+# feed rss
+RewriteRule ^(feed|menu|sitemap|BingSiteAuth|robots)\.(xml|rss|txt)$ /$1.php [L]
+RewriteRule ^(asset-manifest|manifest)\.json /manifest.php [L]
+
+# Handle CORS preflight OPTIONS requests
+RewriteCond %{REQUEST_METHOD} OPTIONS
+RewriteRule ^api/ - [R=200,L]
+
+# API Rules - Process first and stop
+RewriteRule ^api/(.*)$ api.php/$1 [L,QSA]
+
+# Admin SPA routes - must be handled by admin/index.php, not the public CMS
+# Without this rule the catch-all below would swallow admin deep-routes (e.g. admin/widgets/facebook)
+# and serve the public index.php instead.
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^admin/(.*)$ admin/index.php [L,QSA]
+
+# If you don't find a file or directory, go to the Index.html in the same folder.
+# This allows the root index.html to load and perform the JS redirect.
+# But exclude API routes
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_URI} !^/api/
+RewriteCond %{REQUEST_URI} !^/admin/
+RewriteRule ^(.*)$ index.php [L,QSA]
+
+<IfModule mod_headers.c>
+  # cache 1 week
+  <filesMatch ".(jpg|jpeg|png|gif|ico)$">
+    Header set Cache-Control "max-age=604800, public"
+  </filesMatch>
+  <filesMatch ".(css|js|ttf|woff|svg|eot)$">
+    Header set Cache-Control "max-age=604800, public"
+  </filesMatch>
+</IfModule>

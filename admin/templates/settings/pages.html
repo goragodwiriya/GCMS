@@ -1,0 +1,51 @@
+<aside data-component="sidebar"></aside>
+<div class="main-content">
+  <div>
+    <header data-component="topbar"></header>
+    <main class="content" data-script="initPagesList">
+      <div class="card-groups">
+        <header>
+          <div>
+            <h1 class="icon-index" data-i18n>Web pages</h1>
+            <p data-i18n>List of all available main pages</p>
+          </div>
+          <div>
+            <a id="add_page" class="btn btn-primary icon-new" href="/page" data-i18n>{LNG_Add} {LNG_Page}</a>
+          </div>
+        </header>
+
+        <div class="content-body">
+          <!-- Users Table -->
+          <div class="tablebody">
+            <table class="table border fullwidth" data-table="adminpages" data-source="../api/index/adminpages" data-default-sort="created_at desc" data-page-size="25"
+                   data-search-columns="topic,module" data-show-checkbox="true"
+                   data-actions='{"status|published_1":"Published", "status|published_0":"Unpublished","delete":"Delete"}' data-action-url="../api/index/adminpages/action"
+                   data-action-button="Process|btn-success" data-row-actions='{
+                              "edit": {
+                                "label": "Edit",
+                                "className": "btn btn-success icon-edit"
+                              }
+                          }'>
+              <thead>
+                <tr>
+                  <th data-field="topic" data-template="<a href='../${module}' class='two_line' title='${topic}' target='_blank'>${topic}</a>" data-i18n>{LNG_Topic}</th>
+                  <th data-field="published" class="center" data-cell-class="center" data-formatter="formatActiveStatus" data-i18n>{LNG_Published}</th>
+                  <th data-field="published_date" class="center" data-cell-class="center" data-format="date" data-i18n>{LNG_Published date}</th>
+                  <th data-field="language" class="center" data-cell-class="center" data-i18n>{LNG_Language}</th>
+                  <th data-field="module" data-i18n>{LNG_Module}</th>
+                  <th data-field="writer" data-i18n>{LNG_Writer}</th>
+                  <th data-field="updated_at" class="center" data-cell-class="center" data-format="datetime" data-i18n>{LNG_Last Update}</th>
+                  <th data-field="visited" class="center" data-cell-class="center" data-format="number" data-i18n>{LNG_Visited}</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+  <footer class="footer">
+    <p class="center">&copy; 2026 GCMS - Powered by <a href="https://nowjs.net">Now.js</a></p>
+  </footer>
+</div>

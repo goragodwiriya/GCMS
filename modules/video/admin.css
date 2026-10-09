@@ -1,0 +1,7 @@
+/* Video module — admin pages (loaded by admin/index.php) */
+
+/* Video editor: the YouTube thumbnail */
+.video-thumbnail-preview {
+  max-height: 150px;
+  border-radius: 8px;
+}

@@ -1,0 +1,114 @@
+<aside data-component="sidebar"></aside>
+<div class="main-content">
+  <div>
+    <header data-component="topbar"></header>
+    <main class="content">
+      <div class="card-groups">
+        <header>
+          <div>
+            <h1 class="icon-cog" data-i18n>{LNG_Product} {LNG_Settings}</h1>
+            <p data-i18n>Configure store options and permissions</p>
+          </div>
+        </header>
+
+        <div class="content-body">
+          <form data-form="productSettings" action="../api/product/settings/save" method="POST" data-ajax-submit="true" data-load-api="../api/product/settings/get"
+                data-load-query-params="true" data-confirm="Confirm save">
+            <fieldset>
+              <legend class="icon-shop" data-i18n>Store</legend>
+
+              <div class="form-group">
+                <div class="width50">
+                  <label for="store_name" data-i18n>Store name</label>
+                  <span class="form-control icon-shop">
+                    <input type="text" id="store_name" name="store_name" data-attr="value:store_name">
+                  </span>
+                </div>
+                <div class="width50">
+                  <label for="currency" data-i18n>Currency</label>
+                  <span class="form-control icon-money">
+                    <select id="currency" name="currency" data-options-key="currencies" data-attr="value:currency"></select>
+                  </span>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <div class="width50">
+                  <label for="order_prefix" data-i18n>Order number prefix</label>
+                  <span class="form-control icon-tags">
+                    <input type="text" id="order_prefix" name="order_prefix" data-attr="value:order_prefix" maxlength="10">
+                  </span>
+                </div>
+              </div>
+
+              <div>
+                <label for="bank_info" data-i18n>Bank transfer instructions</label>
+                <span class="form-control icon-file">
+                  <textarea id="bank_info" name="bank_info" rows="3" data-text="bank_info"></textarea>
+                </span>
+              </div>
+
+              <div>
+                <label for="promptpay_id" data-i18n>PromptPay ID</label>
+                <span class="form-control icon-payment">
+                  <input type="text" id="promptpay_id" name="promptpay_id" maxlength="20" inputmode="numeric" data-attr="value:promptpay_id">
+                </span>
+                <div class="comment" id="result_promptpay_id" data-i18n>Mobile number or tax ID the store receives PromptPay QR payments on. Leave blank to not offer PromptPay</div>
+              </div>
+
+              <div>
+                <input type="checkbox" class="switch" id="transfer_enabled" name="transfer_enabled" data-attr="checked:transfer_enabled">
+                <label for="transfer_enabled" data-i18n>Enable bank transfer payment</label>
+              </div>
+              <div>
+                <input type="checkbox" class="switch" id="cod_enabled" name="cod_enabled" data-attr="checked:cod_enabled">
+                <label for="cod_enabled" data-i18n>Enable cash on delivery (COD)</label>
+              </div>
+            </fieldset>
+
+            <fieldset>
+              <legend class="icon-shield" data-i18n>Permissions</legend>
+
+              <div class="form-group">
+                <div class="width50">
+                  <label for="can_manage" data-i18n>{LNG_Can manage} {LNG_Products}</label>
+                  <span class="form-control icon-user">
+                    <select id="can_manage" name="can_manage" data-options-key="user_status" data-attr="value:can_manage" multiple></select>
+                  </span>
+                </div>
+                <div class="width50">
+                  <label for="can_pos" data-i18n>{LNG_Can use} {LNG_POS}</label>
+                  <span class="form-control icon-user">
+                    <select id="can_pos" name="can_pos" data-options-key="user_status" data-attr="value:can_pos" multiple></select>
+                  </span>
+                </div>
+              </div>
+              <div class="form-group">
+                <div class="width50">
+                  <label for="can_verify_payment" data-i18n>{LNG_Can verify} {LNG_Payment}</label>
+                  <span class="form-control icon-user">
+                    <select id="can_verify_payment" name="can_verify_payment" data-options-key="user_status" data-attr="value:can_verify_payment" multiple></select>
+                  </span>
+                </div>
+                <div class="width50">
+                  <label for="can_manage_stock" data-i18n>{LNG_Can manage} {LNG_Stock}</label>
+                  <span class="form-control icon-user">
+                    <select id="can_manage_stock" name="can_manage_stock" data-options-key="user_status" data-attr="value:can_manage_stock" multiple></select>
+                  </span>
+                </div>
+              </div>
+            </fieldset>
+
+            <fieldset class="submit">
+              <button type="submit" class="btn btn-primary icon-save" data-i18n>Save</button>
+              <input type="hidden" name="module_id" data-attr="value:module_id">
+            </fieldset>
+          </form>
+        </div>
+      </div>
+    </main>
+  </div>
+  <footer class="footer">
+    <p class="center">&copy; 2026 GCMS - Powered by <a href="https://nowjs.net">Now.js</a></p>
+  </footer>
+</div>

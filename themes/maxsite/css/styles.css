@@ -1,0 +1,110 @@
+:root {
+  --color-surface-bg: #F5F5F5;
+  --color-primary: #1098F3;
+  --color-text: #333333;
+  --footer-heading: var(--color-text);
+  --footer-text: var(--color-text);
+  --footer-bg: transparent;
+  --header-bg: transparent;
+  --home-bg: #FFFFFF;
+  --home-border-color: var(--color-primary);
+  --home-border-style: none;
+  --body-bg-color: #FFFFFF;
+  --highlight-bg: '';
+  --highlight-text: #FF0000;
+  --topmenu-select-bg: url();
+  --topmenu-select-text: #FF0000;
+  --topmenu-gap: 0;
+  --sidemenu-button-bg: var(--color-primary);
+  --sidemenu-text-color: #EEEEEE;
+  --sidemenu-highlight-bg: #0e8bdf;
+  --sidemenu-highlight-text: #FFFFFF;
+}
+body {
+  justify-content: flex-start;
+  background: url(../images/bg.gif);
+}
+.topmenu > ul {
+  background-image: url(../images/menu_bg.png);
+  background-repeat: repeat-x;
+  background-size: cover;
+}
+.topmenu li.home > a {
+  background: url(../images/home.png) !important;
+  background-repeat: no-repeat !important;
+  background-position: top center !important;
+}
+.sidemenu li > button,
+.sidemenu li li > a,
+.sidemenu > ul > li > a {
+  border-left-width: 5px;
+  border-left-style: solid;
+  border-left-color: rgba(255, 255, 255, 0.2);
+}
+body.body--three-columns,
+body.body--three-columns > div:first-of-type {
+  gap: 0;
+}
+.topbar .widget_share a {
+  width: 2rem;
+  height: 2rem;
+}
+.image-links > .container,
+#main > .container,
+.header > .container {
+  background-color: var(--home-bg);
+}
+.header > .container {
+  padding: 0;
+}
+.footer {
+  padding: 0 0 var(--space-4);
+}
+.footer .container {
+  background-color: #F9F9F9;
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  padding: var(--space-6) var(--space-4);
+}
+@media (max-width: 960px) {
+  .footer .container {
+    justify-content: center;
+  }
+}
+.footer a {
+  color: var(--color-primary);
+}
+#main > .container,
+.page-body > .container {
+  padding-top: var(--space-4);
+}
+#main > .container {
+  padding-bottom: var(--space-4);
+}
+.section__body {
+  border: 1px solid var(--home-border-color);
+  padding: 0;
+}
+.content .section__body {
+  padding: var(--space-2);
+}
+.section__header {
+  background-image: url(../images/bar.png);
+  background-size: cover;
+  background-position: top right;
+  padding: 1px 10px 1px 80px;
+  height: 32px;
+}
+.sidebar .section__header {
+  background-image: url(../images/widget_header.png);
+  padding: 1px 10px;
+}
+.section__header h2 {
+  font-size: var(--font-size-lg);
+  color: #FFF;
+  font-weight: normal;
+}
+.sidebar .section__header h2 {
+  color: var(--color-primary);
+}

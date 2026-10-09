@@ -1,0 +1,99 @@
+<div class="homepage">
+  <div class="home-content">
+    <!-- Slideshow (Textlinks: slideshow) -->
+    <section class="slideshow-block">{WIDGET_TEXTLINKS name=slideshow;layout=slideshow}</section>
+    <!-- Recommended products (product category 1) -->
+    <section class="section-bg">
+      <div class="container">
+        <div class="section__header">
+          <h2 class="icon-cart">{LNG_Recommended products}</h2>
+          <a href="{WEBURL}index.php?module=product" class="view-more">{LNG_View All}...</a>
+        </div>
+        <div class="section__body">{WIDGET_PRODUCT module=product;layout=carousel;category=1;limit=8;mobile=1;tablet=2;desktop=4}</div>
+      </div>
+    </section>
+    <!-- Latest products -->
+    <section class="section-bg">
+      <div class="container">
+        <div class="section__header">
+          <h2 class="icon-product">{LNG_Products}</h2>
+          <a href="{WEBURL}index.php?module=product" class="view-more">{LNG_View All}...</a>
+        </div>
+        <div class="section__body">{WIDGET_PRODUCT module=product;layout=thumb;rows=2;cols=4}</div>
+      </div>
+    </section>
+    <!-- Banner (Textlinks: banner) -->
+    <section class="banner">
+      <div class="container home-banner-wrap">{WIDGET_TEXTLINKS name=banner;layout=banner}</div>
+    </section>
+    <!-- Home details -->
+    <section class="section-bg home">
+      <div class="container">
+        <div class="section__body">
+          <div class="page-detail">{DETAIL}</div>
+        </div>
+      </div>
+    </section>
+    <!-- Stats -->
+    <section class="section-bg">
+      <div class="container">
+        <div class="section__body">{WIDGET_STATS}</div>
+      </div>
+    </section>
+    <!-- News -->
+    <section class="section-bg">
+      <div class="container">
+        <div class="section__header">
+          <h2 class="icon-news">{LNG_News}</h2>
+          <a href="{WEBURL}index.php?module=news" class="view-more">{LNG_View All}...</a>
+        </div>
+        <div class="section__body">{WIDGET_DOCUMENT module=news;layout=thumb;rows=1;cols=3}</div>
+      </div>
+    </section>
+    <!-- Gallery + Video -->
+    <section class="section-bg">
+      <div class="container">
+        <div class="ggrid">
+          <div class="block6 tablet12">
+            <div class="section__header">
+              <h2 class="icon-gallery">{LNG_Gallery}</h2>
+              <a href="{WEBURL}index.php?module=gallery" class="view-more">{LNG_View All}...</a>
+            </div>
+            <div class="section__body">{WIDGET_GALLERY module=gallery;count=4}</div>
+          </div>
+          <div class="block6 tablet12">
+            <div class="section__header">
+              <h2 class="icon-video">{LNG_Video}</h2>
+              <a href="{WEBURL}index.php?module=video" class="view-more">{LNG_View All}...</a>
+            </div>
+            <div class="section__body">{WIDGET_VIDEO module=video;count=4}</div>
+          </div>
+        </div>
+      </div>
+    </section>
+    <!-- Forum (questions from customers) -->
+    <section class="section-bg">
+      <div class="container">
+        <div class="section__header">
+          <h2 class="icon-board">{LNG_Forum}</h2>
+          <a href="{WEBURL}index.php?module=forum" class="view-more">{LNG_View All}...</a>
+        </div>
+        <div class="section__body">{WIDGET_BOARD module=forum;limit=5}</div>
+      </div>
+    </section>
+    <!-- Contact -->
+    <section class="section-bg">
+      <div class="container">
+        <div class="section__header">
+          <h2 class="icon-email">{LNG_Contact Us}</h2>
+        </div>
+        <div class="section__body">
+          <div class="ggrid">
+            <div class="block6 tablet12">{WIDGET_CONTACT}</div>
+            <div class="block6 tablet12">{WIDGET_MAP}</div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>

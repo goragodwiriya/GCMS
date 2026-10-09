@@ -1,0 +1,30 @@
+<!-- E-Learning: lesson — the button tells api/elearning/learn/complete the
+     lesson is done and the page reloads with the new progress -->
+<article class="main-page view-page">
+  <header class="page-header view-header">
+    <div class="container">
+      <nav class="breadcrumbs one_line">
+        <ul>{BREADCRUMBS}</ul>
+      </nav>
+      <h1 class="page__title">{TOPIC}</h1>
+      <div class="header-meta">
+        <a class="icon-elearning" href="{COURSE_URL}">{COURSE}</a>
+        <span class="icon-listnumber">{NO}/{TOTAL}</span>
+      </div>
+    </div>
+  </header>
+  <div class="page-body">
+    <div class="container">
+      <div class="page-content">
+        <div class="youtube" {VIDEO_HIDDEN}>
+          <iframe src="{VIDEO}" title="{TOPIC}" allow="autoplay; encrypted-media; fullscreen" allowfullscreen loading="lazy"></iframe>
+        </div>
+        <section class="page-detail">{DETAIL}</section>
+        <footer class="section-actions">
+          <button type="button" class="btn btn-success icon-valid" data-action="click:requestApi" data-api-url="{WEBURL}api/elearning/learn/complete" data-api-method="post" data-param-course-id="{COURSE_ID}" data-param-lesson-id="{ID}" {DONE}>{COMPLETE}</button>
+          <a class="btn btn-primary icon-next" href="{NEXT_URL}">{NEXT}</a>
+        </footer>
+      </div>
+    </div>
+  </div>
+</article>

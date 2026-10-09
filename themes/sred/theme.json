@@ -1,0 +1,72 @@
+{
+    "name": "School Red",
+    "version": "1.0.0",
+    "author": "Goragod Wiriya",
+    "author_url": "https://www.kotchasan.com",
+    "description": "สามคอลัมน์ในหน้าแรก หน้าอื่นๆสองคอลัมน์ สีแดง",
+    "screenshot": "screenshot.webp",
+    "license": "MIT",
+    "layouts": [
+        {
+            "id": "main",
+            "name": "Main Layout",
+            "template": "index.html"
+        },
+        {
+            "id": "auth",
+            "name": "Auth Layout",
+            "template": "login.html"
+        },
+        {
+            "id": "blank",
+            "name": "Blank",
+            "template": "main.html"
+        },
+        {
+            "id": "full-width",
+            "name": "Full Width",
+            "template": "main.html"
+        }
+    ],
+    "components": [
+        {
+            "id": "header",
+            "name": "Header",
+            "template": "index.html#header"
+        },
+        {
+            "id": "footer",
+            "name": "Footer",
+            "template": "index.html#footer"
+        },
+        {
+            "id": "navbar",
+            "name": "Navigation",
+            "template": "index.html#nav"
+        },
+        {
+            "id": "sidebar",
+            "name": "Sidebar",
+            "template": "index.html#sidebar"
+        }
+    ],
+    "colors": {
+        "primary": "#EC0007",
+        "primary_hover": "#d35400",
+        "secondary": "#8d6e63",
+        "accent": "#33ccff",
+        "background": "#fdf6ec",
+        "surface": "#fff8f0",
+        "text": "#3e2723",
+        "text_secondary": "#5d4037",
+        "border": "#d7ccc8"
+    },
+    "settings": {
+        "show_sidebar": true,
+        "sidebar_position": "both",
+        "footer_columns": 3,
+        "sticky_header": true,
+        "hero_style": "gradient",
+        "columns": 3
+    }
+}
