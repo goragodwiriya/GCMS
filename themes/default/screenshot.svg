@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="500" viewBox="0 0 800 500">
+  <defs>
+    <linearGradient id="headerGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#2563eb;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1d4ed8;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <!-- Background -->
+  <rect width="800" height="500" fill="#f8fafc"/>
+  <!-- Header -->
+  <rect width="800" height="64" fill="url(#headerGrad)"/>
+  <!-- Logo area -->
+  <rect x="20" y="18" width="36" height="28" rx="4" fill="rgba(255,255,255,0.3)"/>
+  <!-- Nav items -->
+  <rect x="70" y="24" width="60" height="16" rx="3" fill="rgba(255,255,255,0.5)"/>
+  <rect x="140" y="24" width="60" height="16" rx="3" fill="rgba(255,255,255,0.3)"/>
+  <rect x="210" y="24" width="60" height="16" rx="3" fill="rgba(255,255,255,0.3)"/>
+  <rect x="280" y="24" width="60" height="16" rx="3" fill="rgba(255,255,255,0.3)"/>
+  <!-- Hero Section -->
+  <rect x="0" y="64" width="800" height="180" fill="#dbeafe"/>
+  <text x="400" y="140" text-anchor="middle" font-family="Arial,sans-serif" font-size="28" font-weight="bold" fill="#1e40af">Default Theme</text>
+  <text x="400" y="170" text-anchor="middle" font-family="Arial,sans-serif" font-size="14" fill="#3b82f6">A clean and modern default theme</text>
+  <rect x="340" y="190" width="120" height="36" rx="18" fill="#2563eb"/>
+  <text x="400" y="214" text-anchor="middle" font-family="Arial,sans-serif" font-size="13" fill="#ffffff">Get Started</text>
+  <!-- Content Grid -->
+  <rect x="30" y="270" width="220" height="130" rx="8" fill="#ffffff" stroke="#e2e8f0" stroke-width="1"/>
+  <rect x="30" y="270" width="220" height="50" rx="8" fill="#bfdbfe"/>
+  <rect x="50" y="338" width="140" height="10" rx="3" fill="#e2e8f0"/>
+  <rect x="50" y="356" width="100" height="8" rx="3" fill="#e2e8f0"/>
+  <rect x="290" y="270" width="220" height="130" rx="8" fill="#ffffff" stroke="#e2e8f0" stroke-width="1"/>
+  <rect x="290" y="270" width="220" height="50" rx="8" fill="#bfdbfe"/>
+  <rect x="310" y="338" width="140" height="10" rx="3" fill="#e2e8f0"/>
+  <rect x="310" y="356" width="100" height="8" rx="3" fill="#e2e8f0"/>
+  <rect x="550" y="270" width="220" height="130" rx="8" fill="#ffffff" stroke="#e2e8f0" stroke-width="1"/>
+  <rect x="550" y="270" width="220" height="50" rx="8" fill="#bfdbfe"/>
+  <rect x="570" y="338" width="140" height="10" rx="3" fill="#e2e8f0"/>
+  <rect x="570" y="356" width="100" height="8" rx="3" fill="#e2e8f0"/>
+  <!-- Footer -->
+  <rect x="0" y="440" width="800" height="60" fill="#1e293b"/>
+  <rect x="30" y="460" width="80" height="8" rx="3" fill="rgba(255,255,255,0.3)"/>
+  <rect x="130" y="460" width="80" height="8" rx="3" fill="rgba(255,255,255,0.2)"/>
+  <rect x="600" y="456" width="60" height="8" rx="3" fill="rgba(255,255,255,0.2)"/>
+  <rect x="600" y="470" width="40" height="8" rx="3" fill="rgba(255,255,255,0.15)"/>
+</svg>

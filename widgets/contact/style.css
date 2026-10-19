@@ -1,0 +1,45 @@
+/* Contact widget — frontend */
+.widget-contact {
+  display: flex;
+  flex-direction: column;
+  gap: .6rem;
+}
+
+.widget-contact__field .form-control {
+  width: 100%;
+}
+
+.widget-contact__field textarea {
+  resize: vertical;
+  min-height: 90px;
+}
+
+/* Honeypot — hidden from real users, tempting to bots */
+.widget-contact__hp {
+  position: absolute !important;
+  left: -9999px !important;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.widget-contact__submit {
+  align-self: flex-start;
+}
+
+.widget-contact__status {
+  padding: .5rem .7rem;
+  border-radius: 6px;
+  font-size: .9em;
+}
+
+.widget-contact__status.is-ok {
+  background: var(--color-success-light, #dcfce7);
+  color: var(--color-success, #166534);
+}
+
+.widget-contact__status.is-error {
+  background: var(--color-error-light, #fee2e2);
+  color: var(--color-danger, #dc2626);
+}

@@ -1,0 +1,147 @@
+<aside data-component="sidebar"></aside>
+<div class="main-content">
+  <div>
+    <header data-component="topbar"></header>
+    <main class="content">
+      <form id="productForm" data-on-load="initProductEditor" data-form="product" data-validate="true" data-reset="false" action="../api/product/write/save" method="post" data-ajax-submit="true"
+            data-load-query-params="true" data-load-api="../api/product/write/get" autocomplete="off">
+        <div class="card-groups">
+          <header>
+            <div>
+              <h1 class="icon-shop" data-text="id ? '{LNG_Edit} {LNG_Product}' : '{LNG_Add} {LNG_Product}'"></h1>
+              <p data-i18n>Manage product information, variants and images</p>
+            </div>
+            <div class="header-actions">
+              <a class="btn icon-arrow-left" href="/products" data-params="module_id" data-i18n>Back</a>
+              <button type="submit" class="btn btn-primary icon-save" data-i18n>Save</button>
+            </div>
+          </header>
+
+          <div class="content-body">
+            <fieldset>
+              <legend data-i18n>General</legend>
+
+              <!-- Language tabs for multilingual content -->
+              <div class="lang-tabs" id="langTabs"></div>
+              <div id="langPanels"></div>
+
+              <div class="form-group">
+                <div class="width50">
+                  <label for="category_id" data-i18n>Category</label>
+                  <span class="form-control icon-tags">
+                    <select id="category_id" name="category_id" data-attr="value:category_id" data-options-key="category">
+                      <option value="" data-i18n>-- Select category --</option>
+                    </select>
+                  </span>
+                </div>
+                <div class="width50">
+                  <label for="sku" data-i18n>SKU</label>
+                  <span class="form-control icon-tags">
+                    <input type="text" id="sku" name="sku" data-attr="value:sku">
+                  </span>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <div class="width50">
+                  <label for="alias" data-i18n>URL alias</label>
+                  <span class="form-control icon-link">
+                    <input type="text" id="alias" name="alias" data-attr="value:alias">
+                  </span>
+                </div>
+                <div class="width50">
+                  <label for="weight" data-i18n>Weight (kg)</label>
+                  <span class="form-control icon-box">
+                    <input type="number" step="0.001" id="weight" name="weight" data-attr="value:weight">
+                  </span>
+                </div>
+              </div>
+            </fieldset>
+
+            <fieldset>
+              <legend data-i18n>Pricing & Variants</legend>
+
+              <div class="form-group">
+                <div class="width50">
+                  <label for="product_type" data-i18n>Product type</label>
+                  <span class="form-control icon-config">
+                    <select id="product_type" name="product_type" data-attr="value:product_type">
+                      <option value="simple" data-i18n>Simple product</option>
+                      <option value="variable" data-i18n>Variable product (with variants)</option>
+                    </select>
+                  </span>
+                </div>
+                <div class="width50" id="basePriceWrap">
+                  <label for="base_price" data-i18n>Price</label>
+                  <span class="form-control icon-money">
+                    <input type="number" step="0.01" id="base_price" name="base_price" data-attr="value:base_price">
+                  </span>
+                </div>
+              </div>
+
+              <!-- Variable product: attribute chooser + generated variant matrix -->
+              <div id="variantSection" hidden>
+                <div class="comment" data-i18n>Select attribute values, then generate the variant combinations below.</div>
+                <div id="attributeChooser" class="attribute-chooser"></div>
+                <button type="button" class="btn icon-refresh" id="generateVariantsBtn" data-i18n>Generate variants</button>
+                <div class="tablebody">
+                  <table class="table border fullwidth" id="variantTable">
+                    <thead>
+                      <tr>
+                        <th data-i18n>Variant</th>
+                        <th data-i18n>SKU</th>
+                        <th data-i18n>Price</th>
+                        <th data-i18n>Sale price</th>
+                        <th data-i18n>Image</th>
+                        <th data-i18n>Published</th>
+                      </tr>
+                    </thead>
+                    <tbody id="variantRows"></tbody>
+                  </table>
+                </div>
+              </div>
+            </fieldset>
+
+            <fieldset>
+              <legend data-i18n>Images</legend>
+              <div>
+                <label for="images" data-i18n>Product images</label>
+                <span class="form-control icon-portfolio">
+                  <input type="file" id="images" name="images[]" data-files="images" data-preview="true" data-multiple="true" data-allow-remove-existing="true"
+                         data-action-url="../api/product/write/remove-image" data-file-reference="id" data-action-params="module_id" data-sortable="true" accept="image/*"
+                         data-attr="placeholder:'{LNG_Browse image uploaded, type} ' + img_typies" multiple>
+                </span>
+                <div class="comment" id="result_images" data-i18n>{LNG_Recommended: square images, minimum 600x600 px} {LNG_The first picture is the main picture.} {LNG_You can drag & drop and reorder files.}</div>
+              </div>
+
+              <div>
+                <input type="checkbox" class="switch" id="featured" name="featured" data-attr="checked:featured">
+                <label for="featured" data-i18n>Featured product</label>
+              </div>
+              <div>
+                <input type="checkbox" class="switch" id="manage_stock" name="manage_stock" data-attr="checked:manage_stock">
+                <label for="manage_stock" data-i18n>Manage stock</label>
+              </div>
+              <div>
+                <input type="checkbox" class="switch" id="published" name="published" data-attr="checked:published">
+                <label for="published" data-i18n>Published</label>
+              </div>
+            </fieldset>
+          </div>
+
+          <div class="form-submit">
+            <button type="submit" class="btn btn-primary icon-save" data-i18n>Save</button>
+            <input type="hidden" name="id" data-attr="value:id">
+            <input type="hidden" name="module_id" data-attr="value:module_id">
+            <!-- Serialized JSON payloads filled by initProductEditor on submit -->
+            <input type="hidden" name="detail" id="detailJson">
+            <input type="hidden" name="variants" id="variantsJson">
+          </div>
+        </div>
+      </form>
+    </main>
+  </div>
+  <footer class="footer">
+    <p class="center">&copy; 2026 GCMS - Powered by <a href="https://nowjs.net">Now.js</a></p>
+  </footer>
+</div>

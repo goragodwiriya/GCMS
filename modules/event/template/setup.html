@@ -1,0 +1,46 @@
+<aside data-component="sidebar"></aside>
+<div class="main-content">
+  <div>
+    <header data-component="topbar"></header>
+    <main class="content">
+      <div class="card-groups">
+        <header>
+          <div>
+            <h1 class="icon-calendar" data-i18n>{LNG_List of} {LNG_Event}</h1>
+            <p data-i18n>Manage calendar events</p>
+          </div>
+          <a class="btn btn-primary icon-new" href="/event" data-params="module_id" data-i18n>{LNG_Add} {LNG_Event}</a>
+        </header>
+
+        <div class="content-body">
+          <div class="tablebody">
+            <table class="table border fullwidth" data-table="eventList" data-source="../api/event/setup" data-search-columns="topic" data-default-sort="begin_date desc"
+                   data-page-size="25" data-show-checkbox="true"
+                   data-actions='{"status|published_1":"Published", "status|published_0":"Unpublished", "delete":"Delete"}'
+                   data-action-url="../api/event/setup/action" data-action-params="module_id" data-action-button="Process|btn-success" data-row-actions='{
+                       "edit": {
+                         "label": "Edit",
+                         "className": "btn btn-success icon-edit"
+                       }
+                   }'>
+              <thead>
+                <tr>
+                  <th data-field="topic" data-sort="topic"
+                      data-template="<span class='event-color-dot two_line' style='--color:${color}' title='${topic}'>${topic}</span>" data-i18n>{LNG_Topic}</th>
+                  <th data-field="begin_date" data-sort="begin_date" class="center" data-cell-class="center" data-format="datetime" data-i18n>{LNG_Date and time of event}</th>
+                  <th data-field="published" class="center" data-cell-class="center" data-formatter="formatActiveStatus" data-i18n>{LNG_Published}</th>
+                  <th data-field="last_update" data-sort="last_update" class="center" data-cell-class="center" data-format="datetime" data-i18n>{LNG_Last Update}</th>
+                  <th data-field="writer" class="center" data-cell-class="center" data-i18n>{LNG_Writer}</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+  <footer class="footer">
+    <p class="center">&copy; 2026 GCMS - Powered by <a href="https://nowjs.net">Now.js</a></p>
+  </footer>
+</div>

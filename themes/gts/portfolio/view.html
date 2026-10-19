@@ -1,0 +1,32 @@
+<article class="main-page portfolio-view-page">
+  <header class="page-header view-header">
+    <div class="container">
+      <nav class="breadcrumbs one_line">
+        <ul>{BREADCRUMBS}</ul>
+      </nav>
+      <h1 class="page__title">{TOPIC}</h1>
+      <p class="page__subtitle">{DESCRIPTION}</p>
+    </div>
+  </header>
+  <div class="page-body">
+    <div class="container">
+      <div class="page-content">
+        <div class="ggrid">
+          <div class="block6">
+            <img src="{IMG}" alt="{TOPIC}">
+          </div>
+          <div class="block6 portfolio-view-detail">
+            <section class="page-detail">{DETAIL}</section>
+            <div {TAGS_HIDDEN}>
+              <strong class=icon-tags>{LNG_Tags} :</strong>
+              <nav class="cat-links">{TAGS}</nav>
+            </div>
+            <div {WEBSITE_HIDDEN}><strong class=icon-world>{LNG_URL} : </strong>{WEBSITE}</div>
+            <div><strong class=icon-calendar>{LNG_Year} : </strong>{YEAR}</div>
+          </div>
+        </div>
+        <footer>{WIDGET_SHARE}</footer>
+      </div>
+    </div>
+  </div>
+</article>

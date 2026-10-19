@@ -1,0 +1,36 @@
+<aside data-component="sidebar"></aside>
+<div class="main-content">
+  <!-- Category Form -->
+  <form data-form="productCategory" action="../api/product/category/save" method="post" data-ajax-submit="true" data-load-api="../api/product/category/get"
+        data-load-query-params="true" data-confirm="Confirm save">
+    <header data-component="topbar"></header>
+    <main class="content">
+      <div class="card-groups">
+        <header>
+          <div>
+            <h1 class="icon-tags" data-i18n>Product Category</h1>
+            <p data-i18n>Categories for the store products</p>
+          </div>
+        </header>
+        <div class="content-body">
+          <fieldset class="grid">
+            <div class="tablebody">
+              <table class="table border fullwidth" data-table="category" data-editable-rows="true" data-attr="data:options" data-dynamic-columns="true">
+                <tbody></tbody>
+              </table>
+            </div>
+          </fieldset>
+
+          <fieldset class="submit">
+            <button type="submit" class="btn btn-primary icon-save" data-i18n>Save</button>
+            <input type="hidden" name="type" data-attr="value:type">
+            <input type="hidden" name="module_id" data-attr="value:module_id">
+          </fieldset>
+        </div>
+      </div>
+    </main>
+  </form>
+</div>
+<footer class="footer">
+  <p class="center">&copy; 2026 GCMS - Powered by <a href="https://nowjs.net">Now.js</a></p>
+</footer>

@@ -1,0 +1,30 @@
+<form id="{ID}" class="widget-contact" method="post" action="{ACTION}" data-contact-notify novalidate>
+  <div class="widget-contact__field">
+    <span class="form-control icon-user">
+      <input type="text" name="contact_name" placeholder="{L_NAME}" maxlength="150" required autocomplete="name">
+    </span>
+  </div>
+  <div class="widget-contact__field">
+    <span class="form-control icon-email">
+      <input type="email" name="contact_email" placeholder="{L_EMAIL}" maxlength="150" required autocomplete="email">
+    </span>
+  </div>
+  <div class="widget-contact__field">
+    <span class="form-control icon-phone">
+      <input type="tel" name="contact_phone" placeholder="{L_PHONE}" maxlength="50" autocomplete="tel">
+    </span>
+  </div>
+  <div class="widget-contact__field">
+    <span class="form-control icon-edit">
+      <input type="text" name="contact_subject" placeholder="{L_TOPIC}" maxlength="200">
+    </span>
+  </div>
+  <div class="widget-contact__field">
+    <span class="form-control icon-file">
+      <textarea name="contact_message" rows="4" placeholder="{L_MESSAGE}" required></textarea>
+    </span>
+  </div>
+  <input type="text" name="contact_hp" class="widget-contact__hp" tabindex="-1" autocomplete="off" aria-hidden="true">
+  <div class="widget-contact__status" data-contact-status hidden></div>
+  <button type="submit" class="btn btn-primary icon-send widget-contact__submit">{L_SEND}</button>
+</form>

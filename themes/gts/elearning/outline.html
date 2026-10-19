@@ -1,0 +1,18 @@
+<!-- Course outline of a signed-in learner (outlineitem.html per lesson/quiz) -->
+<section class="section-bg">
+  <div class="section__header">
+    <h2 class="icon-listnumber">{LNG_Course outline}</h2>
+    <span class="icon-user">{NAME}</span>
+  </div>
+  <div class="section__body">
+    <aside class="success" {CERT_HIDDEN}>
+      <p class="icon-verfied">{LNG_Congratulations! You have received a certificate}</p>
+      <a class="btn btn-success" href="{CERT_URL}">{LNG_View certificate}</a>
+    </aside>
+    <div>
+      <label for="elearning_progress">{LNG_Progress} {DONE}/{TOTAL}</label>
+      <progress id="elearning_progress" class="fullwidth" max="{TOTAL}" value="{DONE}"></progress>
+    </div>
+    <div class="elearning-topic-list">{ITEMS}</div>
+  </div>
+</section>

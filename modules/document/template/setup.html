@@ -1,0 +1,48 @@
+<aside data-component="sidebar"></aside>
+<div class="main-content">
+  <div>
+    <header data-component="topbar"></header>
+    <main class="content">
+      <div class="card-groups">
+        <header>
+          <div>
+            <h1 class="icon-file" data-i18n>Articles</h1>
+            <p data-i18n>Manage articles and content</p>
+          </div>
+          <a class="btn btn-primary icon-new" href="/document" data-params="module_id" data-i18n>{LNG_Add} {LNG_Article}</a>
+        </header>
+        <div class="content-body">
+          <div class="tablebody">
+            <table class="table border fullwidth" data-table="documentArticles" data-source="../api/document/setup" data-search-columns="topic" data-page-size="10"
+                   data-default-sort="id desc" data-show-checkbox="true" data-actions='{"delete":"Delete", "status|published_1":"Published", "status|published_0":"Unpublished"}'
+                   data-action-params="module_id" data-action-url="../api/document/setup/action" data-row-actions='{
+                       "edit": {
+                         "label": "Edit",
+                         "className": "btn btn-success icon-edit"
+                       }
+                   }'>
+              <thead>
+                <tr>
+                  <th data-field="id" data-sort="id" class="center" data-i18n>{LNG_ID}</th>
+                  <th data-field="picture" data-formatter="formatImage" class="center" data-i18n>{LNG_Image}</th>
+                  <th data-field="topic" data-template="<a href='../${module}?id=${id}' class='two_line' title='${topic}' target='_blank'>${topic}</a>" data-sort="topic" data-i18n>
+                    {LNG_Topic}</th>
+                  <th data-field="category_id" class="center" data-cell-class="center" data-filter="true" data-filter-key="category_id" data-type="select" data-show-all="true"
+                      data-all-value="0" data-format="lookup" data-i18n>{LNG_Category} </th>
+                  <th data-field="published" data-sort="published" class="center" data-cell-class="center" data-filter="true" data-type="select" data-show-all="true"
+                      data-all-value="" data-label="Published" data-formatter="formatActiveStatus" data-i18n>{LNG_Published}</th>
+                  <th data-field="published_date" data-sort="published_date" class="center" data-cell-class="center" data-format="date" data-i18n>{LNG_Date}</th>
+                  <th data-field="visited" data-sort="visited" class="center" data-cell-class="center" data-i18n>{LNG_Views}</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+  <footer class="footer">
+    <p class="center">&copy; 2026 Document - Powered by <a href="https://nowjs.net">Now.js</a></p>
+  </footer>
+</div>

@@ -1,0 +1,24 @@
+<article class="book-card block{COLS}" data-book-id="{ID}">
+  <a class="book-card-link" href="{URL}">
+    <div class="book-card-image">
+      <img src="{THUMB}" alt="{TOPIC}" loading="lazy">
+      <div class="product-badges">
+        <span class="badge badge-new" {NEW_HIDDEN}>{LNG_New}</span>
+      </div>
+      <div class="stock-status">
+        <span class="badge badge-stock" {IN_STOCK_HIDDEN}>{LNG_In stock}</span>
+        <span class="badge badge-out" {OUT_OF_STOCK_HIDDEN}>{LNG_Out of stock}</span>
+      </div>
+    </div>
+    <div class="book-card-body">
+      <h3 class="book-title">{TOPIC}</h3>
+      <div class="book-footer">
+        <div class="book-price-wrapper">
+          <span class="book-price">{PRICE}</span>
+          <span class="currency">{LNG_THB}</span>
+        </div>
+        <button type="button" class="btn-add-cart add-to-cart icon-cart" data-id="{ID}" data-variant="0" aria-label="{LNG_Add to Cart}" {CART_HIDDEN}></button>
+      </div>
+    </div>
+  </a>
+</article>

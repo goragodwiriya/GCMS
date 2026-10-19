@@ -1,0 +1,47 @@
+<aside data-component="sidebar"></aside>
+<div class="main-content">
+  <div>
+    <header data-component="topbar"></header>
+    <main class="content">
+      <div class="card-groups">
+        <header>
+          <div>
+            <h1 class="icon-portfolio" data-i18n>Portfolio</h1>
+            <p data-i18n>Manage portfolio / project showcase items</p>
+          </div>
+          <a class="btn btn-primary icon-new" href="/portfolio" data-params="module_id" data-i18n>{LNG_Add} {LNG_Portfolio}</a>
+        </header>
+
+        <div class="content-body">
+          <div class="tablebody">
+            <table class="table border fullwidth" data-table="portfolioList" data-source="../api/portfolio/setup" data-search-columns="title" data-page-size="25"
+                   data-show-checkbox="true"
+                   data-actions='{"status|published_1":"Published", "status|published_0":"Unpublished", "delete":"Delete"}'
+                   data-action-url="../api/portfolio/setup/action" data-action-params="module_id" data-action-button="Process|btn-success"
+                   data-row-actions='{
+                       "edit": {
+                         "label": "Edit",
+                         "className": "btn btn-success icon-edit"
+                       }
+                   }'>
+              <thead>
+                <tr>
+                  <th data-field="image" data-formatter="formatImage" class="center" data-cell-class="center" data-i18n>{LNG_Photo}</th>
+                  <th data-field="title" data-sort="title" data-i18n>{LNG_Title}</th>
+                  <th data-field="url" data-template="<a href='${url}' target='_blank' rel='noopener'>${url}</a>" data-i18n>{LNG_Link}</th>
+                  <th data-field="published" class="center" data-cell-class="center" data-formatter="formatActiveStatus" data-i18n>{LNG_Published}</th>
+                  <th data-field="created_at" class="center" data-cell-class="center" data-format="datetime" data-i18n>{LNG_Created}</th>
+                  <th data-field="visited" class="center" data-cell-class="center" data-format="number" data-i18n>{LNG_Visited}</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+  <footer class="footer">
+    <p class="center">&copy; 2026 GCMS - Powered by <a href="https://nowjs.net">Now.js</a></p>
+  </footer>
+</div>

@@ -1,0 +1,32 @@
+<aside data-component="sidebar"></aside>
+<div class="main-content">
+  <div>
+    <header data-component="topbar"></header>
+    <main class="content">
+      <form id="attributeForm" data-on-load="initProductAttributeEditor" data-form="productAttribute" action="../api/product/attribute/save" method="post" data-ajax-submit="true"
+            data-load-api="../api/product/attribute/get" data-load-query-params="true" data-confirm="Confirm save" autocomplete="off">
+        <div class="card-groups">
+          <header>
+            <div>
+              <h1 class="icon-config" data-i18n>Product Attributes</h1>
+              <p data-i18n>Define attributes (e.g. Size, Color) and their values for product variants</p>
+            </div>
+            <div class="header-actions">
+              <button type="button" class="btn icon-new" id="addAttributeBtn" data-i18n>Add attribute</button>
+              <button type="submit" class="btn btn-primary icon-save" data-i18n>Save</button>
+            </div>
+          </header>
+
+          <div class="content-body">
+            <div id="attributeList" class="attribute-list"></div>
+            <input type="hidden" name="datas" id="attributeDatas">
+            <input type="hidden" name="module_id" data-attr="value:module_id">
+          </div>
+        </div>
+      </form>
+    </main>
+  </div>
+  <footer class="footer">
+    <p class="center">&copy; 2026 GCMS - Powered by <a href="https://nowjs.net">Now.js</a></p>
+  </footer>
+</div>

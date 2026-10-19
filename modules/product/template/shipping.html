@@ -1,0 +1,32 @@
+<aside data-component="sidebar"></aside>
+<div class="main-content">
+  <div>
+    <header data-component="topbar"></header>
+    <main class="content">
+      <form id="shippingForm" data-on-load="initProductShipping" data-form="productShipping" action="../api/product/shipping/save" method="post" data-ajax-submit="true"
+            data-load-api="../api/product/shipping/get" data-load-query-params="true" data-confirm="Confirm save" autocomplete="off">
+        <div class="card-groups">
+          <header>
+            <div>
+              <h1 class="icon-purchase" data-i18n>Shipping Methods</h1>
+              <p data-i18n>Define shipping methods and their fee calculation rules</p>
+            </div>
+            <div class="header-actions">
+              <button type="button" class="btn icon-new" id="addShippingBtn" data-i18n>Add method</button>
+              <button type="submit" class="btn btn-primary icon-save" data-i18n>Save</button>
+            </div>
+          </header>
+
+          <div class="content-body">
+            <div id="shippingList" class="shipping-list"></div>
+            <input type="hidden" name="datas" id="shippingDatas">
+            <input type="hidden" name="module_id" data-attr="value:module_id">
+          </div>
+        </div>
+      </form>
+    </main>
+  </div>
+  <footer class="footer">
+    <p class="center">&copy; 2026 GCMS - Powered by <a href="https://nowjs.net">Now.js</a></p>
+  </footer>
+</div>

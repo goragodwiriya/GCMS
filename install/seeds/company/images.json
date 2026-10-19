@@ -1,0 +1,1070 @@
+{
+    "type": "company",
+    "theme": {
+        "palette": [
+            "#b91c1c",
+            "#1f2937",
+            "#f59e0b",
+            "#0e7490",
+            "#7c3aed"
+        ],
+        "label": "company",
+        "document_label": "บริษัทตัวอย่าง จำกัด"
+    },
+    "images": [
+        {
+            "file": "document/default-2.webp",
+            "kind": "article",
+            "caption": "ข่าวสารและกิจกรรม",
+            "label": "ข่าวสาร",
+            "size": [
+                800,
+                450
+            ],
+            "seed": 1095146221
+        },
+        {
+            "file": "document/default-3.webp",
+            "kind": "article",
+            "caption": "บทความและความรู้",
+            "label": "บทความ",
+            "size": [
+                800,
+                450
+            ],
+            "seed": 2316978504
+        },
+        {
+            "file": "document/cat_th_5.webp",
+            "kind": "category",
+            "caption": "เทคโนโลยีเว็บไซต์",
+            "label": "code",
+            "size": [
+                480,
+                320
+            ],
+            "seed": 2988331592
+        },
+        {
+            "file": "document/cat_th_6.webp",
+            "kind": "category",
+            "caption": "การตลาดออนไลน์",
+            "label": "chart",
+            "size": [
+                480,
+                320
+            ],
+            "seed": 881467622
+        },
+        {
+            "file": "document/cat_th_7.webp",
+            "kind": "category",
+            "caption": "คู่มือการใช้งาน",
+            "label": "book",
+            "size": [
+                480,
+                320
+            ],
+            "seed": 4292277059
+        },
+        {
+            "file": "board/cat_th_11.webp",
+            "kind": "category",
+            "caption": "ถาม-ตอบทั่วไป",
+            "label": "chat",
+            "size": [
+                480,
+                320
+            ],
+            "seed": 1173085875
+        },
+        {
+            "file": "board/cat_th_12.webp",
+            "kind": "category",
+            "caption": "การใช้งานระบบ",
+            "label": "gear",
+            "size": [
+                480,
+                320
+            ],
+            "seed": 3279924253
+        },
+        {
+            "file": "board/cat_th_13.webp",
+            "kind": "category",
+            "caption": "ข้อเสนอแนะ",
+            "label": "bulb",
+            "size": [
+                480,
+                320
+            ],
+            "seed": 136544184
+        },
+        {
+            "file": "document/picture-2-13.webp",
+            "kind": "article",
+            "caption": "เปิดตัวบริการคลาวด์โฮสติ้งรุ่นใหม่สำหรับเว็บไซต์องค์กร",
+            "label": "ผลิตภัณฑ์และบริการ",
+            "size": [
+                800,
+                450
+            ],
+            "art": "city",
+            "seed": 3897813221
+        },
+        {
+            "file": "document/picture-2-14.webp",
+            "kind": "article",
+            "caption": "ขอเชิญร่วมสัมมนาออนไลน์ \"เว็บไซต์องค์กรในยุค AI\" ไม่มีค่าใช้จ่าย",
+            "label": "สัมมนาและอีเวนต์",
+            "size": [
+                800,
+                450
+            ],
+            "art": "stage",
+            "seed": 4116109405
+        },
+        {
+            "file": "document/picture-2-15.webp",
+            "kind": "article",
+            "caption": "ทีมพัฒนาคว้ารางวัลชนะเลิศการประกวดนวัตกรรมซอฟต์แวร์ระดับภูมิภาค",
+            "label": "ข่าวบริษัท",
+            "size": [
+                800,
+                450
+            ],
+            "art": "stage",
+            "seed": 1040845816
+        },
+        {
+            "file": "document/picture-2-17.webp",
+            "kind": "article",
+            "caption": "พนักงานจิตอาสาร่วมปลูกป่าชายเลนกับชุมชนชายฝั่ง",
+            "label": "CSR และสังคม",
+            "size": [
+                800,
+                450
+            ],
+            "art": "garden",
+            "seed": 1942137587
+        },
+        {
+            "file": "document/picture-2-18.webp",
+            "kind": "article",
+            "caption": "อัปเดตระบบจัดการเนื้อหาให้ลูกค้าทุกรายโดยไม่มีค่าใช้จ่าย",
+            "label": "ผลิตภัณฑ์และบริการ",
+            "size": [
+                800,
+                450
+            ],
+            "art": "",
+            "seed": 2190743590
+        },
+        {
+            "file": "document/picture-2-19.webp",
+            "kind": "article",
+            "caption": "ประมวลภาพงานสัมมนาลูกค้าประจำปี",
+            "label": "สัมมนาและอีเวนต์",
+            "size": [
+                800,
+                450
+            ],
+            "art": "stage",
+            "seed": 1237896067
+        },
+        {
+            "file": "document/picture-2-20.webp",
+            "kind": "article",
+            "caption": "เปิดรับสมัครนักศึกษาฝึกงานสายเทคโนโลยี",
+            "label": "ข่าวบริษัท",
+            "size": [
+                800,
+                450
+            ],
+            "art": "workshop",
+            "seed": 1596948694
+        },
+        {
+            "file": "document/picture-2-21.webp",
+            "kind": "article",
+            "caption": "โครงการสอนเขียนโปรแกรมให้เยาวชนในชุมชน",
+            "label": "CSR และสังคม",
+            "size": [
+                800,
+                450
+            ],
+            "art": "classroom",
+            "seed": 2490585971
+        },
+        {
+            "file": "document/picture-2-22.webp",
+            "kind": "article",
+            "caption": "เปิดสำนักงานสาขาใหม่ รองรับลูกค้าภาคเหนือ",
+            "label": "ข่าวบริษัท",
+            "size": [
+                800,
+                450
+            ],
+            "art": "city",
+            "seed": 317137373
+        },
+        {
+            "file": "document/picture-2-23.webp",
+            "kind": "article",
+            "caption": "โปรโมชันแพ็กเกจเว็บไซต์สำหรับธุรกิจ SME ลด 20%",
+            "label": "ผลิตภัณฑ์และบริการ",
+            "size": [
+                800,
+                450
+            ],
+            "art": "",
+            "seed": 3652973176
+        },
+        {
+            "file": "document/picture-2-24.webp",
+            "kind": "article",
+            "caption": "ร่วมออกบูธในงานแสดงเทคโนโลยีเพื่อธุรกิจ",
+            "label": "สัมมนาและอีเวนต์",
+            "size": [
+                800,
+                450
+            ],
+            "art": "stage",
+            "seed": 3300836032
+        },
+        {
+            "file": "document/picture-2-25.webp",
+            "kind": "article",
+            "caption": "มอบคอมพิวเตอร์ให้โรงเรียนในพื้นที่ห่างไกล",
+            "label": "CSR และสังคม",
+            "size": [
+                800,
+                450
+            ],
+            "art": "classroom",
+            "seed": 266473829
+        },
+        {
+            "file": "document/picture-3-27.webp",
+            "kind": "article",
+            "caption": "7 ขั้นตอนเตรียมตัวก่อนทำเว็บไซต์องค์กร",
+            "label": "เทคโนโลยีเว็บไซต์",
+            "size": [
+                800,
+                450
+            ],
+            "art": "",
+            "seed": 1431413805
+        },
+        {
+            "file": "document/picture-3-28.webp",
+            "kind": "article",
+            "caption": "เลือกชื่อโดเมนอย่างไรให้จำง่ายและปลอดภัย",
+            "label": "เทคโนโลยีเว็บไซต์",
+            "size": [
+                800,
+                450
+            ],
+            "art": "",
+            "seed": 2751928056
+        },
+        {
+            "file": "document/picture-3-29.webp",
+            "kind": "article",
+            "caption": "SEO เบื้องต้น ทำให้เว็บไซต์ถูกค้นพบบน Google",
+            "label": "การตลาดออนไลน์",
+            "size": [
+                800,
+                450
+            ],
+            "art": "",
+            "seed": 1868285277
+        },
+        {
+            "file": "document/picture-3-30.webp",
+            "kind": "article",
+            "caption": "วัดผลการตลาดออนไลน์ด้วยตัวชี้วัดที่ใช่",
+            "label": "การตลาดออนไลน์",
+            "size": [
+                800,
+                450
+            ],
+            "art": "",
+            "seed": 3995311905
+        },
+        {
+            "file": "document/picture-3-31.webp",
+            "kind": "article",
+            "caption": "คู่มือเพิ่มบทความและรูปภาพในระบบหลังบ้าน",
+            "label": "คู่มือการใช้งาน",
+            "size": [
+                800,
+                450
+            ],
+            "art": "",
+            "seed": 629099652
+        },
+        {
+            "file": "document/picture-3-32.webp",
+            "kind": "article",
+            "caption": "วิธีสำรองข้อมูลเว็บไซต์ด้วยตัวเอง",
+            "label": "คู่มือการใช้งาน",
+            "size": [
+                800,
+                450
+            ],
+            "art": "",
+            "seed": 2750103082
+        },
+        {
+            "file": "document/picture-3-33.webp",
+            "kind": "article",
+            "caption": "HTTPS คืออะไร ทำไมทุกเว็บไซต์ต้องมี",
+            "label": "เทคโนโลยีเว็บไซต์",
+            "size": [
+                800,
+                450
+            ],
+            "art": "",
+            "seed": 1756884367
+        },
+        {
+            "file": "document/picture-3-34.webp",
+            "kind": "article",
+            "caption": "เขียนคอนเทนต์ให้ทั้งคนอ่านและเครื่องมือค้นหาชอบ",
+            "label": "การตลาดออนไลน์",
+            "size": [
+                800,
+                450
+            ],
+            "art": "",
+            "seed": 1974656311
+        },
+        {
+            "file": "portfolio/1.webp",
+            "kind": "portfolio",
+            "caption": "เว็บไซต์โรงแรมริมทะเล",
+            "label": "Website",
+            "size": [
+                800,
+                600
+            ],
+            "seed": 534971119
+        },
+        {
+            "file": "portfolio/2.webp",
+            "kind": "portfolio",
+            "caption": "ระบบจองห้องประชุมออนไลน์",
+            "label": "Web App",
+            "size": [
+                800,
+                600
+            ],
+            "seed": 2574741569
+        },
+        {
+            "file": "portfolio/3.webp",
+            "kind": "portfolio",
+            "caption": "แอปสะสมแต้มร้านกาแฟ",
+            "label": "Mobile App",
+            "size": [
+                800,
+                600
+            ],
+            "seed": 1378591716
+        },
+        {
+            "file": "portfolio/4.webp",
+            "kind": "portfolio",
+            "caption": "เว็บไซต์โรงเรียนอนุบาล",
+            "label": "Website",
+            "size": [
+                800,
+                600
+            ],
+            "seed": 1328452444
+        },
+        {
+            "file": "portfolio/5.webp",
+            "kind": "portfolio",
+            "caption": "ระบบแจ้งซ่อมและบำรุงรักษา",
+            "label": "Web App",
+            "size": [
+                800,
+                600
+            ],
+            "seed": 2222080249
+        },
+        {
+            "file": "portfolio/6.webp",
+            "kind": "portfolio",
+            "caption": "ร้านค้าออนไลน์ผลิตภัณฑ์ชุมชน",
+            "label": "E-commerce",
+            "size": [
+                800,
+                600
+            ],
+            "seed": 48640599
+        },
+        {
+            "file": "portfolio/7.webp",
+            "kind": "portfolio",
+            "caption": "เว็บไซต์คลินิกทันตกรรม",
+            "label": "Website",
+            "size": [
+                800,
+                600
+            ],
+            "seed": 3384467954
+        },
+        {
+            "file": "portfolio/8.webp",
+            "kind": "portfolio",
+            "caption": "แอปติดตามพัสดุสำหรับร้านค้า",
+            "label": "Mobile App",
+            "size": [
+                800,
+                600
+            ],
+            "seed": 955011879
+        },
+        {
+            "file": "portfolio/9.webp",
+            "kind": "portfolio",
+            "caption": "ระบบลงเวลาทำงานด้วยใบหน้าและตำแหน่ง",
+            "label": "Web App",
+            "size": [
+                800,
+                600
+            ],
+            "seed": 4088430722
+        },
+        {
+            "file": "portfolio/10.webp",
+            "kind": "portfolio",
+            "caption": "เว็บไซต์องค์การบริหารส่วนตำบล",
+            "label": "Website",
+            "size": [
+                800,
+                600
+            ],
+            "seed": 970569033
+        },
+        {
+            "file": "gallery/1/album1-01.webp",
+            "kind": "photo",
+            "caption": "ลงทะเบียนหน้างาน",
+            "label": "สัมมนาลูกค้า",
+            "size": [
+                800,
+                533
+            ],
+            "scene": "stage",
+            "seed": 449212496
+        },
+        {
+            "file": "gallery/1/album1-02.webp",
+            "kind": "photo",
+            "caption": "กล่าวต้อนรับผู้ร่วมงาน",
+            "label": "สัมมนาลูกค้า",
+            "size": [
+                800,
+                533
+            ],
+            "scene": "stage",
+            "seed": 2622620414
+        },
+        {
+            "file": "gallery/1/album1-03.webp",
+            "kind": "photo",
+            "caption": "บรรยายแนวโน้มเทคโนโลยี",
+            "label": "สัมมนาลูกค้า",
+            "size": [
+                800,
+                533
+            ],
+            "scene": "stage",
+            "seed": 1460588891
+        },
+        {
+            "file": "gallery/1/album1-04.webp",
+            "kind": "photo",
+            "caption": "กรณีศึกษาจากลูกค้า",
+            "label": "สัมมนาลูกค้า",
+            "size": [
+                800,
+                533
+            ],
+            "scene": "stage",
+            "seed": 1242292707
+        },
+        {
+            "file": "gallery/1/album1-05.webp",
+            "kind": "photo",
+            "caption": "ช่วงถาม-ตอบ",
+            "label": "สัมมนาลูกค้า",
+            "size": [
+                800,
+                533
+            ],
+            "scene": "stage",
+            "seed": 2169975366
+        },
+        {
+            "file": "gallery/1/album1-06.webp",
+            "kind": "photo",
+            "caption": "บูธให้คำปรึกษา",
+            "label": "สัมมนาลูกค้า",
+            "size": [
+                800,
+                533
+            ],
+            "scene": "stage",
+            "seed": 130236648
+        },
+        {
+            "file": "gallery/1/album1-07.webp",
+            "kind": "photo",
+            "caption": "ถ่ายภาพร่วมกัน",
+            "label": "สัมมนาลูกค้า",
+            "size": [
+                800,
+                533
+            ],
+            "scene": "stage",
+            "seed": 3433009997
+        },
+        {
+            "file": "gallery/1/album1-08.webp",
+            "kind": "photo",
+            "caption": "ขอบคุณผู้ร่วมงาน",
+            "label": "สัมมนาลูกค้า",
+            "size": [
+                800,
+                533
+            ],
+            "scene": "stage",
+            "seed": 1036591512
+        },
+        {
+            "file": "gallery/2/album2-01.webp",
+            "kind": "photo",
+            "caption": "เตรียมกล้าไม้",
+            "label": "CSR",
+            "size": [
+                800,
+                533
+            ],
+            "scene": "garden",
+            "seed": 176420967
+        },
+        {
+            "file": "gallery/2/album2-02.webp",
+            "kind": "photo",
+            "caption": "รับฟังวิธีปลูกจากปราชญ์ชุมชน",
+            "label": "CSR",
+            "size": [
+                800,
+                533
+            ],
+            "scene": "garden",
+            "seed": 2350353097
+        },
+        {
+            "file": "gallery/2/album2-03.webp",
+            "kind": "photo",
+            "caption": "ลงพื้นที่ปลูก",
+            "label": "CSR",
+            "size": [
+                800,
+                533
+            ],
+            "scene": "garden",
+            "seed": 1196120428
+        },
+        {
+            "file": "gallery/2/album2-04.webp",
+            "kind": "photo",
+            "caption": "ปักหลักยึดกล้าไม้",
+            "label": "CSR",
+            "size": [
+                800,
+                533
+            ],
+            "scene": "garden",
+            "seed": 1515088340
+        },
+        {
+            "file": "gallery/2/album2-05.webp",
+            "kind": "photo",
+            "caption": "เก็บขยะชายฝั่ง",
+            "label": "CSR",
+            "size": [
+                800,
+                533
+            ],
+            "scene": "garden",
+            "seed": 2433923697
+        },
+        {
+            "file": "gallery/2/album2-06.webp",
+            "kind": "photo",
+            "caption": "พักรับประทานอาหารกลางวัน",
+            "label": "CSR",
+            "size": [
+                800,
+                533
+            ],
+            "scene": "garden",
+            "seed": 394709215
+        },
+        {
+            "file": "gallery/2/album2-07.webp",
+            "kind": "photo",
+            "caption": "ภาพหมู่จิตอาสา",
+            "label": "CSR",
+            "size": [
+                800,
+                533
+            ],
+            "scene": "garden",
+            "seed": 3705281402
+        },
+        {
+            "file": "gallery/3/album3-01.webp",
+            "kind": "photo",
+            "caption": "ประชุมวางแผนประจำสัปดาห์",
+            "label": "ชีวิตในออฟฟิศ",
+            "size": [
+                800,
+                533
+            ],
+            "scene": "meeting",
+            "seed": 3012591029
+        },
+        {
+            "file": "gallery/3/album3-02.webp",
+            "kind": "photo",
+            "caption": "ทีมออกแบบระดมความคิด",
+            "label": "ชีวิตในออฟฟิศ",
+            "size": [
+                800,
+                533
+            ],
+            "scene": "meeting",
+            "seed": 889458459
+        },
+        {
+            "file": "gallery/3/album3-03.webp",
+            "kind": "photo",
+            "caption": "ทดสอบระบบก่อนส่งมอบ",
+            "label": "ชีวิตในออฟฟิศ",
+            "size": [
+                800,
+                533
+            ],
+            "scene": "meeting",
+            "seed": 4267236542
+        },
+        {
+            "file": "gallery/3/album3-04.webp",
+            "kind": "photo",
+            "caption": "อบรมภายในทุกวันศุกร์",
+            "label": "ชีวิตในออฟฟิศ",
+            "size": [
+                800,
+                533
+            ],
+            "scene": "meeting",
+            "seed": 3814583302
+        },
+        {
+            "file": "gallery/3/album3-05.webp",
+            "kind": "photo",
+            "caption": "มุมพักผ่อน",
+            "label": "ชีวิตในออฟฟิศ",
+            "size": [
+                800,
+                533
+            ],
+            "scene": "meeting",
+            "seed": 671170467
+        },
+        {
+            "file": "gallery/3/album3-06.webp",
+            "kind": "photo",
+            "caption": "ต้อนรับพนักงานใหม่",
+            "label": "ชีวิตในออฟฟิศ",
+            "size": [
+                800,
+                533
+            ],
+            "scene": "meeting",
+            "seed": 2929020173
+        },
+        {
+            "file": "gallery/4/album4-01.webp",
+            "kind": "photo",
+            "caption": "พิธีเปิดการแข่งขัน",
+            "label": "กีฬาสัมพันธ์",
+            "size": [
+                800,
+                533
+            ],
+            "scene": "field",
+            "seed": 705226761
+        },
+        {
+            "file": "gallery/4/album4-02.webp",
+            "kind": "photo",
+            "caption": "ฟุตบอลกระชับมิตร",
+            "label": "กีฬาสัมพันธ์",
+            "size": [
+                800,
+                533
+            ],
+            "scene": "field",
+            "seed": 2895944359
+        },
+        {
+            "file": "gallery/4/album4-03.webp",
+            "kind": "photo",
+            "caption": "วิ่งผลัดระหว่างแผนก",
+            "label": "กีฬาสัมพันธ์",
+            "size": [
+                800,
+                533
+            ],
+            "scene": "field",
+            "seed": 1740654850
+        },
+        {
+            "file": "gallery/4/album4-04.webp",
+            "kind": "photo",
+            "caption": "กองเชียร์สีสันสดใส",
+            "label": "กีฬาสัมพันธ์",
+            "size": [
+                800,
+                533
+            ],
+            "scene": "field",
+            "seed": 2059762106
+        },
+        {
+            "file": "gallery/4/album4-05.webp",
+            "kind": "photo",
+            "caption": "มอบรางวัล",
+            "label": "กีฬาสัมพันธ์",
+            "size": [
+                800,
+                533
+            ],
+            "scene": "field",
+            "seed": 2979637791
+        },
+        {
+            "file": "gallery/4/album4-06.webp",
+            "kind": "photo",
+            "caption": "ภาพหมู่ทุกทีม",
+            "label": "กีฬาสัมพันธ์",
+            "size": [
+                800,
+                533
+            ],
+            "scene": "field",
+            "seed": 923654321
+        },
+        {
+            "file": "download/company-profile.pdf",
+            "kind": "pdf",
+            "caption": "โบรชัวร์แนะนำบริษัท",
+            "lines": [
+                "เราออกแบบเว็บไซต์ ระบบงานองค์กร และแอปพลิเคชันสำหรับธุรกิจทุกขนาด",
+                "บริการ: ออกแบบเว็บไซต์ • ระบบงานองค์กร • คลาวด์โฮสติ้ง • ดูแลระบบรายปี",
+                "ติดต่อฝ่ายขายเพื่อรับคำปรึกษาโดยไม่มีค่าใช้จ่าย"
+            ],
+            "label": "ดาวน์โหลดเอกสาร",
+            "seed": 2357818389
+        },
+        {
+            "file": "download/price-list.pdf",
+            "kind": "pdf",
+            "caption": "อัตราค่าบริการ",
+            "lines": [
+                "แพ็กเกจเริ่มต้น — เว็บไซต์ 5 หน้า รองรับมือถือ",
+                "แพ็กเกจธุรกิจ — เว็บไซต์ 10 หน้า พร้อมระบบข่าวสารและแบบฟอร์มติดต่อ",
+                "แพ็กเกจองค์กร — ออกแบบเฉพาะ พร้อมระบบงานตามความต้องการ",
+                "ราคาทั้งหมดเป็นตัวอย่าง ไม่ใช่ใบเสนอราคา"
+            ],
+            "label": "ดาวน์โหลดเอกสาร",
+            "seed": 4196602273
+        },
+        {
+            "file": "download/website-brief.docx",
+            "kind": "docx",
+            "caption": "แบบฟอร์มสรุปความต้องการเว็บไซต์",
+            "lines": [
+                "ชื่อหน่วยงาน/บริษัท: ...............................................",
+                "เป้าหมายของเว็บไซต์: ...............................................",
+                "กลุ่มผู้ใช้หลัก: ...............................................",
+                "เมนูที่ต้องการ: ...............................................",
+                "งบประมาณและกำหนดเสร็จ: ..............................................."
+            ],
+            "label": "ดาวน์โหลดเอกสาร",
+            "seed": 3530741713
+        },
+        {
+            "file": "download/job-application.docx",
+            "kind": "docx",
+            "caption": "ใบสมัครงาน",
+            "lines": [
+                "ตำแหน่งที่สมัคร: ...............................................",
+                "ชื่อ-นามสกุล: ...............................................",
+                "การศึกษา: ...............................................",
+                "ประสบการณ์และผลงาน: ..............................................."
+            ],
+            "label": "ดาวน์โหลดเอกสาร",
+            "seed": 1207695967
+        },
+        {
+            "file": "download/admin-manual.pdf",
+            "kind": "pdf",
+            "caption": "คู่มือการใช้งานระบบหลังบ้าน",
+            "lines": [
+                "บทที่ 1 การเข้าระบบและเปลี่ยนรหัสผ่าน",
+                "บทที่ 2 การเขียนข่าวและบทความ",
+                "บทที่ 3 การจัดการอัลบั้มภาพและวิดีโอ",
+                "บทที่ 4 การจัดเมนูและหน้าแรก"
+            ],
+            "label": "ดาวน์โหลดเอกสาร",
+            "seed": 3880568064
+        },
+        {
+            "file": "download/document-templates.zip",
+            "kind": "zip",
+            "caption": "ชุดเทมเพลตเอกสารสำหรับลูกค้า",
+            "lines": [
+                "ไฟล์ในชุดนี้: README.txt และ sample.pdf",
+                "ใช้เป็นแนวทางเตรียมข้อความและรูปภาพก่อนเริ่มโครงการ"
+            ],
+            "label": "ดาวน์โหลดเอกสาร",
+            "seed": 1896309355
+        },
+        {
+            "file": "video/aqz-KE-bpKQ.jpg",
+            "kind": "video",
+            "caption": "วิดีโอแนะนำบริษัท (ตัวอย่าง)",
+            "label": "แนะนำบริษัท",
+            "size": [
+                480,
+                360
+            ],
+            "seed": 2229687342
+        },
+        {
+            "file": "video/eRsGyueVLvQ.jpg",
+            "kind": "video",
+            "caption": "บันทึกการบรรยายงานสัมมนาลูกค้า (ตัวอย่าง)",
+            "label": "สัมมนา",
+            "size": [
+                480,
+                360
+            ],
+            "seed": 1366341095
+        },
+        {
+            "file": "video/R6MlUcmOul8.jpg",
+            "kind": "video",
+            "caption": "สาธิตการใช้งานระบบจัดการเนื้อหา (ตัวอย่าง)",
+            "label": "สาธิต",
+            "size": [
+                480,
+                360
+            ],
+            "seed": 1913992592
+        },
+        {
+            "file": "video/WhWc3b3KhnY.jpg",
+            "kind": "video",
+            "caption": "เบื้องหลังการทำงานของทีมออกแบบ (ตัวอย่าง)",
+            "label": "เบื้องหลัง",
+            "size": [
+                480,
+                360
+            ],
+            "seed": 3609520936
+        },
+        {
+            "file": "video/YE7VzlLtp-4.jpg",
+            "kind": "video",
+            "caption": "เสียงจากลูกค้า (ตัวอย่าง)",
+            "label": "รีวิว",
+            "size": [
+                480,
+                360
+            ],
+            "seed": 3201573647
+        },
+        {
+            "file": "video/Y-rmzh0PI3c.jpg",
+            "kind": "video",
+            "caption": "จิตอาสาปลูกป่าชายเลน (ตัวอย่าง)",
+            "label": "CSR",
+            "size": [
+                480,
+                360
+            ],
+            "seed": 673017348
+        },
+        {
+            "file": "image/textlink-1.webp",
+            "kind": "slide",
+            "caption": "โซลูชันดิจิทัล สำหรับธุรกิจยุคใหม่",
+            "subtitle": "ออกแบบเว็บไซต์ ระบบงานองค์กร และแอปพลิเคชัน ครบจบในที่เดียว",
+            "label": "บริการของเรา",
+            "button": "ดูบริการทั้งหมด",
+            "icon": "",
+            "scene": "",
+            "size": [
+                1200,
+                450
+            ],
+            "seed": 3660325532
+        },
+        {
+            "file": "image/textlink-2.webp",
+            "kind": "slide",
+            "caption": "ผลงานที่ลูกค้า ไว้วางใจ",
+            "subtitle": "กว่า 850 โครงการ ทั้งภาคเอกชน ภาครัฐ และสถานศึกษา",
+            "label": "ผลงาน",
+            "button": "ชมผลงาน",
+            "icon": "",
+            "scene": "",
+            "size": [
+                1200,
+                450
+            ],
+            "seed": 1555583026
+        },
+        {
+            "file": "image/textlink-3.webp",
+            "kind": "slide",
+            "caption": "สัมมนาออนไลน์ เว็บไซต์องค์กรในยุค AI",
+            "subtitle": "เข้าร่วมฟรี ลงทะเบียนล่วงหน้าได้แล้ววันนี้",
+            "label": "กิจกรรม",
+            "button": "ดูกำหนดการ",
+            "icon": "",
+            "scene": "",
+            "size": [
+                1200,
+                450
+            ],
+            "seed": 2548335511
+        },
+        {
+            "file": "image/textlink-4.webp",
+            "kind": "slide",
+            "caption": "ปรึกษาโครงการ ไม่มีค่าใช้จ่าย",
+            "subtitle": "เล่าโจทย์ของท่าน ทีมงานพร้อมเสนอแนวทางที่เหมาะสม",
+            "label": "ติดต่อเรา",
+            "button": "นัดคุยกับเรา",
+            "icon": "",
+            "scene": "",
+            "size": [
+                1200,
+                450
+            ],
+            "seed": 2330047279
+        },
+        {
+            "file": "image/textlink-5.webp",
+            "kind": "banner",
+            "caption": "แพ็กเกจเว็บไซต์ SME ลด 20%",
+            "subtitle": "พร้อมโดเมน โฮสติ้ง และอบรมการใช้งาน เฉพาะเดือนนี้",
+            "label": "",
+            "button": "ดูรายละเอียด",
+            "icon": "",
+            "scene": "",
+            "size": [
+                970,
+                250
+            ],
+            "seed": 1102930058
+        },
+        {
+            "file": "image/textlink-6.webp",
+            "kind": "banner",
+            "caption": "คลาวด์โฮสติ้ง สำรองข้อมูลทุกวัน",
+            "subtitle": "ย้ายเว็บมาใช้บริการ ทีมงานย้ายให้ฟรี",
+            "label": "",
+            "button": "สอบถาม",
+            "icon": "",
+            "scene": "",
+            "size": [
+                970,
+                250
+            ],
+            "seed": 3341357604
+        },
+        {
+            "file": "image/textlink-7.webp",
+            "kind": "imagemenu",
+            "caption": "ดาวน์โหลดเอกสาร",
+            "subtitle": "โบรชัวร์ แบบฟอร์ม คู่มือ",
+            "label": "",
+            "button": "",
+            "icon": "download",
+            "scene": "",
+            "size": [
+                400,
+                120
+            ],
+            "seed": 209043841
+        },
+        {
+            "file": "image/textlink-8.webp",
+            "kind": "imagemenu",
+            "caption": "ปฏิทินกิจกรรม",
+            "subtitle": "สัมมนาและอบรม",
+            "label": "",
+            "button": "",
+            "icon": "calendar",
+            "scene": "",
+            "size": [
+                400,
+                120
+            ],
+            "seed": 4246958932
+        },
+        {
+            "file": "image/textlink-9.webp",
+            "kind": "imagemenu",
+            "caption": "ถาม-ตอบ",
+            "subtitle": "เว็บบอร์ดช่วยเหลือ",
+            "label": "",
+            "button": "",
+            "icon": "chat",
+            "scene": "",
+            "size": [
+                400,
+                120
+            ],
+            "seed": 914333937
+        },
+        {
+            "file": "image/textlink-10.webp",
+            "kind": "imagemenu",
+            "caption": "ติดต่อฝ่ายขาย",
+            "subtitle": "ปรึกษาฟรี",
+            "label": "",
+            "button": "",
+            "icon": "phone",
+            "scene": "",
+            "size": [
+                400,
+                120
+            ],
+            "seed": 4027603695
+        }
+    ]
+}

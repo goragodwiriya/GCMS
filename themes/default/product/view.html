@@ -1,0 +1,115 @@
+<!-- Product page: pictures (thumb.html per extra picture), price, variants
+     (variant.html per option), add to cart, details (detailrow.html per
+     attribute) and related products (api/product/lists) -->
+<article class="main-page product-view-page">
+  <header class="page-header hero">
+    <div class="container">
+      <nav class="breadcrumbs one_line">
+        <ul>{BREADCRUMBS}</ul>
+      </nav>
+      <h1 class="page__title">{TOPIC}</h1>
+    </div>
+  </header>
+  <div class="page-body">
+    <div class="container">
+      <div class="page-content">
+        <section class="product-detail">
+          <div class="product-content">
+            <div class="product-grid">
+              <div class="product-gallery">
+                <div class="main-image">
+                  <img src="{THUMB}" alt="{TOPIC}" class="product-main-img">
+                  <div class="product-badges">
+                    <span class="badge badge-new" {NEW_HIDDEN}>{LNG_New}</span>
+                  </div>
+                  <div class="stock-status">
+                    <span class="badge badge-stock" {IN_STOCK_HIDDEN}>{LNG_In stock}</span>
+                    <span class="badge badge-out" {OUT_OF_STOCK_HIDDEN}>{LNG_Out of stock}</span>
+                  </div>
+                </div>
+                <div class="product-thumbs" {THUMBS_HIDDEN}>{THUMBS}</div>
+              </div>
+              <div class="product-info">
+                <h1 class="product-title">{TOPIC}</h1>
+                <div class="product-meta">
+                  <div class="meta-item">
+                    <span class="meta-label">{LNG_Product No.}</span>
+                    <span class="meta-value">{PRODUCT_NO}</span>
+                  </div>
+                </div>
+                <div class="product-pricing">
+                  <div class="price-box">
+                    <span class="price-label">{LNG_Price}</span>
+                    <div class="price-value">
+                      <span class="current-price">{PRICE}</span>
+                      <span class="currency">{LNG_THB}</span>
+                    </div>
+                  </div>
+                  <div class="stock-box">
+                    <span class="stock-label">{LNG_Stock}</span>
+                    <span class="stock-count">
+                      <span>{STOCK}</span> <span>{LNG_items}</span>
+                    </span>
+                  </div>
+                </div>
+                <div class="product-actions">
+                  <div class="quantity-selector">
+                    <label for="productQuantity">{LNG_Quantity}</label>
+                    <div class="quantity-controls">
+                      <button type="button" class="btn-quantity minus icon-minus" data-quantity-step="-1" aria-label="-" {QTY_DISABLED}></button>
+                      <input type="number" id="productQuantity" class="quantity-input" value="1" min="1" max="{MAX}" {QTY_DISABLED}>
+                      <button type="button" class="btn-quantity plus icon-plus" data-quantity-step="1" aria-label="+" {QTY_DISABLED}></button>
+                    </div>
+                  </div>
+                  <select class="product-variant-select" aria-label="{LNG_Options}" {VARIANTS_HIDDEN}>
+                    <option value="">{LNG_Please select}</option>
+                    {VARIANTS}
+                  </select>
+                  <button type="button" class="btn btn-primary add-to-cart icon-cart" data-id="{ID}" data-variant="0" {CART_DISABLED}><span>{LNG_Add to Cart}</span></button>
+                </div>
+                <div class="product-details-table" {DETAILS_HIDDEN}>
+                  <h3 class="details-title">{LNG_Product details}</h3>
+                  <table class="details-table">
+                    <tbody>{DETAILS}</tbody>
+                  </table>
+                </div>
+                <div class="product-description">
+                  <h3 class="description-title">{LNG_Description}</h3>
+                  <div class="description-content">{DESCRIPTION}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+        <section class="related-products">
+          <h2 class="section__header">{LNG_Related products}</h2>
+          <p class="section-subtitle">{LNG_Other products you might be interested in}</p>
+          <div data-component="api" data-endpoint="{WEBURL}api/product/lists?module_id={MODULE_ID}&amp;exclude={ID}" data-method="GET" data-params='{"limit": 10, "category_id": "{CATEGORIES}"}' data-on-load="initCarousel" data-cache="true" data-cache-time="300000">
+            <div id="relatedProducts" class="books-list" data-for="item of data">
+              <template>
+                <article class="book-card" data-attr="data-book-id:item.id">
+                  <a class="book-card-link" data-attr="href:item.url">
+                    <div class="book-card-image">
+                      <img data-attr="src:item.thumb,alt:item.topic">
+                      <span class="badge badge-new" data-if="item.is_new">{LNG_New}</span>
+                    </div>
+                    <div class="book-card-body">
+                      <h3 class="book-title" data-text="item.topic"></h3>
+                      <div class="book-footer">
+                        <div class="book-price-wrapper">
+                          <span class="book-price" data-text="item.price" data-format="currency"></span>
+                          <span class="currency">{LNG_THB}</span>
+                        </div>
+                        <button type="button" class="btn-add-cart add-to-cart icon-cart" data-if="item.stock > 0" data-attr="data-id:item.id" data-variant="0" aria-label="{LNG_Add to Cart}"></button>
+                      </div>
+                    </div>
+                  </a>
+                </article>
+              </template>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+  </div>
+</article>

@@ -1,0 +1,240 @@
+<aside data-component="sidebar"></aside>
+<div class="main-content">
+  <div>
+    <header data-component="topbar"></header>
+    <main class="content" data-script="initAiTheme">
+      <!-- ═══════════════════════════════════════════════════
+           Section 1 – Prompt & Generate
+           ═══════════════════════════════════════════════════ -->
+      <div id="aitheme-unavailable-message" class="comment" hidden>
+        <span data-i18n>AI Theme Generator is unavailable. Check the AI connector in Settings → AI.</span>
+        <a href="#/ai-settings" data-i18n>AI Settings</a>
+      </div>
+      <div id="aitheme-generate-section" class="card-groups" hidden>
+        <section>
+          <header>
+            <div>
+              <h1 class="icon-support" data-i18n>AI Theme Generator</h1>
+              <p data-i18n>Describe the theme you want and let AI design it for you</p>
+            </div>
+          </header>
+          <form class="content-body" id="aitheme-form" autocomplete="off">
+            <!-- Prompt -->
+            <fieldset>
+              <legend class="icon-edit" data-i18n>Theme Description</legend>
+              <div>
+                <label for="ai_theme_prompt" data-i18n>Design Brief</label>
+                <span class="form-control icon-edit">
+                  <textarea id="ai_theme_prompt" name="prompt" rows="3" placeholder="{LNG_Describe style, mood, brand colors, and target audience}"></textarea>
+                </span>
+                <div class="comment" data-i18n>{LNG_Example}: modern civic portal, calm blue-green, high readability, professional but friendly</div>
+              </div>
+              <div>
+                <label data-i18n>Quick start</label>
+                <div class="aitheme-presets" id="aitheme-presets">
+                  <button type="button" class="btn btn-primary outline small pill" data-preset title="{LNG_Secondary school website in deep blue and white with a dark navy footer, trustworthy and formal but not boring, news and activities first}" data-i18n>School</button>
+                  <button type="button" class="btn btn-primary outline small pill" data-preset title="{LNG_University website in deep navy with a gold accent, academic and credible, a large hero with the university&#39;s message}" data-i18n>University</button>
+                  <button type="button" class="btn btn-primary outline small pill" data-preset title="{LNG_Community hospital website in calm green and white, clean and reassuring, easy to read for older visitors}" data-i18n>Hospital</button>
+                  <button type="button" class="btn btn-primary outline small pill" data-preset title="{LNG_Municipality or sub-district office website, formal blue with a touch of red, clear announcements and public services}" data-i18n>Local government</button>
+                  <button type="button" class="btn btn-primary outline small pill" data-preset title="{LNG_Government agency website in deep blue, formal and credible, simple and easy to navigate}" data-i18n>Government agency</button>
+                  <button type="button" class="btn btn-primary outline small pill" data-preset title="{LNG_Modern company website with a confident brand color, plenty of white space, portfolio and contact up front}" data-i18n>Company</button>
+                  <button type="button" class="btn btn-primary outline small pill" data-preset title="{LNG_Online shop with warm, friendly colors, products and promotions first, clear call-to-action buttons}" data-i18n>Online shop</button>
+                  <button type="button" class="btn btn-primary outline small pill" data-preset title="{LNG_Technology organization with a dark theme, violet-blue highlights, rounded cards and a gradient hero}" data-i18n>Dark / Tech</button>
+                  <button type="button" class="btn btn-primary outline small pill" data-preset title="{LNG_Minimal website, mostly white with a single blue accent, thin borders, clean and modern}" data-i18n>Minimal</button>
+                </div>
+              </div>
+              <div class="form-group">
+                <div class="width50">
+                  <label for="ai_theme_name" data-i18n>{LNG_Theme name} ({LNG_Optional})</label>
+                  <span class="form-control icon-template">
+                    <input type="text" id="ai_theme_name" name="name" placeholder="{LNG_My Awesome Theme}">
+                  </span>
+                </div>
+                <div class="width50">
+                  <label for="ai_color_scheme" data-i18n>Color scheme</label>
+                  <span class="form-control icon-config">
+                    <select id="ai_color_scheme" name="color_scheme">
+                      <option value="light" data-i18n>Light</option>
+                      <option value="dark" data-i18n>Dark</option>
+                    </select>
+                  </span>
+                </div>
+              </div>
+              <div class="form-group">
+                <div class="width50">
+                  <label for="ai_base_theme" data-i18n>Base theme</label>
+                  <span class="form-control icon-template">
+                    <select id="ai_base_theme" name="base_theme">
+                      <option value="" data-i18n>Current theme</option>
+                      <option value="auto" data-i18n>Let AI choose</option>
+                    </select>
+                  </span>
+                  <div class="comment" data-i18n>The new theme copies the base theme's pages and columns, then gets new colors and fonts.</div>
+                </div>
+                <div class="width50">
+                  <label for="ai_variants" data-i18n>Designs to compare</label>
+                  <span class="form-control icon-gallery">
+                    <select id="ai_variants" name="variants">
+                      <option value="1">1</option>
+                      <option value="2">2</option>
+                      <option value="3" selected>3</option>
+                    </select>
+                  </span>
+                  <div class="comment" data-i18n>Designs are requested at the same time; each one uses AI tokens.</div>
+                </div>
+              </div>
+              <div>
+                <input type="checkbox" class="switch" id="ai_use_logo_colors" name="use_logo_colors" value="1">
+                <label for="ai_use_logo_colors" data-i18n>Build the palette around the colors of the site logo</label>
+              </div>
+              <div class="comment" data-i18n>The new theme is saved in its own folder; only its colors and fonts are appended at the end of css/styles.css. Saving again under the same slug updates that AI theme in place.</div>
+            </fieldset>
+            <!-- Homepage -->
+            <fieldset>
+              <legend class="icon-layout" data-i18n>Homepage</legend>
+              <div>
+                <input type="checkbox" class="switch" id="ai_include_home_html" name="include_home_html" value="1">
+                <label for="ai_include_home_html" data-i18n>Also generate the homepage layout (home.html) — arrange columns, banner position, and widget blocks, not just
+                  colors</label>
+              </div>
+              <div id="aitheme-position-field" hidden>
+                <label for="ai_sidebar_position" data-i18n>Sidebar position</label>
+                <span class="form-control icon-cols">
+                  <select id="ai_sidebar_position" name="sidebar_position">
+                    <option value="" data-i18n>Let AI choose</option>
+                    <option value="right" data-i18n>Right</option>
+                    <option value="left" data-i18n>Left</option>
+                    <option value="both" data-i18n>Both sides</option>
+                    <option value="none" data-i18n>No sidebar</option>
+                  </select>
+                </span>
+                <div class="comment" data-i18n>AI arranges blocks from the modules that have content on this site. Themes that show a menu column on every page can only add a right sidebar.</div>
+              </div>
+            </fieldset>
+            <!-- Actions -->
+            <fieldset class="submit">
+              <button type="button" id="btn-generate" class="btn btn-primary icon-support" data-i18n>Generate Theme</button>
+            </fieldset>
+          </form>
+        </section>
+        <!-- ═══════════════════════════════════════════════════
+           Section 2 – Preview & Save  (hidden until generated)
+           ═══════════════════════════════════════════════════ -->
+        <section id="aitheme-preview-section" hidden>
+          <header>
+            <div>
+              <h2 class="icon-template" data-i18n>{LNG_Preview} &amp; {LNG_Save}</h2>
+              <p data-i18n>Review the generated theme, then save it to activate</p>
+            </div>
+          </header>
+          <form class="content-body" autocomplete="off">
+            <div id="aitheme-gen-info" class="comment" hidden></div>
+            <!-- Variants -->
+            <fieldset id="aitheme-variants-field" hidden>
+              <legend class="icon-gallery" data-i18n>Choose a design</legend>
+              <div class="comment" data-i18n>Click a picture to choose that design. Preview homepage shows it on the real homepage; only administrators see the preview and the website keeps its current theme.</div>
+              <div id="aitheme-variants" class="aitheme-variants"></div>
+            </fieldset>
+            <!-- Color Palette Preview -->
+            <fieldset>
+              <legend class="icon-brush" data-i18n>Color Palette</legend>
+              <div id="aitheme-palette" class="aitheme-palette"></div>
+              <div id="aitheme-contrast" class="aitheme-contrast" hidden></div>
+            </fieldset>
+            <!-- Fonts -->
+            <fieldset>
+              <legend class="icon-fontfamily" data-i18n>Fonts</legend>
+              <div class="form-group">
+                <div class="width50">
+                  <label for="aitheme-font-heading" data-i18n>Heading font</label>
+                  <span class="form-control icon-heading">
+                    <select id="aitheme-font-heading"></select>
+                  </span>
+                </div>
+                <div class="width50">
+                  <label for="aitheme-font-body" data-i18n>Body font</label>
+                  <span class="form-control icon-fontfamily">
+                    <select id="aitheme-font-body"></select>
+                  </span>
+                </div>
+              </div>
+              <div class="comment" data-i18n>Fonts are loaded from Google Fonts and all of them support Thai.</div>
+            </fieldset>
+            <!-- Layout Preview (only when home.html generated) -->
+            <fieldset id="aitheme-layout-preview" hidden>
+              <legend class="icon-template" data-i18n>Homepage Layout</legend>
+              <div id="aitheme-layout-summary" class="comment"></div>
+              <div id="aitheme-layout-blocks" class="aitheme-layout-blocks"></div>
+            </fieldset>
+            <!-- Hero image (only when the homepage has a hero) -->
+            <fieldset id="aitheme-hero-field" hidden>
+              <legend class="icon-image" data-i18n>Hero image</legend>
+              <div class="aitheme-hero" id="aitheme-hero" hidden>
+                <img id="aitheme-hero-img" alt="">
+              </div>
+              <div class="aitheme-actions">
+                <button type="button" id="btn-hero-ai" class="btn btn-primary icon-image" data-i18n>Generate with AI</button>
+                <label class="btn btn-secondary icon-upload" for="aitheme-hero-file" data-i18n>Upload image</label>
+                <input type="file" id="aitheme-hero-file" accept="image/jpeg,image/png,image/webp" hidden>
+                <button type="button" id="btn-hero-remove" class="btn btn-danger outline icon-delete" hidden data-i18n>Remove</button>
+              </div>
+              <div class="comment" data-i18n>Shown behind the homepage heading with a dark overlay. JPEG, PNG or WebP, up to 4 MB.</div>
+            </fieldset>
+            <!-- Refine -->
+            <fieldset>
+              <legend class="icon-wizard" data-i18n>Adjust this design</legend>
+              <div>
+                <label for="aitheme-refine" data-i18n>What should change?</label>
+                <span class="form-control icon-edit">
+                  <input type="text" id="aitheme-refine" placeholder="{LNG_e.g. darker header, softer colors, Kanit for headings}">
+                </span>
+                <div class="comment" data-i18n>AI adjusts the colors and fonts of the selected design; the homepage layout stays as it is.</div>
+              </div>
+              <div class="aitheme-actions">
+                <button type="button" id="btn-refine" class="btn btn-primary icon-refresh" data-i18n>Adjust</button>
+              </div>
+            </fieldset>
+            <!-- Theme Metadata -->
+            <fieldset>
+              <legend class="icon-info" data-i18n>Theme Info</legend>
+              <div class="form-group">
+                <div class="width50">
+                  <label for="preview-name" data-i18n>Theme name</label>
+                  <span class="form-control icon-template">
+                    <input type="text" id="preview-name">
+                  </span>
+                </div>
+                <div class="width50">
+                  <label for="preview-slug" data-i18n>Slug (folder name)</label>
+                  <span class="form-control icon-folder">
+                    <input type="text" id="preview-slug" placeholder="{LNG_Auto generated}">
+                  </span>
+                  <div class="comment" data-i18n>Allowed: a-z 0-9 and -</div>
+                </div>
+              </div>
+              <div>
+                <label for="preview-description" data-i18n>Description</label>
+                <span class="form-control icon-file">
+                  <input type="text" id="preview-description">
+                </span>
+              </div>
+            </fieldset>
+            <!-- CSS Preview -->
+            <fieldset>
+              <legend class="icon-code" data-i18n>Generated CSS</legend>
+              <pre id="aitheme-css-preview" class="aitheme-code-preview"></pre>
+            </fieldset>
+            <!-- Save Actions -->
+            <fieldset class="submit">
+              <button type="button" id="btn-save-theme" class="btn btn-primary icon-save" data-i18n>Save Theme</button>
+              <button type="button" id="btn-activate-theme" class="btn btn-success icon-valid" hidden data-i18n>Activate this theme</button>
+            </fieldset>
+          </form>
+        </section>
+      </div>
+    </main>
+  </div>
+  <footer class="footer">
+    <p class="center">&copy; 2026 - Powered by <a href="https://nowjs.net">Now.js</a></p>
+  </footer>
+</div>

@@ -1,0 +1,16 @@
+<!-- Certificate (A4 landscape). The course's certificate design places each
+     field: --x/--y are % of the width/height, --size the font size in
+     1/840 of the width (see .elearning-certificate in themes/gcms.css) -->
+<div class="section-actions">
+  <button type="button" class="btn btn-primary icon-print" data-action="click:print" data-print-target="#elearning-certificate">{LNG_Print or save as PDF}</button>
+  <a class="btn btn-secondary icon-verfied" href="{VERIFY_URL}">{LNG_Verify certificate}</a>
+</div>
+<div id="elearning-certificate" class="elearning-certificate" style="--certificate-color:{COLOR}">
+  <img class="elearning-certificate-bg" {BG_HIDDEN} src="{BG}" alt="">
+  <div class="elearning-certificate-frame" {FRAME_HIDDEN}>{LNG_This certificate is awarded to}</div>
+  <div class="elearning-certificate-field elearning-certificate-name" style="{NAME_POS}">{NAME}</div>
+  <div class="elearning-certificate-field" style="{COURSE_POS}">{LNG_for completing the course} {COURSE}</div>
+  <div class="elearning-certificate-field" style="{DATE_POS}">{LNG_Given on} {DATE}</div>
+  <div class="elearning-certificate-field" style="{NO_POS}">{LNG_No.} {NO}</div>
+  <div class="elearning-certificate-qr" data-qr="{VERIFY_URL}" title="{LNG_Verify certificate}"></div>
+</div>

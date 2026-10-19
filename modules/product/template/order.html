@@ -1,0 +1,118 @@
+<aside data-component="sidebar"></aside>
+<div class="main-content" data-script="initProductOrder">
+  <div>
+    <header data-component="topbar"></header>
+    <main class="content">
+      <div class="card-groups">
+        <header>
+          <div>
+            <h1 class="icon-cart"><span data-i18n>Order</span> <span id="orderNo"></span></h1>
+            <p id="orderStatusText"></p>
+          </div>
+          <a class="btn icon-back" href="/product-orders" data-params="module_id" data-i18n>Back</a>
+        </header>
+
+        <div class="content-body">
+          <input type="hidden" id="orderModuleId" data-attr="value:module_id">
+
+          <div class="card">
+            <h2 class="icon-user" data-i18n>Customer</h2>
+            <div id="orderCustomer"></div>
+          </div>
+
+          <div class="card">
+            <h2 class="icon-list" data-i18n>Items</h2>
+            <table class="table border fullwidth">
+              <thead>
+                <tr>
+                  <th data-i18n>{LNG_Name}</th>
+                  <th class="center" data-i18n>SKU</th>
+                  <th class="right" data-i18n>{LNG_Price}</th>
+                  <th class="center" data-i18n>Qty</th>
+                  <th class="right" data-i18n>{LNG_Total}</th>
+                </tr>
+              </thead>
+              <tbody id="orderItemRows"></tbody>
+            </table>
+            <div id="orderTotals" class="pos-totals"></div>
+          </div>
+
+          <div class="card">
+            <h2 class="icon-money" data-i18n>Payment</h2>
+            <div id="orderPayment"></div>
+            <div id="orderPaymentProof"></div>
+            <div id="verifyActions" class="submit" hidden>
+              <button type="button" id="verifyApproveBtn" class="btn btn-success icon-check" data-i18n>Approve payment</button>
+              <button type="button" id="verifyRejectBtn" class="btn btn-danger icon-delete" data-i18n>Reject payment</button>
+            </div>
+          </div>
+
+          <div class="card">
+            <h2 class="icon-config" data-i18n>Update status</h2>
+            <form id="statusForm" class="stock-form" autocomplete="off">
+              <div class="form-group">
+                <div class="width50">
+                  <label data-i18n>{LNG_Status}</label>
+                  <span class="form-control icon-list"><select id="statusSelect"></select></span>
+                </div>
+                <div class="width50">
+                  <label data-i18n>Note</label>
+                  <span class="form-control icon-file"><input type="text" id="statusNote" maxlength="255"></span>
+                </div>
+              </div>
+              <div class="submit">
+                <button type="submit" class="btn btn-primary icon-save" data-i18n>Update status</button>
+              </div>
+            </form>
+          </div>
+
+          <div class="card">
+            <h2 class="icon-purchase" data-i18n>Shipment</h2>
+            <form id="shipForm" class="stock-form" autocomplete="off">
+              <div class="form-group">
+                <div class="width50">
+                  <label data-i18n>Shipping method</label>
+                  <span class="form-control icon-list"><select id="shipMethod"></select></span>
+                </div>
+                <div class="width50">
+                  <label data-i18n>Tracking no</label>
+                  <span class="form-control icon-tags"><input type="text" id="shipTracking" maxlength="64"></span>
+                </div>
+              </div>
+              <div class="submit">
+                <button type="submit" class="btn btn-primary icon-save" data-i18n>Mark shipped</button>
+              </div>
+            </form>
+            <table class="table border fullwidth">
+              <thead>
+                <tr>
+                  <th class="center" data-i18n>Date</th>
+                  <th data-i18n>Tracking no</th>
+                  <th class="center" data-i18n>{LNG_Status}</th>
+                </tr>
+              </thead>
+              <tbody id="shipmentRows"></tbody>
+            </table>
+          </div>
+
+          <div class="card">
+            <h2 class="icon-config" data-i18n>History</h2>
+            <table class="table border fullwidth">
+              <thead>
+                <tr>
+                  <th class="center" data-i18n>Date</th>
+                  <th data-i18n>{LNG_Status}</th>
+                  <th data-i18n>Note</th>
+                </tr>
+              </thead>
+              <tbody id="historyRows"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+  <footer class="footer">
+    <p class="center">&copy; 2026 GCMS - Powered by <a href="https://nowjs.net">Now.js</a></p>
+  </footer>
+</div>

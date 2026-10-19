@@ -1,0 +1,66 @@
+<aside data-component="sidebar"></aside>
+<div class="main-content">
+  <div>
+    <header data-component="topbar"></header>
+    <main class="content">
+      <form data-form="gallery-album" data-validate="true" data-reset="false" action="../api/gallery/write/save" method="post" data-ajax-submit="true" data-load-query-params="true"
+            data-load-api="../api/gallery/write/get" autocomplete="off">
+        <div class="card-groups">
+          <header>
+            <div>
+              <h1 class="icon-image" data-text="id ? '{LNG_Edit} {LNG_Album}' : '{LNG_Create} {LNG_Album}'" data-i18n></h1>
+              <p data-i18n>Manage photo album details and images</p>
+            </div>
+            <div class="header-actions">
+              <a class="btn icon-arrow-left" href="/gallery-albums" data-params="module_id" data-i18n>Back</a>
+              <button type="submit" class="btn btn-primary icon-save" data-i18n>Save</button>
+            </div>
+          </header>
+          <div class="content-body">
+            <!-- Basic Info -->
+            <fieldset>
+              <legend data-i18n>Album Information</legend>
+              <input type="hidden" name="id" data-attr="value:id">
+              <input type="hidden" name="module_id" value="8">
+              <div>
+                <label for="topic" data-i18n>Topic</label>
+                <span class="form-control icon-edit">
+                  <input type="text" id="topic" name="topic" data-attr="value:topic" required>
+                </span>
+              </div>
+              <div>
+                <label for="detail" data-i18n>Description</label>
+                <span class="form-control icon-file">
+                  <textarea id="detail" name="detail" rows="5" data-text="detail"></textarea>
+                </span>
+              </div>
+              <div class="item">
+                <label for="images" data-i18n>Images</label>
+                <span class="form-control icon-upload">
+                  <input type="file" id="images" name="images" multiple data-preview="true" data-drag-drop="true" data-allow-remove-existing="true" data-file-reference="url"
+                         data-sortable="true" data-action-url="../api/gallery/write/action" data-action-params="module_id" data-files="images" accept="image/*"
+                         data-attr="placeholder:'{LNG_Browse image uploaded, type} ' + img_typies">
+                </span>
+                <div id="result_images" class="comment" data-i18n>{LNG_The first picture is the album cover.} {LNG_You can drag & drop and reorder files.}</div>
+              </div>
+              <div>
+                <label for="published_date" data-i18n>Published date</label>
+                <span class="form-control icon-calendar">
+                  <input type="date" id="published_date" name="published_date" data-attr="value:published_date">
+                </span>
+              </div>
+            </fieldset>
+          </div>
+          <div class="form-submit">
+            <button type="submit" class="btn btn-primary icon-save" data-i18n>Save</button>
+            <input type="hidden" name="id" data-attr="value:id">
+            <input type="hidden" name="module_id" data-attr="value:module_id">
+          </div>
+        </div>
+      </form>
+    </main>
+  </div>
+  <footer class="footer">
+    <p class="center">&copy; 2026 GCMS - Powered by <a href="https://nowjs.net">Now.js</a></p>
+  </footer>
+</div>

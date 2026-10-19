@@ -1,0 +1,38 @@
+<!-- Sign in to a course that is open to everyone (the name is printed on the certificate) -->
+<section class="section-bg">
+  <div class="section__header">
+    <h2 class="icon-signin">{LNG_Sign in to start learning}</h2>
+  </div>
+  <div class="section__body">
+    <form data-form="elearningEnter" novalidate autocomplete="off" action="{WEBURL}api/elearning/learn/enter" method="post" data-ajax-submit="true">
+      <input type="hidden" name="course_id" value="{COURSE_ID}">
+      <fieldset>
+        <div>
+          <label for="elearning_name">{LNG_Full name}</label>
+          <span class="form-control icon-user">
+            <input type="text" id="elearning_name" name="name" maxlength="150" required>
+          </span>
+          <div class="comment">{LNG_Printed on the certificate}</div>
+        </div>
+        <div class="form-group">
+          <div class="width50">
+            <label for="elearning_org">{LNG_School, organization or class}</label>
+            <span class="form-control icon-office">
+              <input type="text" id="elearning_org" name="org" maxlength="150">
+            </span>
+          </div>
+          <div class="width50">
+            <label for="elearning_email">{LNG_Email}</label>
+            <span class="form-control icon-email">
+              <input type="email" id="elearning_email" name="email" maxlength="255">
+            </span>
+            <div class="comment">{LNG_Optional}</div>
+          </div>
+        </div>
+      </fieldset>
+      <fieldset class="submit">
+        <button type="submit" class="btn btn-primary large icon-signin">{LNG_Start learning}</button>
+      </fieldset>
+    </form>
+  </div>
+</section>

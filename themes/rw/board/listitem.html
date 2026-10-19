@@ -1,0 +1,19 @@
+<div class="board-topic-item{PIN}{LOCKED}" data-id="{ID}">
+  <div class="board-topic-badges">
+    <span class="{ICON}"></span>
+  </div>
+  <div class="board-topic-main">
+    <a href="{WEBURL}{MODULE}?cat={CATEGORY_ID}" class="badge category">{CATEGORY}</a>
+    <a href="{URL}" class="board-topic-title">{TOPIC}</a>
+    <div class="board-meta">
+      <span class="board-meta-author icon-user" style="color:var(--status{STATUS})" title="{LNG_Writer}">{SENDER}</span>
+      <time class="date icon-calendar" datetime="{DATE}" title="{LNG_Created}">{DATE {DATE} timeago}</time>
+      <span class="icon-comments" title="{LNG_Comments}">{COMMENTS}</span>
+      <span class="icon-visited" title="{LNG_Views}">{VISITED}</span>
+    </div>
+  </div>
+  <div class="board-topic-last">
+    <span class="board-last-by" style="color:var(--status{REPLY_STATUS})" title="{LNG_Last reply}">{LNG_Last reply} {LAST_REPLY_BY}</span>
+    <span class="date" title="{LNG_Last reply}">{DATE {LAST_REPLY} timeago}</span>
+  </div>
+</div>

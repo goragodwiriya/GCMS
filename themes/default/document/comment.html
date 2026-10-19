@@ -1,0 +1,13 @@
+<div class="document-comment" id="comment-{COMMENT_ID}">
+  <div class="document-comment-meta">
+    <span class="document-comment-author icon-user">{COMMENT_SENDER}</span>
+    <span class="date icon-calendar">{DATE {COMMENT_DATE} d M Y H:i}</span>
+    <div class="comment-actions {APPROVER}">
+      <button type="button" class="icon-delete" data-id="delete-comment-{MODULE_ID}-{COMMENT_ID}"></button>
+      <a class="icon-edit {COMMENT_CAN_EDIT}" href="{COMMENT_EDIT_URL}" title="{LNG_Edit}"></a>
+    </div>
+  </div>
+  <div class="page-detail">
+    {COMMENT_DETAIL}
+  </div>
+</div>

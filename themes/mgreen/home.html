@@ -1,0 +1,112 @@
+<div class="homepage sidebar-right gap">
+  <!-- ── Main Content ── -->
+  <div class="home-content">
+    <!-- Home details -->
+    <section class="section-bg home">
+      <div class="container">
+        <div class="section__body">
+          <div class="page-detail">{DETAIL}</div>
+        </div>
+      </div>
+    </section>
+    <!-- News -->
+    <section class="section-bg">
+      <div class="container">
+        <div class="section__header">
+          <h2 class="icon-news">{LNG_News}</h2>
+        </div>
+        <div class="section__body">{WIDGET_DOCUMENT module=news;layout=icon;rows=5;cols=1}</div>
+      </div>
+    </section>
+    <!-- Announcement -->
+    <section class="section-bg">
+      <div class="container">
+        <div class="section__header">
+          <h2 class="icon-info">{LNG_Announcement}</h2>
+        </div>
+        <div class="section__body">{WIDGET_DOCUMENT module=announce;layout=list;rows=5;cols=1}</div>
+      </div>
+    </section>
+    <!-- Knowledge -->
+    <section class="section-bg">
+      <div class="container">
+        <div class="section__header">
+          <h2 class="icon-documents">{LNG_Knowledge}</h2>
+        </div>
+        <div class="section__body">{WIDGET_DOCUMENT module=knowledge;layout=thumb;rows=1;cols=3}</div>
+      </div>
+    </section>
+    <!-- Gallery -->
+    <section class="section-bg">
+      <div class="container">
+        <div class="section__header">
+          <h2 class="icon-gallery">{LNG_Gallery}</h2>
+        </div>
+        <div class="section__body">{WIDGET_GALLERY module=gallery;count=4}</div>
+      </div>
+    </section>
+    <!-- Forum -->
+    <section class="section-bg">
+      <div class="container">
+        <div class="section__header">
+          <h2 class="icon-board">{LNG_Forum}</h2>
+        </div>
+        <div class="section__body">{WIDGET_BOARD module=forum;limit=5}</div>
+      </div>
+    </section>
+    <!-- Download -->
+    <section class="section-bg">
+      <div class="container">
+        <div class="section__header">
+          <h2 class="icon-download">{LNG_Download}</h2>
+        </div>
+        <div class="section__body">{WIDGET_DOWNLOAD module=download;limit=5}</div>
+      </div>
+    </section>
+    <!-- Video -->
+    <section class="section-bg">
+      <div class="container">
+        <div class="section__header">
+          <h2 class="icon-video">{LNG_Video}</h2>
+        </div>
+        <div class="section__body">{WIDGET_VIDEO module=video;count=4}</div>
+      </div>
+    </section>
+  </div>
+  <!-- ── Right Sidebar ── -->
+  <aside class="sidebar home-sidebar">
+    <!-- Personnel -->
+    <section class="section-bg">
+      <div class="container">
+        <div class="section__header">
+          <h2 class="icon-customer">{LNG_Personnel}</h2>
+        </div>
+        <div class="section__body">{WIDGET_PERSONNEL module=personnel;level=1;layout=fade;menu=1}</div>
+      </div>
+    </section>
+    <!-- Upcoming events -->
+    <section class="section-bg">
+      <div class="container">
+        <div class="section__header">
+          <h2 class="icon-calendar">{LNG_Activities}</h2>
+        </div>
+        <div class="section__body">{WIDGET_EVENT module=event;count=5}</div>
+      </div>
+    </section>
+    <!-- Banner (Textlinks: banner) -->
+    <section class="section-bg">
+      <div class="container">
+        <div class="section__body">{WIDGET_TEXTLINKS name=banner;layout=banner}</div>
+      </div>
+    </section>
+    <!-- Counter -->
+    <section class="section-bg">
+      <div class="container">
+        <div class="section__header">
+          <h2 class="icon-chart">{LNG_Counter}</h2>
+        </div>
+        <div class="section__body">{WIDGET_COUNTER}</div>
+      </div>
+    </section>
+  </aside>
+</div>

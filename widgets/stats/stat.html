@@ -1,0 +1,228 @@
+<aside data-component="sidebar"></aside>
+<div class="main-content">
+  <div>
+    <header data-component="topbar"></header>
+    <main class="content">
+      <div class="card-groups">
+        <header>
+          <div>
+            <h1 class="icon-stats" data-text="id ? '{LNG_Edit} {LNG_Stats}' : '{LNG_Add} {LNG_Stats}'"></h1>
+            <p data-i18n>Manage stats and counters</p>
+          </div>
+        </header>
+
+        <div class="content-body">
+          <form data-form="stat" data-validate="true" data-reset="false" action="../api/index/widgets/save?widget=stats" method="post" data-ajax-submit="true"
+                data-load-query-params="true" data-load-api="../api/index/widgets/get?widget=stats" data-on-load="initWidgetStats" autocomplete="off">
+
+            <fieldset>
+              <legend class="icon-cog" data-i18n>Settings</legend>
+
+              <div>
+                <label for="name" data-i18n>Group name</label>
+                <em id="name_demo">{WIDGET_STATS}</em>
+                <span class="form-control icon-edit">
+                  <input type="text" id="name" name="name" data-attr="value:name">
+                </span>
+                <div class="comment" id="result_name" data-i18n>
+                  Enter the group name for this stat (lowercase letters and numbers). Used to group related counters together on one section.
+                </div>
+              </div>
+
+              <div>
+                <label for="label" data-i18n>Label</label>
+                <span class="form-control icon-edit">
+                  <input type="text" id="label" name="label" placeholder="e.g. Happy Customers" data-attr="value:label">
+                </span>
+                <div class="comment" id="result_label" data-i18n>
+                  The text displayed below the counter number.
+                </div>
+              </div>
+
+              <div>
+                <label for="description" data-i18n>Description</label>
+                <span class="form-control icon-detail">
+                  <input type="text" id="description" name="description" placeholder="Optional description" data-attr="value:description">
+                </span>
+                <div class="comment" id="result_description" data-i18n>
+                  Optional short description or subtitle for this stat.
+                </div>
+              </div>
+            </fieldset>
+
+            <fieldset>
+              <legend class="icon-stats" data-i18n>Counter</legend>
+
+              <div>
+                <label for="value" data-i18n>Value</label>
+                <span class="form-control icon-stats">
+                  <input type="number" id="value" name="value" placeholder="0" data-attr="value:value">
+                </span>
+                <div class="comment" id="result_value" data-i18n>
+                  The target number to count up to.
+                </div>
+              </div>
+
+              <div>
+                <div class="form-group">
+                  <div>
+                    <label for="prefix" data-i18n>Prefix</label>
+                    <span class="form-control icon-edit">
+                      <input type="text" id="prefix" name="prefix" placeholder="e.g. $" data-attr="value:prefix">
+                    </span>
+                  </div>
+                  <div>
+                    <label for="suffix" data-i18n>Suffix</label>
+                    <span class="form-control icon-edit">
+                      <input type="text" id="suffix" name="suffix" placeholder="e.g. +" data-attr="value:suffix">
+                    </span>
+                  </div>
+                </div>
+                <div class="comment" id="result_suffix" data-i18n>
+                  Optional text shown before (prefix) or after (suffix) the number.
+                </div>
+              </div>
+
+              <div>
+                <label for="format" data-i18n>Number format</label>
+                <span class="form-control icon-stats">
+                  <select id="format" name="format" data-attr="value:format">
+                    <option value="number" data-i18n>Number</option>
+                    <option value="percentage" data-i18n>Percentage (%)</option>
+                    <option value="currency" data-i18n>Currency</option>
+                    <option value="time" data-i18n>Time (HH:MM:SS)</option>
+                    <option value="timer" data-i18n>Timer (MM:SS.ms)</option>
+                  </select>
+                </span>
+                <div class="comment" id="result_format" data-i18n>
+                  Select the number display format.
+                </div>
+              </div>
+
+              <div>
+                <label for="decimals" data-i18n>Decimal places</label>
+                <span class="form-control icon-edit">
+                  <input type="number" id="decimals" name="decimals" min="0" max="10" placeholder="0" data-attr="value:decimals">
+                </span>
+                <div class="comment" id="result_decimals" data-i18n>
+                  Number of decimal places to display (used with number or currency format).
+                </div>
+              </div>
+
+              <div>
+                <div class="form-group">
+                  <div>
+                    <label for="separator" data-i18n>Thousands separator</label>
+                    <span class="form-control icon-edit">
+                      <input type="text" id="separator" name="separator" placeholder="," maxlength="1" data-attr="value:separator">
+                    </span>
+                  </div>
+                  <div>
+                    <label for="decimal" data-i18n>Decimal point</label>
+                    <span class="form-control icon-edit">
+                      <input type="text" id="decimal" name="decimal" placeholder="." maxlength="1" data-attr="value:decimal">
+                    </span>
+                  </div>
+                </div>
+                <div class="comment" data-i18n>
+                  Characters used for thousands grouping and decimal point.
+                </div>
+              </div>
+
+              <div>
+                <label for="duration" data-i18n>{LNG_Animation duration} ({LNG_ms})</label>
+                <span class="form-control icon-calendar">
+                  <input type="number" id="duration" name="duration" placeholder="2000" min="100" max="10000" data-attr="value:duration">
+                </span>
+                <div class="comment" id="result_duration" data-i18n>
+                  Duration of the counting animation in milliseconds (e.g. 2000 = 2 seconds).
+                </div>
+              </div>
+
+              <div>
+                <label for="countMode" data-i18n>Count mode</label>
+                <span class="form-control icon-stats">
+                  <select id="countMode" name="countMode" data-attr="value:countMode">
+                    <option value="up" data-i18n>Count up</option>
+                    <option value="down" data-i18n>Count down</option>
+                  </select>
+                </span>
+                <div class="comment" id="result_countMode" data-i18n>
+                  Direction of the counter animation.
+                </div>
+              </div>
+
+              <div>
+                <label for="animation" data-i18n>Animation style</label>
+                <span class="form-control icon-stats">
+                  <select id="animation" name="animation" data-attr="value:animation">
+                    <option value="default" data-i18n>Default</option>
+                    <option value="odometer" data-i18n>Odometer</option>
+                    <option value="rollup" data-i18n>Roll up</option>
+                  </select>
+                </span>
+                <div class="comment" id="result_animation" data-i18n>
+                  Visual style of the counting animation.
+                </div>
+              </div>
+
+              <div>
+                <label for="delay" data-i18n>Start delay (ms)</label>
+                <span class="form-control icon-calendar">
+                  <input type="number" id="delay" name="delay" placeholder="0" min="0" max="10000" data-attr="value:delay">
+                </span>
+                <div class="comment" id="result_delay" data-i18n>
+                  Delay in milliseconds before the counter starts animating.
+                </div>
+              </div>
+
+              <div>
+                <label for="easing" data-i18n>Easing function</label>
+                <span class="form-control icon-stats">
+                  <select id="easing" name="easing" data-attr="value:easing">
+                    <option value="easeOutExpo" data-i18n>Ease Out Expo (default)</option>
+                    <option value="easeOutQuad" data-i18n>Ease Out Quad</option>
+                    <option value="easeOutCubic" data-i18n>Ease Out Cubic</option>
+                    <option value="linear" data-i18n>Linear</option>
+                  </select>
+                </span>
+                <div class="comment" id="result_easing" data-i18n>
+                  Easing curve used during the counting animation.
+                </div>
+              </div>
+            </fieldset>
+
+            <fieldset>
+              <legend class="icon-image" data-i18n>Appearance</legend>
+
+              <div>
+                <label data-i18n>Icon</label>
+                <div id="icon_picker" data-component="icon-picker" data-name="icon" data-attr="value:icon"></div>
+                <div class="comment" id="result_icon" data-i18n>Select the icon for this menu.</div>
+              </div>
+
+              <div>
+                <label for="color" data-i18n>Color</label>
+                <span class="form-control icon-image">
+                  <input type="color" id="color" name="color" data-attr="value:color">
+                </span>
+                <div class="comment" id="result_color" data-i18n>
+                  Optional highlight color for the icon and counter value.
+                </div>
+              </div>
+            </fieldset>
+
+            <!-- Submit Button -->
+            <fieldset class="submit">
+              <button type="submit" class="btn btn-primary icon-save" data-i18n>Save</button>
+              <input type="hidden" name="id" data-attr="value:id">
+            </fieldset>
+          </form>
+        </div>
+      </div>
+    </main>
+  </div>
+  <footer class="footer">
+    <p class="center">&copy; 2026 Goragod.com - Powered by <a href="https://nowjs.net">Now.js</a></p>
+  </footer>
+</div>

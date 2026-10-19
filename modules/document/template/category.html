@@ -1,0 +1,85 @@
+<aside data-component="sidebar"></aside>
+<div class="main-content">
+  <div>
+    <header data-component="topbar"></header>
+    <main class="content">
+      <div class="card-groups">
+        <header>
+          <div>
+            <h1 class="icon-tags" data-i18n>Category</h1>
+            <p data-i18n>{LNG_Manage category of} {LNG_Document}</p>
+          </div>
+          <div class="header-actions">
+            <a class="btn icon-arrow-left" href="/document-categories" data-params="module_id" data-i18n>Back</a>
+          </div>
+        </header>
+        <div class="content-body">
+          <!-- Category Form -->
+          <form data-form="documentCategory" action="../api/document/category/save" method="POST" data-ajax-submit="true" data-sanitize-input="false"
+                data-load-api="../api/document/category/get" data-load-query-params="true" data-confirm="Confirm save">
+            <fieldset>
+              <legend class="icon-tag" data-i18n>Category</legend>
+              <div>
+                <label for="category_id" data-i18n>ID</label>
+                <span class="form-control icon-edit">
+                  <input type="text" id="category_id" name="category_id" maxlength="50" data-attr="value:category_id">
+                </span>
+                <div class="comment" id="result_category_id" data-i18n>The name of the category, less than 50 characters </div>
+              </div>
+              <div>
+                <label for="can_reply" data-i18n>Can reply</label>
+                <span class="form-control icon-visited">
+                  <select id="can_reply" name="can_reply" data-options-key="user_status_with_guest" data-attr="value:can_reply" multiple></select>
+                </span>
+              </div>
+              <div>
+                <input type="checkbox" class="switch" id="published" name="published" data-attr="checked:published">
+                <label for="published" data-i18n>Published</label>
+              </div>
+              <div class="comment" id="result_published" data-i18n>The configuration of the newly added entry only. You can configure it once each.</div>
+            </fieldset>
+            <fieldset data-for="lng in languages">
+              <template>
+                <fieldset>
+                  <legend class="icon-file" data-i18n>{LNG_Category} [{{lng.text}}]</legend>
+                  <div>
+                    <label for="default_icon_{{lng.value}}" data-i18n>Image</label>
+                    <span class="form-control icon-image">
+                      <input type="file" id="default_icon_{{lng.value}}" name="default_icon[{{lng.value}}]" data-files="default_icon[{{lng.value}}]" data-preview="true"
+                             data-allow-remove-existing="true" data-action-url="../api/document/category/removeIcon" data-action-params="module_id,id" data-file-reference="url"
+                             accept="image/*" data-attr="placeholder:'{LNG_Browse image uploaded, type} ' + img_typies">
+                    </span>
+                    <div class="comment" id="result_image" data-text="'{LNG_Browse image uploaded, type} ' + img_typies + ', {LNG_should be prepared to have the same size}'"></div>
+                  </div>
+                  <div>
+                    <label for="topic_{{lng.value}}" data-i18n>Topic</label>
+                    <span class="form-control icon-edit">
+                      <input type="text" id="topic_{{lng.value}}" name="topic[{{lng.value}}]" maxlength="50" data-attr="value:topic[{{lng.value}}]">
+                    </span>
+                    <div class="comment" id="result_topic" data-i18n> The name of the category, less than 50 characters </div>
+                  </div>
+                  <div>
+                    <label for="detail_{{lng.value}}" data-i18n>Description</label>
+                    <span class="form-control icon-file">
+                      <textarea id="detail_{{lng.value}}" name="detail[{{lng.value}}]" maxlength="255" data-attr="value:detail[{{lng.value}}]"></textarea>
+                    </span>
+                    <div class="comment" id="result_detail" data-i18n> Description of this category, less than 255 characters </div>
+                  </div>
+                </fieldset>
+              </template>
+            </fieldset>
+            <!-- Submit Button -->
+            <fieldset class="submit">
+              <button type="submit" class="btn btn-primary icon-save" data-i18n>Save</button>
+              <input type="hidden" name="id" data-attr="value:id">
+              <input type="hidden" name="module_id" data-attr="value:module_id">
+            </fieldset>
+          </form>
+        </div>
+      </div>
+    </main>
+  </div>
+  <footer class="footer">
+    <p class="center">&copy; 2026 GCMS - Powered by <a href="https://nowjs.net">Now.js</a></p>
+  </footer>
+</div>

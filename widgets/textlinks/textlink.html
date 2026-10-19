@@ -1,0 +1,148 @@
+<aside data-component="sidebar"></aside>
+<div class="main-content">
+  <div>
+    <header data-component="topbar"></header>
+    <main class="content">
+      <div class="card-groups">
+        <header>
+          <div>
+            <h1 class="icon-ads" data-text="id ? '{LNG_Edit} {LNG_Text Link}' : '{LNG_Create} {LNG_Text Link}'"></h1>
+            <p data-i18n>Manage text links</p>
+          </div>
+        </header>
+
+        <div class="content-body">
+          <!-- API Settings -->
+          <form data-form="textlink" data-validate="true" data-reset="false" action="../api/index/widgets/save?widget=textlinks" method="post" data-ajax-submit="true"
+                data-load-query-params="true" data-load-api="../api/index/widgets/get?widget=textlinks" data-on-load="initWidgetTextlink" autocomplete="off">
+            <fieldset>
+              <legend class="icon-cog" data-i18n>Settings</legend>
+
+              <div>
+                <label for="name" data-i18n>Group</label>
+                <em id="name_demo">{WIDGET_TEXTLINKS}</em>
+                <span class="form-control icon-edit">
+                  <input type="text" id="name" name="name" list="textlink_groups" required data-attr="value:name">
+                </span>
+                <datalist id="textlink_groups"></datalist>
+                <div class="comment" id="result_name" data-i18n>
+                  Enter the name of Textlink english lowercase letters and numbers. Used for grouping similar position.
+                </div>
+              </div>
+
+              <div>
+                <label for="type" data-i18n>Type</label>
+                <span class="form-control icon-menus">
+                  <select id="type" name="type" data-attr="value:type">
+                    <option value="text" data-i18n>Text menu</option>
+                    <option value="image" data-i18n>Image menu</option>
+                  </select>
+                </span>
+                <div class="comment" id="result_type" data-i18n>
+                  Text menu items render as a menu list, image menu items render as a row of logos.
+                </div>
+              </div>
+
+              <div>
+                <label for="description" data-i18n>Description</label>
+                <span class="form-control icon-edit">
+                  <input type="text" id="description" name="description" placeholder="{DESCRIPTION}" data-attr="value:description">
+                </span>
+                <div class="comment" id="result_description" data-i18n>
+                  Notes or short description of the link
+                </div>
+              </div>
+            </fieldset>
+
+            <fieldset>
+              <legend class="icon-info" data-i18n>Details</legend>
+
+              <div>
+                <label for="text" data-i18n>Text</label>
+                <span class="form-control icon-edit">
+                  <input type="text" id="text" name="text" placeholder="{TITLE}" data-attr="value:text">
+                </span>
+                <div class="comment" id="result_text" data-i18n>
+                  Message on the link, also used as the image alt text
+                </div>
+              </div>
+
+              <div>
+                <label for="url" data-i18n>URL</label>
+                <span class="form-control icon-link">
+                  <input type="text" id="url" name="url" placeholder="https://" data-attr="value:url">
+                </span>
+                <div class="comment" id="result_url" data-i18n>
+                  Links for this item, which will open this page when click on it
+                </div>
+              </div>
+
+              <div>
+                <label for="target" data-i18n>Open Link In</label>
+                <span class="form-control icon-forward">
+                  <select id="target" name="target" data-attr="value:target">
+                    <option value="" data-i18n>Open link in same page (default)</option>
+                    <option value="_blank" data-i18n>Open link in new page (_blank)</option>
+                  </select>
+                </span>
+                <div class="comment" id="result_target" data-i18n>
+                  Determine how to turn the page when a link is clicked
+                </div>
+              </div>
+
+              <div id="logo_group">
+                <label for="logo" data-i18n>Browse</label>
+                <span class="form-control icon-image">
+                  <input type="file" id="logo" name="logo" data-files="logo" data-preview="true" data-allow-remove-existing="true"
+                         data-action-url="../api/index/widgets/remove?widget=textlinks&type=logo" data-file-reference="url" accept="image/*">
+                </span>
+                <div class="comment" id="result_logo" data-i18n>
+                  {LNG_Browse image uploaded, type} jpg, jpeg, png, webp
+                </div>
+              </div>
+            </fieldset>
+
+            <fieldset>
+              <legend class="icon-visited" data-i18n>Publish this item</legend>
+
+              <div>
+                <input type="checkbox" class="switch" id="dateless" name="dateless" value="1" data-attr="check:dateless">
+                <label for="dateless" data-i18n>Dateless</label>
+              </div>
+
+              <div id="publish_group">
+                <div class="form-group">
+                  <div>
+                    <label for="publish_start" data-i18n>Start date</label>
+                    <span class="form-control icon-calendar">
+                      <input type="date" id="publish_start" name="publish_start" data-attr="value:publish_start">
+                    </span>
+                  </div>
+
+                  <div>
+                    <label for="publish_end" data-i18n>End date</label>
+                    <span class="form-control icon-calendar">
+                      <input type="date" id="publish_end" name="publish_end" data-attr="value:publish_end">
+                    </span>
+                  </div>
+                </div>
+                <div class="comment" id="result_publish_start" data-i18n>
+                  The date of the start and end of the link. (Links are performed within a given time automatically.)
+                </div>
+              </div>
+            </fieldset>
+
+            <!-- Submit Button -->
+            <fieldset class="submit">
+              <button type="submit" class="btn btn-primary icon-save" data-i18n>Save</button>
+              <input type="hidden" name="id" data-attr="value:id">
+            </fieldset>
+          </form>
+        </div>
+      </div>
+    </main>
+  </div>
+  <footer class="footer">
+    <p class="center">&copy; 2026 GCMS - Powered by <a href="https://nowjs.net">Now.js</a></p>
+  </footer>
+</div>

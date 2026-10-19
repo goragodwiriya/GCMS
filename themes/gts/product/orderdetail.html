@@ -1,0 +1,137 @@
+<!-- Order Detail Page -->
+<article class="main-page order-detail-container" data-component="api" data-endpoint="{WEBURL}api/product/myorders/view?module_id={MODULE_ID}" data-method="GET" data-url-params="true">
+  <header class="page-header hero">
+    <div class="container">
+      <nav class="breadcrumbs one_line">
+        <ul>{BREADCRUMBS}</ul>
+      </nav>
+      <h1 class="page__title">{TOPIC}</h1>
+    </div>
+  </header>
+  <div class="page-body">
+    <div class="container">
+      <div class="page-content">
+        <!-- Order Header -->
+        <div class="order-detail-header">
+          <div class="order-title-section">
+            <h1 class="order-title"><span>{LNG_Order}</span> #<span data-text="order_no"></span></h1>
+            <span class="order-status-badge" data-text="order_status_text" data-attr="class:'order-status-badge status-' + order_status"></span>
+          </div>
+          <div class="order-meta">
+            <div class="meta-item">
+              <span class="meta-label">{LNG_Order Date}</span>
+              <span class="meta-value" data-text="created_at" data-format="datetime"></span>
+            </div>
+            <div class="meta-item" data-if="payment_date">
+              <span class="meta-label">{LNG_Payment Date}</span>
+              <span class="meta-value" data-text="payment_date" data-format="datetime"></span>
+            </div>
+          </div>
+        </div>
+        <!-- Order Details Grid -->
+        <div class="order-details-grid">
+          <!-- Customer Information -->
+          <div class="detail-card">
+            <h2 class="card-title">{LNG_Customer information}</h2>
+            <div class="info-group">
+              <div class="info-item">
+                <span class="info-label">{LNG_Name}</span>
+                <span class="info-value" data-text="name"></span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">{LNG_Phone}</span>
+                <span class="info-value" data-text="phone"></span>
+              </div>
+            </div>
+          </div>
+          <!-- Shipping Address -->
+          <div class="detail-card">
+            <h2 class="card-title">{LNG_Shipping Address}</h2>
+            <div class="info-group">
+              <p class="address-text">
+                <span data-text="address"></span>
+                <span>{LNG_Province}</span> <span data-text="province"></span>
+                <span>{LNG_Zipcode}</span> <span data-text="zipcode"></span>
+              </p>
+            </div>
+          </div>
+          <!-- Payment information -->
+          <div class="detail-card">
+            <h2 class="card-title">{LNG_Payment information}</h2>
+            <div class="info-group">
+              <div class="info-item">
+                <span class="info-label">{LNG_Payment Method}</span>
+                <span class="info-value" data-text="payment_method"></span>
+              </div>
+              <div class="info-item" data-if="payment_ref">
+                <span class="info-label">{LNG_Reference No}</span>
+                <span class="info-value" data-text="payment_ref"></span>
+              </div>
+              <div data-if="payment_proof">
+                <span class="info-label">{LNG_Payment Proof}</span>
+                <div class="payment-proof-container">
+                  <img class="payment-proof-image" data-attr="src:payment_proof" alt="Payment Proof">
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Order Items -->
+        <div class="order-items-section">
+          <h2 class="section__header">{LNG_Order Items}</h2>
+          <div class="tablebody">
+            <table class="items-table">
+              <thead>
+                <tr>
+                  <th>{LNG_Product}</th>
+                  <th class="text-center">{LNG_Quantity}</th>
+                  <th class="text-center">{LNG_Price}</th>
+                  <th class="text-center">{LNG_Total}</th>
+                </tr>
+              </thead>
+              <tbody data-for="item of items">
+                <template>
+                  <tr>
+                    <td>
+                      <div class="item-info">
+                        <span class="item-name" data-text="item.topic"></span>
+                        <span class="item-code"><span>{LNG_Product No.}</span>: <span data-text="item.product_no"></span></span>
+                      </div>
+                    </td>
+                    <td class="text-center" data-text="item.quantity"></td>
+                    <td class="text-right" data-text="item.price" data-format="currency:THB"></td>
+                    <td class="text-right" data-text="item.total" data-format="currency:THB"></td>
+                  </tr>
+                </template>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <!-- Order Summary -->
+        <div class="order-summary">
+          <div class="summary-row">
+            <span class="summary-label">{LNG_Subtotal}</span>
+            <span class="summary-value" data-text="subtotal" data-format="currency:THB"></span>
+          </div>
+          <div class="summary-row">
+            <span class="summary-label">{LNG_Shipping}</span>
+            <span class="summary-value" data-text="transport" data-format="currency:THB"></span>
+          </div>
+          <div class="summary-row" data-if="discount > 0">
+            <span class="summary-label">{LNG_Discount}</span>
+            <span class="summary-value discount-text">- <span data-text="discount" data-format="currency:THB"></span></span>
+          </div>
+          <div class="summary-row total-row">
+            <span class="summary-label">{LNG_Grand Total}</span>
+            <span class="summary-value total-value" data-text="total" data-format="currency:THB"></span>
+          </div>
+        </div>
+        <!-- Notes -->
+        <div class="notes-section" data-if="notes">
+          <h3 class="notes-title">{LNG_Notes}</h3>
+          <p class="notes-text" data-text="notes"></p>
+        </div>
+      </div>
+    </div>
+  </div>
+</article>

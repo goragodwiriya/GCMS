@@ -1,0 +1,65 @@
+<aside data-component="sidebar"></aside>
+<div class="main-content" data-script="initProductPos">
+  <div>
+    <header data-component="topbar"></header>
+    <main class="content">
+      <div class="card-groups">
+        <header>
+          <div>
+            <h1 class="icon-shop" data-i18n>POS</h1>
+            <p data-i18n>Point of sale register</p>
+          </div>
+        </header>
+
+        <div class="content-body">
+          <input type="hidden" id="posModuleId" data-attr="value:module_id">
+          <div class="pos-register">
+            <!-- Product search column -->
+            <div class="pos-search card">
+              <div class="form-control icon-search">
+                <input type="text" id="posSearch" placeholder="Search products / SKU" data-i18n-placeholder="Search products / SKU" autocomplete="off">
+              </div>
+              <div id="posResults" class="pos-results"></div>
+            </div>
+
+            <!-- Cart column -->
+            <div class="pos-cart card">
+              <table class="table border fullwidth">
+                <thead>
+                  <tr>
+                    <th data-i18n>{LNG_Name}</th>
+                    <th class="right" data-i18n>{LNG_Price}</th>
+                    <th class="center" data-i18n>Qty</th>
+                    <th class="right" data-i18n>{LNG_Total}</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody id="posCartRows"></tbody>
+              </table>
+
+              <div class="pos-totals">
+                <div><span data-i18n>Subtotal</span>: <strong id="posSubtotal">0.00</strong></div>
+                <div>
+                  <label data-i18n>Customer</label>
+                  <span class="form-control icon-user"><input type="text" id="posCustName" maxlength="255"></span>
+                </div>
+                <div>
+                  <label data-i18n>Paid</label>
+                  <span class="form-control icon-money"><input type="number" id="posPaid" min="0" step="0.01" value="0"></span>
+                </div>
+                <div><span data-i18n>Change</span>: <strong id="posChange">0.00</strong></div>
+                <button type="button" id="posCheckoutBtn" class="btn btn-primary icon-save" data-i18n>Checkout</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Receipt result -->
+          <div id="posReceipt" class="card" hidden></div>
+        </div>
+      </div>
+    </main>
+  </div>
+  <footer class="footer">
+    <p class="center">&copy; 2026 GCMS - Powered by <a href="https://nowjs.net">Now.js</a></p>
+  </footer>
+</div>

@@ -1,0 +1,27 @@
+<!-- E-Learning: course page. The slot under the description holds enter.html,
+     enterstudent.html or notice.html for a visitor, outline.html for a learner -->
+<article class="main-page view-page">
+  <header class="page-header view-header">
+    <div class="container">
+      <nav class="breadcrumbs one_line">
+        <ul>{BREADCRUMBS}</ul>
+      </nav>
+      <h1 class="page__title">{TOPIC}</h1>
+      <div class="header-meta">
+        <span class="icon-estudent">{CLASS}</span>
+        <span class="icon-book">{LESSONS} {LNG_lessons}</span>
+        <span class="icon-question">{QUIZZES} {LNG_quizzes}</span>
+        <span class="badge-success" {CERT} data-badge="{LNG_Certificate}"></span>
+      </div>
+    </div>
+  </header>
+  <div class="page-body">
+    <div class="container">
+      <div class="page-content">
+        <section class="article-image" {COVER_HIDDEN}><img src="{COVER}" alt="{TOPIC}"></section>
+        <section class="page-detail">{DETAIL}</section>
+        {CONTENT}
+      </div>
+    </div>
+  </div>
+</article>

@@ -1,0 +1,78 @@
+<aside data-component="sidebar"></aside>
+<div class="main-content">
+  <div>
+    <header data-component="topbar"></header>
+    <main class="content">
+      <div class="card-groups">
+        <header>
+          <div>
+            <h1 class="icon-cog" data-i18n>{LNG_Video} {LNG_Settings}</h1>
+            <p data-i18n>Configure video display options and YouTube API</p>
+          </div>
+        </header>
+        <div class="content-body">
+          <!-- Settings Form -->
+          <form data-form="videoSettings" action="../api/video/settings/save" method="POST" data-ajax-submit="true" data-load-api="../api/video/settings/get"
+                data-load-query-params="true" data-confirm="Confirm save">
+            <fieldset>
+              <legend class="icon-google" data-i18n>{LNG_Settings} YouTube</legend>
+              <div>
+                <label for="google_api_key" data-i18n>Google API Key</label>
+                <span class="form-control icon-google">
+                  <input type="text" id="google_api_key" name="google_api_key" data-attr="value:google_api_key" autocomplete="off">
+                </span>
+                <div class="comment" id="result_google_api_key" data-i18n>{LNG_API Key for various services from Google} <a href="http://gcms.in.th/index.php?module=howto&id=319"
+                     target="_blank" class=icon-help></a></div>
+              </div>
+            </fieldset>
+            <fieldset>
+              <legend class="icon-list" data-i18n>Listing page</legend>
+              <div class="form-group">
+                <div class="width50">
+                  <label for="cols" data-i18n>Columns</label>
+                  <span class="form-control icon-cols">
+                    <select name="cols" id="cols" data-attr="value:cols">
+                      <option value="1" data-i18n>1</option>
+                      <option value="2" data-i18n>2</option>
+                      <option value="3" data-i18n>3</option>
+                      <option value="4" data-i18n>4</option>
+                    </select>
+                  </span>
+                </div>
+                <div class="width50">
+                  <label for="rows" data-i18n>Rows</label>
+                  <span class="form-control icon-rows">
+                    <input type="number" id="rows" name="rows" data-attr="value:rows" min="1" max="100">
+                  </span>
+                </div>
+              </div>
+            </fieldset>
+            <fieldset>
+              <legend class="icon-shield" data-i18n>Permissions</legend>
+              <div>
+                <label for="can_write" data-i18n>Can write</label>
+                <span class="form-control icon-user">
+                  <select id="can_write" name="can_write" data-options-key="user_status" data-attr="value:can_write" multiple></select>
+                </span>
+              </div>
+              <div>
+                <label for="can_config" data-i18n>Can configure</label>
+                <span class="form-control icon-valid">
+                  <select id="can_config" name="can_config" data-options-key="user_status" data-attr="value:can_config" multiple></select>
+                </span>
+              </div>
+            </fieldset>
+            <!-- Submit Button -->
+            <fieldset class="submit">
+              <button type="submit" class="btn btn-primary icon-save" data-i18n>Save</button>
+              <input type="hidden" name="module_id" data-attr="value:module_id">
+            </fieldset>
+          </form>
+        </div>
+      </div>
+    </main>
+  </div>
+  <footer class="footer">
+    <p class="center">&copy; 2026 GCMS - Powered by <a href="https://nowjs.net">Now.js</a></p>
+  </footer>
+</div>

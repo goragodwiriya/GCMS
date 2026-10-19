@@ -1,0 +1,112 @@
+<aside data-component="sidebar"></aside>
+<div class="main-content" data-script="initProductStock">
+  <div>
+    <header data-component="topbar"></header>
+    <main class="content">
+      <div class="card-groups">
+        <header>
+          <div>
+            <h1 class="icon-box" data-i18n>Stock</h1>
+            <p data-i18n>Receive stock and manage inventory</p>
+          </div>
+        </header>
+
+        <div class="content-body">
+          <!-- Receive / adjust panel (shown when a product is selected) -->
+          <div id="stockPanel" class="card" hidden>
+            <h2 class="icon-box"><span id="stockProductTopic"></span></h2>
+
+            <form id="receiveForm" class="stock-form" autocomplete="off">
+              <fieldset>
+                <legend class="icon-purchase" data-i18n>Receive stock</legend>
+                <div class="form-group">
+                  <div class="width50">
+                    <label data-i18n>Variant</label>
+                    <span class="form-control icon-list">
+                      <select id="receiveVariant" name="variant_id"></select>
+                    </span>
+                  </div>
+                  <div class="width50">
+                    <label data-i18n>Quantity</label>
+                    <span class="form-control icon-config">
+                      <input type="number" id="receiveQty" name="qty" min="1" step="1" value="1">
+                    </span>
+                  </div>
+                </div>
+                <div class="form-group">
+                  <div class="width50">
+                    <label data-i18n>Unit cost</label>
+                    <span class="form-control icon-money">
+                      <input type="number" id="receiveCost" name="unit_cost" min="0" step="0.01" value="0">
+                    </span>
+                  </div>
+                  <div class="width50">
+                    <label data-i18n>Reference</label>
+                    <span class="form-control icon-tags">
+                      <input type="text" id="receiveRef" name="ref" maxlength="64">
+                    </span>
+                  </div>
+                </div>
+                <div class="submit">
+                  <button type="submit" class="btn btn-primary icon-save" data-i18n>Receive</button>
+                  <button type="button" id="adjustBtn" class="btn icon-edit" data-i18n>Adjust</button>
+                </div>
+              </fieldset>
+            </form>
+
+            <h3 data-i18n>Variants</h3>
+            <table class="table border fullwidth">
+              <thead>
+                <tr>
+                  <th data-i18n>SKU</th>
+                  <th data-i18n>Variant</th>
+                  <th class="center" data-i18n>Available</th>
+                </tr>
+              </thead>
+              <tbody id="stockVariantRows"></tbody>
+            </table>
+
+            <h3 data-i18n>Movements</h3>
+            <table class="table border fullwidth">
+              <thead>
+                <tr>
+                  <th class="center" data-i18n>Date</th>
+                  <th class="center" data-i18n>Type</th>
+                  <th class="right" data-i18n>Quantity</th>
+                  <th class="right" data-i18n>Unit cost</th>
+                  <th data-i18n>Reference</th>
+                </tr>
+              </thead>
+              <tbody id="stockMovementRows"></tbody>
+            </table>
+          </div>
+
+          <!-- Product list -->
+          <div class="tablebody">
+            <table class="table border fullwidth" data-table="productStockList" data-source="../api/product/stocks" data-search-columns="topic,sku" data-page-size="25"
+                   data-row-actions='{
+                       "edit": {
+                         "label": "Receive",
+                         "className": "btn btn-success icon-purchase"
+                       }
+                   }'>
+              <thead>
+                <tr>
+                  <th data-field="topic" data-i18n>{LNG_Name}</th>
+                  <th data-field="sku" class="center" data-cell-class="center" data-i18n>SKU</th>
+                  <th data-field="category_id" data-filter="true" data-type="select" class="center" data-cell-class="center" data-format="lookup" data-i18n>{LNG_Category}</th>
+                  <th data-field="stock_qty" class="center" data-cell-class="center" data-i18n>{LNG_Stock}</th>
+                  <th data-field="updated_at" class="center" data-cell-class="center" data-format="datetime" data-i18n>{LNG_Last Update}</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+  <footer class="footer">
+    <p class="center">&copy; 2026 GCMS - Powered by <a href="https://nowjs.net">Now.js</a></p>
+  </footer>
+</div>

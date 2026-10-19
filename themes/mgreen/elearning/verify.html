@@ -1,0 +1,25 @@
+<!-- Certificate check — a plain GET form to index.php?module=…&page=verify&no=… -->
+<div class="auth-container">
+  <div class="auth-card">
+    <form class="auth-form" method="get" action="{WEBURL}index.php">
+      <input type="hidden" name="module" value="{MODULE}">
+      <input type="hidden" name="page" value="verify">
+      <div class="auth-header">
+        <h2>{LNG_Verify certificate}</h2>
+        <p class="login-message">{LNG_Enter the number printed on the certificate}</p>
+      </div>
+      <fieldset>
+        <div>
+          <label for="elearning_cert_no">{LNG_Certificate number}</label>
+          <span class="form-control icon-verfied">
+            <input type="text" id="elearning_cert_no" name="no" value="{NO}" placeholder="2569-001-0001" required>
+          </span>
+        </div>
+      </fieldset>
+      <fieldset class="text-center">
+        <button type="submit" class="btn btn-primary fullwidth large icon-search">{LNG_Verify}</button>
+      </fieldset>
+      {RESULT}
+    </form>
+  </div>
+</div>

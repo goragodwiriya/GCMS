@@ -1,0 +1,82 @@
+<aside data-component="sidebar"></aside>
+<div class="main-content">
+  <div>
+    <header data-component="topbar"></header>
+    <main class="content">
+      <div class="card-groups">
+        <header>
+          <div>
+            <h1 class="icon-office" data-i18n>Company Settings</h1>
+            <p data-i18n>Configure company information for documents and reports</p>
+          </div>
+        </header>
+        <div class="content-body">
+          <!-- Company Settings Form -->
+          <form data-form="company" action="../api/index/settings/save" method="POST" data-ajax-submit="true" data-load-api="../api/index/settings/company"
+                data-confirm="Confirm save" enctype="multipart/form-data">
+            <fieldset>
+              <legend class="icon-info" data-i18n>Company Information</legend>
+              <div class="form-group">
+                <div class="width50">
+                  <label for="company_name" data-i18n>{LNG_Company Name} (Thai)</label>
+                  <span class="form-control icon-office">
+                    <input type="text" id="company_name" name="company_name" maxlength="255" data-attr="value:company_name" required>
+                  </span>
+                </div>
+                <div class="width50">
+                  <label for="company_name_en" data-i18n>{LNG_Company Name} (English)</label>
+                  <span class="form-control icon-office">
+                    <input type="text" id="company_name_en" name="company_name_en" maxlength="255" data-attr="value:company_name_en">
+                  </span>
+                </div>
+              </div>
+              <div>
+                <label for="company_address" data-i18n>Address</label>
+                <span class="form-control icon-address">
+                  <textarea id="company_address" name="company_address" rows="3" data-text="company_address"></textarea>
+                </span>
+              </div>
+              <div class="form-group">
+                <div class="width50">
+                  <label for="company_phone" data-i18n>Phone</label>
+                  <span class="form-control icon-phone">
+                    <input type="text" id="company_phone" name="company_phone" maxlength="50" data-attr="value:company_phone">
+                  </span>
+                </div>
+                <div class="width50">
+                  <label for="company_fax" data-i18n>Fax</label>
+                  <span class="form-control icon-print">
+                    <input type="text" id="company_fax" name="company_fax" maxlength="50" data-attr="value:company_fax">
+                  </span>
+                </div>
+              </div>
+              <div class="form-group">
+                <div class="width50">
+                  <label for="company_email" data-i18n>Email</label>
+                  <span class="form-control icon-email">
+                    <input type="email" id="company_email" name="company_email" maxlength="150" data-attr="value:company_email">
+                  </span>
+                </div>
+                <div class="width50">
+                  <label for="tax_id" data-i18n>Tax ID</label>
+                  <span class="form-control icon-profile">
+                    <input type="text" id="tax_id" name="tax_id" maxlength="13" data-attr="value:tax_id">
+                  </span>
+                  <div class="comment" data-i18n>13 digit tax identification number</div>
+                </div>
+              </div>
+            </fieldset>
+            <!-- Submit Button -->
+            <fieldset class="submit">
+              <input type="hidden" name="module" value="company">
+              <button type="submit" class="btn btn-primary icon-save" data-i18n>Save</button>
+            </fieldset>
+          </form>
+        </div>
+      </div>
+    </main>
+  </div>
+  <footer class="footer">
+    <p class="center">&copy; 2026 GCMS - Powered by <a href="https://nowjs.net">Now.js</a></p>
+  </footer>
+</div>

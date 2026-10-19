@@ -1,0 +1,1025 @@
+{
+    "type": "shop",
+    "theme": {
+        "palette": [
+            "#cc0000",
+            "#ffb81c",
+            "#1f2937",
+            "#0ea5e9",
+            "#16a34a"
+        ],
+        "label": "shop",
+        "document_label": "ร้านตัวอย่างช้อป"
+    },
+    "images": [
+        {
+            "file": "document/default-3.webp",
+            "kind": "article",
+            "caption": "ข่าวสารและโปรโมชัน",
+            "label": "โปรโมชัน",
+            "size": [
+                800,
+                450
+            ],
+            "seed": 4131095996
+        },
+        {
+            "file": "board/cat_th_9.webp",
+            "kind": "category",
+            "caption": "สอบถามสินค้า",
+            "label": "cart",
+            "size": [
+                480,
+                320
+            ],
+            "seed": 3846070158
+        },
+        {
+            "file": "board/cat_th_10.webp",
+            "kind": "category",
+            "caption": "การสั่งซื้อและชำระเงิน",
+            "label": "money",
+            "size": [
+                480,
+                320
+            ],
+            "seed": 813266877
+        },
+        {
+            "file": "board/cat_th_11.webp",
+            "kind": "category",
+            "caption": "การจัดส่งและคืนสินค้า",
+            "label": "truck",
+            "size": [
+                480,
+                320
+            ],
+            "seed": 4213548056
+        },
+        {
+            "file": "product/1/1.webp",
+            "kind": "product",
+            "caption": "แก้วมัคเซรามิก รุ่นคลาสสิก",
+            "label": "สินค้าแนะนำ",
+            "shape": "mug",
+            "color": "#CC0000",
+            "size": [
+                800,
+                800
+            ],
+            "seed": 1705445861
+        },
+        {
+            "file": "product/1/2.webp",
+            "kind": "product",
+            "caption": "แก้วมัคเซรามิก สีเทาเข้ม",
+            "label": "",
+            "shape": "mug",
+            "color": "#1F2937",
+            "size": [
+                800,
+                800
+            ],
+            "seed": 3811801931
+        },
+        {
+            "file": "product/2/3.webp",
+            "kind": "product",
+            "caption": "เสื้อยืดคอตตอน สีขาว",
+            "label": "สินค้าแนะนำ",
+            "shape": "shirt",
+            "color": "#F3F4F6",
+            "size": [
+                800,
+                800
+            ],
+            "seed": 2799742733
+        },
+        {
+            "file": "product/2/4.webp",
+            "kind": "product",
+            "caption": "เสื้อยืดคอตตอน สีกรมท่า",
+            "label": "",
+            "shape": "shirt",
+            "color": "#1E3A8A",
+            "size": [
+                800,
+                800
+            ],
+            "seed": 3152388021
+        },
+        {
+            "file": "product/3/5.webp",
+            "kind": "product",
+            "caption": "กระเป๋าผ้าแคนวาส สีครีม",
+            "label": "สินค้าแนะนำ",
+            "shape": "bag",
+            "color": "#E7D8B8",
+            "size": [
+                800,
+                800
+            ],
+            "seed": 3155381390
+        },
+        {
+            "file": "product/3/6.webp",
+            "kind": "product",
+            "caption": "กระเป๋าผ้าแคนวาส สีดำ",
+            "label": "",
+            "shape": "bag",
+            "color": "#1F2937",
+            "size": [
+                800,
+                800
+            ],
+            "seed": 981941792
+        },
+        {
+            "file": "product/3/7.webp",
+            "kind": "product",
+            "caption": "กระเป๋าผ้าแคนวาส สีเขียว",
+            "label": "",
+            "shape": "bag",
+            "color": "#16A34A",
+            "size": [
+                800,
+                800
+            ],
+            "seed": 4057722245
+        },
+        {
+            "file": "product/4/8.webp",
+            "kind": "product",
+            "caption": "ขวดน้ำสแตนเลส สีฟ้า",
+            "label": "สินค้าแนะนำ",
+            "shape": "bottle",
+            "color": "#0EA5E9",
+            "size": [
+                800,
+                800
+            ],
+            "seed": 172512841
+        },
+        {
+            "file": "product/4/9.webp",
+            "kind": "product",
+            "caption": "ขวดน้ำสแตนเลส สีดำ",
+            "label": "",
+            "shape": "bottle",
+            "color": "#1F2937",
+            "size": [
+                800,
+                800
+            ],
+            "seed": 3239347692
+        },
+        {
+            "file": "product/4/10.webp",
+            "kind": "product",
+            "caption": "ขวดน้ำสแตนเลส สีชมพู",
+            "label": "",
+            "shape": "bottle",
+            "color": "#EC4899",
+            "size": [
+                800,
+                800
+            ],
+            "seed": 2481020179
+        },
+        {
+            "file": "product/5/11.webp",
+            "kind": "product",
+            "caption": "โคมไฟตั้งโต๊ะมินิมอล",
+            "label": "สินค้าแนะนำ",
+            "shape": "lamp",
+            "color": "#FFB81C",
+            "size": [
+                800,
+                800
+            ],
+            "seed": 1338415861
+        },
+        {
+            "file": "product/6/12.webp",
+            "kind": "product",
+            "caption": "ต้นไม้ฟอกอากาศในกระถางเซรามิก",
+            "label": "สินค้าแนะนำ",
+            "shape": "plant",
+            "color": "#F3F4F6",
+            "size": [
+                800,
+                800
+            ],
+            "seed": 4041200798
+        },
+        {
+            "file": "product/7/13.webp",
+            "kind": "product",
+            "caption": "หูฟังไร้สาย รุ่นเบสิก",
+            "label": "สินค้าแนะนำ",
+            "shape": "headphone",
+            "color": "#1F2937",
+            "size": [
+                800,
+                800
+            ],
+            "seed": 754455416
+        },
+        {
+            "file": "product/8/14.webp",
+            "kind": "product",
+            "caption": "น้ำผึ้งดอกลำไยแท้ 250 กรัม",
+            "label": "สินค้าแนะนำ",
+            "shape": "jar",
+            "color": "#F59E0B",
+            "size": [
+                800,
+                800
+            ],
+            "seed": 3997494289
+        },
+        {
+            "file": "product/9/15.webp",
+            "kind": "product",
+            "caption": "หมวกแก๊ป สีดำ",
+            "label": "",
+            "shape": "cap",
+            "color": "#1F2937",
+            "size": [
+                800,
+                800
+            ],
+            "seed": 845360119
+        },
+        {
+            "file": "product/9/16.webp",
+            "kind": "product",
+            "caption": "หมวกแก๊ป สีครีม",
+            "label": "",
+            "shape": "cap",
+            "color": "#E7D8B8",
+            "size": [
+                800,
+                800
+            ],
+            "seed": 3036109145
+        },
+        {
+            "file": "product/10/17.webp",
+            "kind": "product",
+            "caption": "รองเท้าผ้าใบลำลอง",
+            "label": "",
+            "shape": "shoe",
+            "color": "#F3F4F6",
+            "size": [
+                800,
+                800
+            ],
+            "seed": 3394066384
+        },
+        {
+            "file": "product/11/18.webp",
+            "kind": "product",
+            "caption": "เสื้อยืดลายกราฟิก รุ่นลิมิเต็ด",
+            "label": "",
+            "shape": "shirt",
+            "color": "#CC0000",
+            "size": [
+                800,
+                800
+            ],
+            "seed": 744550726
+        },
+        {
+            "file": "product/12/19.webp",
+            "kind": "product",
+            "caption": "ชุดของขวัญแก้วมัคคู่",
+            "label": "",
+            "shape": "mug",
+            "color": "#0EA5E9",
+            "size": [
+                800,
+                800
+            ],
+            "seed": 3736149542
+        },
+        {
+            "file": "product/12/20.webp",
+            "kind": "product",
+            "caption": "กล่องของขวัญ",
+            "label": "",
+            "shape": "box",
+            "color": "#FFB81C",
+            "size": [
+                800,
+                800
+            ],
+            "seed": 3361101171
+        },
+        {
+            "file": "product/13/21.webp",
+            "kind": "product",
+            "caption": "สมุดปกผ้า สีเขียว",
+            "label": "",
+            "shape": "notebook",
+            "color": "#16A34A",
+            "size": [
+                800,
+                800
+            ],
+            "seed": 342987413
+        },
+        {
+            "file": "product/13/22.webp",
+            "kind": "product",
+            "caption": "สมุดปกผ้า สีกรมท่า",
+            "label": "",
+            "shape": "notebook",
+            "color": "#1E3A8A",
+            "size": [
+                800,
+                800
+            ],
+            "seed": 2464538683
+        },
+        {
+            "file": "product/13/23.webp",
+            "kind": "product",
+            "caption": "สมุดปกผ้า สีชมพู",
+            "label": "",
+            "shape": "notebook",
+            "color": "#EC4899",
+            "size": [
+                800,
+                800
+            ],
+            "seed": 1505309598
+        },
+        {
+            "file": "product/14/24.webp",
+            "kind": "product",
+            "caption": "กล่องเก็บของไม้ไผ่",
+            "label": "",
+            "shape": "box",
+            "color": "#B08968",
+            "size": [
+                800,
+                800
+            ],
+            "seed": 551382767
+        },
+        {
+            "file": "product/15/25.webp",
+            "kind": "product",
+            "caption": "แยมสตรอว์เบอร์รีโฮมเมด",
+            "label": "",
+            "shape": "jar",
+            "color": "#CC0000",
+            "size": [
+                800,
+                800
+            ],
+            "seed": 4244285705
+        },
+        {
+            "file": "product/16/26.webp",
+            "kind": "product",
+            "caption": "ชาดอกไม้อบแห้ง กล่องของขวัญ",
+            "label": "",
+            "shape": "box",
+            "color": "#16A34A",
+            "size": [
+                800,
+                800
+            ],
+            "seed": 1139009378
+        },
+        {
+            "file": "product/17/27.webp",
+            "kind": "product",
+            "caption": "นาฬิกาอัจฉริยะ สีดำ",
+            "label": "",
+            "shape": "watch",
+            "color": "#1F2937",
+            "size": [
+                800,
+                800
+            ],
+            "seed": 2680430724
+        },
+        {
+            "file": "product/17/28.webp",
+            "kind": "product",
+            "caption": "นาฬิกาอัจฉริยะ สีชมพู",
+            "label": "",
+            "shape": "watch",
+            "color": "#EC4899",
+            "size": [
+                800,
+                800
+            ],
+            "seed": 1855099473
+        },
+        {
+            "file": "product/18/29.webp",
+            "kind": "product",
+            "caption": "หูฟังครอบหู รุ่นโปร",
+            "label": "",
+            "shape": "headphone",
+            "color": "#CC0000",
+            "size": [
+                800,
+                800
+            ],
+            "seed": 2054655525
+        },
+        {
+            "file": "document/picture-3-10.webp",
+            "kind": "article",
+            "caption": "ลดทั้งร้าน 10% เมื่อซื้อครบ 1,000 บาท ส่งฟรีทั่วประเทศ",
+            "label": "โปรโมชัน",
+            "size": [
+                800,
+                450
+            ],
+            "art": "shop",
+            "seed": 3763854692
+        },
+        {
+            "file": "document/picture-3-11.webp",
+            "kind": "article",
+            "caption": "สินค้าใหม่ เสื้อยืดคอตตอนออร์แกนิก มาแล้ว",
+            "label": "สินค้าใหม่",
+            "size": [
+                800,
+                450
+            ],
+            "art": "",
+            "seed": 722144961
+        },
+        {
+            "file": "document/picture-3-12.webp",
+            "kind": "article",
+            "caption": "กระเป๋าผ้าสีเขียว ลดเหลือ 299 บาท",
+            "label": "โปรโมชัน",
+            "size": [
+                800,
+                450
+            ],
+            "art": "",
+            "seed": 2912910447
+        },
+        {
+            "file": "document/picture-3-13.webp",
+            "kind": "article",
+            "caption": "ของขวัญปีใหม่ ห่อของขวัญฟรีทุกคำสั่งซื้อ",
+            "label": "โปรโมชัน",
+            "size": [
+                800,
+                450
+            ],
+            "art": "shop",
+            "seed": 1724100554
+        },
+        {
+            "file": "document/picture-3-14.webp",
+            "kind": "article",
+            "caption": "สินค้าชุมชน น้ำผึ้งดอกลำไยและกล่องไม้ไผ่",
+            "label": "สินค้าใหม่",
+            "size": [
+                800,
+                450
+            ],
+            "art": "garden",
+            "seed": 2076614514
+        },
+        {
+            "file": "document/picture-3-16.webp",
+            "kind": "article",
+            "caption": "รีวิวจากลูกค้า ขวดน้ำสแตนเลสเก็บความเย็นได้ทั้งวัน",
+            "label": "ข่าวจากร้าน",
+            "size": [
+                800,
+                450
+            ],
+            "art": "",
+            "seed": 906903161
+        },
+        {
+            "file": "document/picture-3-17.webp",
+            "kind": "article",
+            "caption": "วิธีดูแลแก้วมัคเซรามิกให้สวยนาน",
+            "label": "ข่าวจากร้าน",
+            "size": [
+                800,
+                450
+            ],
+            "art": "",
+            "seed": 4250070492
+        },
+        {
+            "file": "gallery/1/album1-01.webp",
+            "kind": "photo",
+            "caption": "หน้าร้าน",
+            "label": "หน้าร้าน",
+            "size": [
+                800,
+                533
+            ],
+            "scene": "shop",
+            "seed": 2691327897
+        },
+        {
+            "file": "gallery/1/album1-02.webp",
+            "kind": "photo",
+            "caption": "ชั้นวางของใช้ในบ้าน",
+            "label": "หน้าร้าน",
+            "size": [
+                800,
+                533
+            ],
+            "scene": "shop",
+            "seed": 654185783
+        },
+        {
+            "file": "gallery/1/album1-03.webp",
+            "kind": "photo",
+            "caption": "มุมเสื้อผ้า",
+            "label": "หน้าร้าน",
+            "size": [
+                800,
+                533
+            ],
+            "scene": "shop",
+            "seed": 3986867858
+        },
+        {
+            "file": "gallery/1/album1-04.webp",
+            "kind": "photo",
+            "caption": "มุมของฝาก",
+            "label": "หน้าร้าน",
+            "size": [
+                800,
+                533
+            ],
+            "scene": "shop",
+            "seed": 4037539370
+        },
+        {
+            "file": "gallery/1/album1-05.webp",
+            "kind": "photo",
+            "caption": "เคาน์เตอร์ชำระเงิน",
+            "label": "หน้าร้าน",
+            "size": [
+                800,
+                533
+            ],
+            "scene": "shop",
+            "seed": 1006314895
+        },
+        {
+            "file": "gallery/1/album1-06.webp",
+            "kind": "photo",
+            "caption": "มุมห่อของขวัญ",
+            "label": "หน้าร้าน",
+            "size": [
+                800,
+                533
+            ],
+            "scene": "shop",
+            "seed": 3178190625
+        },
+        {
+            "file": "gallery/2/album2-01.webp",
+            "kind": "photo",
+            "caption": "บูธของร้าน",
+            "label": "ตลาดนัด",
+            "size": [
+                800,
+                533
+            ],
+            "scene": "market",
+            "seed": 2955931566
+        },
+        {
+            "file": "gallery/2/album2-02.webp",
+            "kind": "photo",
+            "caption": "สินค้าชุมชน",
+            "label": "ตลาดนัด",
+            "size": [
+                800,
+                533
+            ],
+            "scene": "market",
+            "seed": 918265088
+        },
+        {
+            "file": "gallery/2/album2-03.webp",
+            "kind": "photo",
+            "caption": "ชิมน้ำผึ้งดอกลำไย",
+            "label": "ตลาดนัด",
+            "size": [
+                800,
+                533
+            ],
+            "scene": "market",
+            "seed": 4259794597
+        },
+        {
+            "file": "gallery/2/album2-04.webp",
+            "kind": "photo",
+            "caption": "ลูกค้าเลือกซื้อสินค้า",
+            "label": "ตลาดนัด",
+            "size": [
+                800,
+                533
+            ],
+            "scene": "market",
+            "seed": 3772939805
+        },
+        {
+            "file": "gallery/2/album2-05.webp",
+            "kind": "photo",
+            "caption": "สาธิตงานจักสาน",
+            "label": "ตลาดนัด",
+            "size": [
+                800,
+                533
+            ],
+            "scene": "market",
+            "seed": 733916600
+        },
+        {
+            "file": "gallery/2/album2-06.webp",
+            "kind": "photo",
+            "caption": "ภาพหมู่ทีมงาน",
+            "label": "ตลาดนัด",
+            "size": [
+                800,
+                533
+            ],
+            "scene": "market",
+            "seed": 2905267990
+        },
+        {
+            "file": "gallery/3/album3-01.webp",
+            "kind": "photo",
+            "caption": "ตรวจสินค้าก่อนแพ็ก",
+            "label": "แพ็กสินค้า",
+            "size": [
+                800,
+                533
+            ],
+            "scene": "workshop",
+            "seed": 154954364
+        },
+        {
+            "file": "gallery/3/album3-02.webp",
+            "kind": "photo",
+            "caption": "ห่อกันกระแทก",
+            "label": "แพ็กสินค้า",
+            "size": [
+                800,
+                533
+            ],
+            "scene": "workshop",
+            "seed": 2410158290
+        },
+        {
+            "file": "gallery/3/album3-03.webp",
+            "kind": "photo",
+            "caption": "ติดใบปะหน้า",
+            "label": "แพ็กสินค้า",
+            "size": [
+                800,
+                533
+            ],
+            "scene": "workshop",
+            "seed": 1156893559
+        },
+        {
+            "file": "gallery/3/album3-04.webp",
+            "kind": "photo",
+            "caption": "ส่งมอบให้ขนส่ง",
+            "label": "แพ็กสินค้า",
+            "size": [
+                800,
+                533
+            ],
+            "scene": "workshop",
+            "seed": 1509030863
+        },
+        {
+            "file": "gallery/3/album3-05.webp",
+            "kind": "photo",
+            "caption": "พัสดุพร้อมส่ง",
+            "label": "แพ็กสินค้า",
+            "size": [
+                800,
+                533
+            ],
+            "scene": "workshop",
+            "seed": 2460821610
+        },
+        {
+            "file": "gallery/3/album3-06.webp",
+            "kind": "photo",
+            "caption": "ทีมแพ็กสินค้า",
+            "label": "แพ็กสินค้า",
+            "size": [
+                800,
+                533
+            ],
+            "scene": "workshop",
+            "seed": 339303108
+        },
+        {
+            "file": "gallery/4/album4-01.webp",
+            "kind": "photo",
+            "caption": "เตรียมอุปกรณ์",
+            "label": "เวิร์กช็อป",
+            "size": [
+                800,
+                533
+            ],
+            "scene": "garden",
+            "seed": 2426732480
+        },
+        {
+            "file": "gallery/4/album4-02.webp",
+            "kind": "photo",
+            "caption": "เลือกต้นไม้",
+            "label": "เวิร์กช็อป",
+            "size": [
+                800,
+                533
+            ],
+            "scene": "garden",
+            "seed": 372280686
+        },
+        {
+            "file": "gallery/4/album4-03.webp",
+            "kind": "photo",
+            "caption": "จัดวางหินและดิน",
+            "label": "เวิร์กช็อป",
+            "size": [
+                800,
+                533
+            ],
+            "scene": "garden",
+            "seed": 3714866891
+        },
+        {
+            "file": "gallery/4/album4-04.webp",
+            "kind": "photo",
+            "caption": "ผลงานผู้ร่วมกิจกรรม",
+            "label": "เวิร์กช็อป",
+            "size": [
+                800,
+                533
+            ],
+            "scene": "garden",
+            "seed": 3228135027
+        },
+        {
+            "file": "gallery/4/album4-05.webp",
+            "kind": "photo",
+            "caption": "ถ่ายภาพร่วมกัน",
+            "label": "เวิร์กช็อป",
+            "size": [
+                800,
+                533
+            ],
+            "scene": "garden",
+            "seed": 188071382
+        },
+        {
+            "file": "gallery/4/album4-06.webp",
+            "kind": "photo",
+            "caption": "ของที่ระลึก",
+            "label": "เวิร์กช็อป",
+            "size": [
+                800,
+                533
+            ],
+            "scene": "garden",
+            "seed": 2376191864
+        },
+        {
+            "file": "video/aqz-KE-bpKQ.jpg",
+            "kind": "video",
+            "caption": "แนะนำร้านของเรา (ตัวอย่าง)",
+            "label": "แนะนำร้าน",
+            "size": [
+                480,
+                360
+            ],
+            "seed": 3311198260
+        },
+        {
+            "file": "video/eRsGyueVLvQ.jpg",
+            "kind": "video",
+            "caption": "รีวิวขวดน้ำสแตนเลส (ตัวอย่าง)",
+            "label": "รีวิว",
+            "size": [
+                480,
+                360
+            ],
+            "seed": 281674237
+        },
+        {
+            "file": "video/R6MlUcmOul8.jpg",
+            "kind": "video",
+            "caption": "วิธีเลือกไซซ์เสื้อยืด (ตัวอย่าง)",
+            "label": "How-to",
+            "size": [
+                480,
+                360
+            ],
+            "seed": 867139978
+        },
+        {
+            "file": "video/WhWc3b3KhnY.jpg",
+            "kind": "video",
+            "caption": "เบื้องหลังการแพ็กสินค้า (ตัวอย่าง)",
+            "label": "เบื้องหลัง",
+            "size": [
+                480,
+                360
+            ],
+            "seed": 2526961458
+        },
+        {
+            "file": "video/YE7VzlLtp-4.jpg",
+            "kind": "video",
+            "caption": "รีวิวหูฟังไร้สาย (ตัวอย่าง)",
+            "label": "รีวิว",
+            "size": [
+                480,
+                360
+            ],
+            "seed": 4285437717
+        },
+        {
+            "file": "video/Y-rmzh0PI3c.jpg",
+            "kind": "video",
+            "caption": "เวิร์กช็อปจัดสวนขวด (ตัวอย่าง)",
+            "label": "กิจกรรม",
+            "size": [
+                480,
+                360
+            ],
+            "seed": 1772608030
+        },
+        {
+            "file": "image/textlink-1.webp",
+            "kind": "slide",
+            "caption": "ลดทั้งร้าน 10% ส่งฟรีทั่วประเทศ",
+            "subtitle": "เมื่อช้อปครบ 1,000 บาท ตลอดเดือนนี้",
+            "label": "โปรโมชัน",
+            "button": "ช้อปเลย",
+            "icon": "",
+            "scene": "shop",
+            "size": [
+                1200,
+                450
+            ],
+            "seed": 2610337414
+        },
+        {
+            "file": "image/textlink-2.webp",
+            "kind": "slide",
+            "caption": "เสื้อยืดคอตตอน ออร์แกนิก คอลเลกชันใหม่",
+            "subtitle": "นุ่ม ใส่สบาย ระบายอากาศดี มีให้เลือก 4 ขนาด",
+            "label": "สินค้าใหม่",
+            "button": "ดูสินค้า",
+            "icon": "",
+            "scene": "market",
+            "size": [
+                1200,
+                450
+            ],
+            "seed": 486728744
+        },
+        {
+            "file": "image/textlink-3.webp",
+            "kind": "slide",
+            "caption": "ของฝากจากชุมชน คุณภาพจากผู้ผลิตท้องถิ่น",
+            "subtitle": "น้ำผึ้งดอกลำไย แยมโฮมเมด และงานจักสานไม้ไผ่",
+            "label": "สินค้าชุมชน",
+            "button": "เลือกซื้อ",
+            "icon": "",
+            "scene": "garden",
+            "size": [
+                1200,
+                450
+            ],
+            "seed": 3596498829
+        },
+        {
+            "file": "image/textlink-4.webp",
+            "kind": "slide",
+            "caption": "ห่อของขวัญฟรี พร้อมการ์ดอวยพร",
+            "subtitle": "ระบุข้อความในหมายเหตุตอนสั่งซื้อ",
+            "label": "บริการพิเศษ",
+            "button": "อ่านรายละเอียด",
+            "icon": "",
+            "scene": "food",
+            "size": [
+                1200,
+                450
+            ],
+            "seed": 3411740469
+        },
+        {
+            "file": "image/textlink-5.webp",
+            "kind": "banner",
+            "caption": "สมาชิกใหม่รับส่วนลด 50 บาท",
+            "subtitle": "สมัครสมาชิกวันนี้ ใช้ได้กับคำสั่งซื้อแรก",
+            "label": "",
+            "button": "สมัครสมาชิก",
+            "icon": "",
+            "scene": "",
+            "size": [
+                970,
+                250
+            ],
+            "seed": 513168
+        },
+        {
+            "file": "image/textlink-6.webp",
+            "kind": "banner",
+            "caption": "เก็บเงินปลายทาง ทั่วประเทศ",
+            "subtitle": "สะดวก ปลอดภัย ตรวจสอบสินค้าก่อนจ่าย",
+            "label": "",
+            "button": "วิธีสั่งซื้อ",
+            "icon": "",
+            "scene": "",
+            "size": [
+                970,
+                250
+            ],
+            "seed": 2257823294
+        },
+        {
+            "file": "image/textlink-7.webp",
+            "kind": "imagemenu",
+            "caption": "จัดส่งทั่วประเทศ",
+            "subtitle": "ส่งฟรีเมื่อซื้อครบ 1,000 บาท",
+            "label": "",
+            "button": "",
+            "icon": "truck",
+            "scene": "",
+            "size": [
+                400,
+                120
+            ],
+            "seed": 1305441691
+        },
+        {
+            "file": "image/textlink-8.webp",
+            "kind": "imagemenu",
+            "caption": "เปลี่ยนคืนใน 7 วัน",
+            "subtitle": "มั่นใจทุกคำสั่งซื้อ",
+            "label": "",
+            "button": "",
+            "icon": "shield",
+            "scene": "",
+            "size": [
+                400,
+                120
+            ],
+            "seed": 3164194638
+        },
+        {
+            "file": "image/textlink-9.webp",
+            "kind": "imagemenu",
+            "caption": "ชำระเงินปลอดภัย",
+            "subtitle": "โอนเงิน / ปลายทาง",
+            "label": "",
+            "button": "",
+            "icon": "money",
+            "scene": "",
+            "size": [
+                400,
+                120
+            ],
+            "seed": 2009404651
+        },
+        {
+            "file": "image/textlink-10.webp",
+            "kind": "imagemenu",
+            "caption": "สอบถามสินค้า",
+            "subtitle": "ตอบทุกวัน 9.00-18.00 น.",
+            "label": "",
+            "button": "",
+            "icon": "chat",
+            "scene": "",
+            "size": [
+                400,
+                120
+            ],
+            "seed": 221452577
+        }
+    ]
+}

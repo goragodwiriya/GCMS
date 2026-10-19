@@ -1,0 +1,45 @@
+<aside data-component="sidebar"></aside>
+<div class="main-content">
+  <div>
+    <header data-component="topbar"></header>
+    <main class="content">
+      <div class="card-groups">
+        <header>
+          <div>
+            <h1 class="icon-ads" data-i18n>Text links</h1>
+            <p data-i18n>Manage text links and image links, grouped for use on any theme</p>
+          </div>
+          <a class="btn btn-primary icon-new" href="/widgets/textlinks/textlink" data-params="name" data-i18n>{LNG_Add} {LNG_Text link}</a>
+        </header>
+
+        <div class="content-body">
+          <div class="tablebody">
+            <table class="table border fullwidth" data-table="textlinks" data-source="../api/index/widgets/table?widget=textlinks" data-row-sortable="true" data-page-size="25"
+                   data-show-checkbox="true" data-actions='{"delete":"Delete", "status|published_1":"Published", "status|published_0":"Unpublished"}'
+                   data-action-url="../api/index/widgets/tableaction?widget=textlinks" data-row-actions='{
+                              "edit": {
+                                "label": "Edit",
+                                "className": "btn btn-success icon-edit"
+                              }
+                          }'>
+              <thead>
+                <tr>
+                  <th data-field="name" data-filter="true" data-type="select" data-show-all="true" data-all-value="" data-i18n>{LNG_Group}</th>
+                  <th data-field="type" data-template="{LNG_${type}}" class="center" data-cell-class="center" data-i18n>{LNG_Type}</th>
+                  <th data-field="thumb" data-formatter="formatImage" class="center" data-cell-class="center" data-i18n>{LNG_Image}</th>
+                  <th data-field="text" data-template="<span class='two_line' title='${text}'>${text}</span>" data-i18n>{LNG_Text}</th>
+                  <th data-field="url" data-template="<span class='two_line' title='${url}'>${url}</span>" data-i18n>{LNG_URL}</th>
+                  <th data-field="published" class="center" data-cell-class="center" data-formatter="formatActiveStatus" data-i18n>{LNG_Published}</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+  <footer class="footer">
+    <p class="center">&copy; 2026 GCMS - Powered by <a href="https://nowjs.net">Now.js</a></p>
+  </footer>
+</div>

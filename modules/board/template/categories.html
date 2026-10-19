@@ -1,0 +1,44 @@
+<aside data-component="sidebar"></aside>
+<div class="main-content">
+  <div>
+    <header data-component="topbar"></header>
+    <main class="content">
+      <div class="card-groups">
+        <header>
+          <div>
+            <h1 class="icon-tags" data-i18n>Categories</h1>
+            <p data-i18n>{LNG_Manage category of} {LNG_Board}</p>
+          </div>
+          <a class="btn btn-primary icon-new" href="/board-category" data-params="module_id" data-i18n>{LNG_Add} {LNG_Category}</a>
+        </header>
+        <div class="content-body">
+          <div class="tablebody">
+            <table class="table border fullwidth" data-table="boardCategoryList" data-source="../api/board/categories" data-show-checkbox="true"
+                   data-actions='{"delete":"Delete", "status|published_1":"Published", "status|published_0":"Unpublished"}' data-action-url="../api/board/categories/action"
+                   data-action-params="module_id" data-row-actions='{
+                       "edit": {
+                         "label": "Edit",
+                         "className": "btn btn-success icon-edit"
+                       }
+                   }'>
+              <thead>
+                <tr>
+                  <th data-field="category_id" class="center" data-cell-class="center" data-i18n>ID</th>
+                  <th data-field="icon" data-formatter="formatImage" class="center" data-cell-class="center" data-i18n>{LNG_Photo}</th>
+                  <th data-field="topic" data-template="${topic}" data-i18n>{LNG_Topic}</th>
+                  <th data-field="detail" data-template="${detail}" data-i18n>{LNG_Description}</th>
+                  <th data-field="config" data-template="${config}" class="center" data-cell-class="center" data-i18n>{LNG_Settings}</th>
+                  <th data-field="published" class="center" data-cell-class="center" data-formatter="formatActiveStatus" data-i18n>{LNG_Status}</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+  <footer class="footer">
+    <p class="center">&copy; 2026 GCMS - Powered by <a href="https://nowjs.net">Now.js</a></p>
+  </footer>
+</div>

@@ -1,0 +1,93 @@
+<aside data-component="sidebar"></aside>
+<div class="main-content">
+  <div>
+    <header data-component="topbar"></header>
+    <main class="content">
+      <form data-form="downloadWrite" action="../api/download/write/save" method="POST" data-ajax-submit="true" data-load-api="../api/download/write/get"
+            data-load-query-params="true" data-validate="true" data-reset="false" autocomplete="off">
+        <div class="card-groups">
+          <header>
+            <div>
+              <h1 class="icon-download" data-text="id ? '{LNG_Edit} {LNG_Download file}' : '{LNG_New} {LNG_Download file}'"></h1>
+              <p data-i18n>{LNG_Details of} {LNG_Download file}</p>
+            </div>
+            <div class="header-actions">
+              <a class="btn icon-arrow-left" href="/download-setup" data-params="module_id" data-i18n>Back</a>
+              <button type="submit" class="btn btn-primary icon-save" data-i18n>Save</button>
+            </div>
+          </header>
+
+          <div class="content-body">
+            <fieldset>
+              <legend class="icon-file" data-i18n>{LNG_Details of} {LNG_Download file}</legend>
+
+              <div>
+                <label for="name" data-i18n>{LNG_File Name}</label>
+                <span class="form-control icon-edit">
+                  <input type="text" id="name" name="name" data-attr="value:name" maxlength="100">
+                </span>
+                <div class="comment" data-i18n>
+                  {LNG_The name of the file you want to download it the file name extension. To upload a new file name if not specified. The program uses the name of a file to upload. (Can be used in Thai language)}
+                </div>
+              </div>
+
+              <div>
+                <label for="category_id" data-i18n>{LNG_Category}</label>
+                <span class="form-control icon-folder">
+                  <select id="category_id" name="category_id" data-options-key="category_id" data-attr="value:category_id"></select>
+                </span>
+              </div>
+
+              <div>
+                <label for="reciever" data-i18n>{LNG_Select the group of recipients}</label>
+                <span class="form-control icon-group">
+                  <select id="reciever" name="reciever" data-options-key="user_status" data-attr="value:reciever" multiple></select>
+                </span>
+                <div class="comment" data-i18n>
+                  {LNG_The recipient is listed in the selected group can be downloaded (You can select multiple groups)}
+                </div>
+              </div>
+
+              <div>
+                <label for="detail" data-i18n>{LNG_Description}</label>
+                <span class="form-control icon-file">
+                  <input type="text" id="detail" name="detail" data-attr="value:detail" maxlength="255">
+                </span>
+                <div class="comment" data-i18n>
+                  {LNG_Brief details about the file. (Page may be downloaded).}
+                </div>
+              </div>
+
+              <div>
+                <label for="file_path" data-i18n>{LNG_Name include file path}</label>
+                <span class="form-control icon-world">
+                  <input type="text" id="file_path" name="file_path" data-attr="value:file" maxlength="255">
+                </span>
+                <div class="comment" data-i18n>
+                  {LNG_The name and address files such as upload/file.ext. If a file is already on the Server, or upload them below.}
+                </div>
+              </div>
+
+              <div>
+                <label for="file" data-i18n>{LNG_Browse file}</label>
+                <span class="form-control icon-upload">
+                  <input type="file" id="file" name="file" data-attr="accept:file_typies_text">
+                </span>
+                <div class="comment" id="result_file" data-text="'{LNG_Browse file uploaded, type} ' + file_typies_text + ', {LNG_Max size} ' + upload_size_text"></div>
+              </div>
+            </fieldset>
+
+            <fieldset class="submit">
+              <button type="submit" class="btn btn-primary icon-save" data-i18n>Save</button>
+              <input type="hidden" name="id" data-attr="value:id">
+              <input type="hidden" name="module_id" data-attr="value:module_id">
+            </fieldset>
+          </div>
+        </div>
+      </form>
+    </main>
+  </div>
+  <footer class="footer">
+    <p class="center">&copy; 2026 GCMS - Powered by <a href="https://nowjs.net">Now.js</a></p>
+  </footer>
+</div>

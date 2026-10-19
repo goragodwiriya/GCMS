@@ -1,0 +1,21 @@
+<article class="main-page search-page">
+  <header class="page-header gcms-site-search__hero">
+    <div class="container gcms-site-search__hero-inner">
+      <a class="gcms-site-search__logo" href="{SEARCH_HOME_URL}">{WEBTITLE}</a>
+      <form class="gcms-site-search__form" method="get" action="{FORM_ACTION}" role="search">
+        <input type="hidden" name="module" value="search">
+        <input class="gcms-site-search__input" type="search" name="q" value="{QUERY}" placeholder="{SEARCH_PLACEHOLDER}" autocomplete="off" aria-label="{BTN_SEARCH}">
+        <button class="gcms-site-search__submit" type="submit">{BTN_SEARCH}</button>
+      </form>
+      <p class="{STATUS_CLASS}">{STATUS_TEXT}</p>
+    </div>
+  </header>
+  <div class="page-body">
+    <div class="container">
+      <div class="page-content">
+        <div class="gcms-site-search__results">{RESULTS}</div>
+        <nav class="pagination-wrapper">{PAGINATION}</nav>
+      </div>
+    </div>
+  </div>
+</article>

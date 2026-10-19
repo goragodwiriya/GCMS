@@ -1,0 +1,79 @@
+<aside data-component="sidebar"></aside>
+<div class="main-content">
+  <div>
+    <header data-component="topbar"></header>
+    <main class="content">
+      <form data-form="edocumentWrite" action="../api/edocument/write/save" method="POST" data-ajax-submit="true" data-load-api="../api/edocument/write/get"
+            data-load-query-params="true" data-validate="true" data-reset="false" autocomplete="off">
+        <div class="card-groups">
+          <header>
+            <div>
+              <h1 class="icon-edocument" data-text="id ? '{LNG_Edit} {LNG_E-Document}' : '{LNG_New} {LNG_E-Document}'"></h1>
+              <p data-i18n>{LNG_Details of} {LNG_E-Document}</p>
+            </div>
+            <div class="header-actions">
+              <a class="btn icon-arrow-left" href="/edocument-setup" data-params="module_id" data-i18n>Back</a>
+              <button type="submit" class="btn btn-primary icon-save" data-i18n>Save</button>
+            </div>
+          </header>
+          <div class="content-body">
+            <fieldset>
+              <legend class="icon-file" data-i18n>{LNG_Details of} {LNG_E-Document}</legend>
+              <div>
+                <label for="document_no" data-i18n>{LNG_Document number}</label>
+                <span class="form-control icon-number">
+                  <input type="text" id="document_no" name="document_no" data-attr="value:document_no" maxlength="20">
+                </span>
+                <div class="comment" data-i18n>{LNG_Leave blank to generate the number from the module settings}</div>
+              </div>
+              <div>
+                <label for="reciever" data-i18n>{LNG_Select the group of recipients}</label>
+                <span class="form-control icon-group">
+                  <select id="reciever" name="reciever" data-options-key="user_status" data-attr="value:reciever" multiple></select>
+                </span>
+                <div class="comment" data-i18n> {LNG_The recipient is listed in the selected group can be downloaded (You can select multiple groups)} </div>
+              </div>
+              <div>
+                <label for="topic" data-i18n>{LNG_Document title}</label>
+                <span class="form-control icon-edit">
+                  <input type="text" id="topic" name="topic" data-attr="value:topic" maxlength="50">
+                </span>
+                <div class="comment" data-i18n> {LNG_The name of the file you want to download it the file name extension. To upload a new file name if not specified. The program
+                  uses the name of a file to upload. (Can be used in Thai language)} </div>
+              </div>
+              <div>
+                <label for="file" data-i18n>{LNG_Browse file}</label>
+                <span class="form-control icon-upload">
+                  <input type="file" id="file" name="file" data-attr="accept:file_typies_text">
+                </span>
+                <div class="comment" id="result_file" data-text="'{LNG_Browse file uploaded, type} ' + file_typies_text + ', {LNG_Max size} ' + upload_size_text"></div>
+                <div class="comment" data-if="file_url">
+                  <a class="icon-download" data-attr="href:file_url" data-text="file_name" target="_blank"></a>
+                </div>
+              </div>
+              <div>
+                <label for="detail" data-i18n>{LNG_Description}</label>
+                <span class="form-control icon-file">
+                  <textarea id="detail" name="detail" rows="5" data-text="detail"></textarea>
+                </span>
+                <div class="comment" data-i18n>{LNG_Notes or Additional Notes}</div>
+              </div>
+            </fieldset>
+            <fieldset class="submit flex gap middle">
+              <button type="submit" class="btn btn-primary icon-save" data-i18n>Save</button>
+              <span>
+                <input type="checkbox" class="switch" id="send_mail" name="send_mail" value="1" data-attr="checked:send_mail">
+                <label for=send_mail data-i18n>{LNG_Send an email to members}</label>
+              </span>
+              <input type="hidden" name="id" data-attr="value:id">
+              <input type="hidden" name="module_id" data-attr="value:module_id">
+            </fieldset>
+          </div>
+        </div>
+      </form>
+    </main>
+  </div>
+  <footer class="footer">
+    <p class="center">&copy; 2026 GCMS - Powered by <a href="https://nowjs.net">Now.js</a></p>
+  </footer>
+</div>

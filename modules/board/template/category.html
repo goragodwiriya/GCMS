@@ -1,0 +1,125 @@
+<aside data-component="sidebar"></aside>
+<div class="main-content">
+  <div>
+    <header data-component="topbar"></header>
+    <main class="content">
+      <div class="card-groups">
+        <header>
+          <div>
+            <h1 class="icon-tags" data-i18n>Category</h1>
+            <p data-i18n>{LNG_Manage category of} {LNG_Board}</p>
+          </div>
+        </header>
+        <div class="content-body">
+          <!-- Board Category Form -->
+          <form data-form="boardCategory" action="../api/board/category/save" method="POST" data-ajax-submit="true" data-sanitize-input="false" data-load-api="../api/board/category/get"
+                data-load-query-params="true" data-confirm="Confirm save">
+            <fieldset>
+              <legend class="icon-tag" data-i18n>Category</legend>
+              <div>
+                <label for="category_id" data-i18n>ID</label>
+                <span class="form-control icon-edit">
+                  <input type="text" id="category_id" name="category_id" maxlength="50" data-attr="value:category_id">
+                </span>
+                <div class="comment" id="result_category_id" data-i18n>The name of the category, less than 50 characters</div>
+              </div>
+              <div>
+                <label for="can_post" data-i18n>Can post</label>
+                <span class="form-control icon-user">
+                  <select id="can_post" name="can_post" data-options-key="user_status_with_guest" data-attr="value:can_post" multiple></select>
+                </span>
+              </div>
+              <div>
+                <label for="can_reply" data-i18n>Can reply</label>
+                <span class="form-control icon-visited">
+                  <select id="can_reply" name="can_reply" data-options-key="user_status_with_guest" data-attr="value:can_reply" multiple></select>
+                </span>
+              </div>
+              <div>
+                <label for="can_view" data-i18n>Can view</label>
+                <span class="form-control icon-visible">
+                  <select id="can_view" name="can_view" data-options-key="user_status_with_guest" data-attr="value:can_view" multiple></select>
+                </span>
+              </div>
+              <div>
+                <label for="moderator" data-i18n>Moderator</label>
+                <span class="form-control icon-user">
+                  <select id="moderator" name="moderator" data-options-key="user_status" data-attr="value:moderator" multiple></select>
+                </span>
+              </div>
+              <div>
+                <input type="checkbox" class="switch" id="published" name="published" data-attr="checked:published">
+                <label for="published" data-i18n>Published</label>
+                <div class="comment" id="result_published" data-i18n> When activated Categories are displayed on the category page. </div>
+              </div>
+            </fieldset>
+            <fieldset>
+              <legend class="icon-upload" data-i18n>Upload</legend>
+              <div>
+                <label data-i18n>Type of file uploads</label>
+                <div class="btn-group">
+                  <input type="checkbox" id="img_upload_type_jpg" name="img_upload_type[]" value="jpg" data-attr="checked:img_upload_type_jpg">
+                  <label for="img_upload_type_jpg" class="btn">jpg</label>
+                  <input type="checkbox" id="img_upload_type_jpeg" name="img_upload_type[]" value="jpeg" data-attr="checked:img_upload_type_jpeg">
+                  <label for="img_upload_type_jpeg" class="btn">jpeg</label>
+                  <input type="checkbox" id="img_upload_type_gif" name="img_upload_type[]" value="gif" data-attr="checked:img_upload_type_gif">
+                  <label for="img_upload_type_gif" class="btn">gif</label>
+                  <input type="checkbox" id="img_upload_type_png" name="img_upload_type[]" value="png" data-attr="checked:img_upload_type_png">
+                  <label for="img_upload_type_png" class="btn">png</label>
+                  <input type="checkbox" id="img_upload_type_webp" name="img_upload_type[]" value="webp" data-attr="checked:img_upload_type_webp">
+                  <label for="img_upload_type_webp" class="btn">webp</label>
+                </div>
+                <div class="comment" data-i18n>Type of files allowed to upload it, if not select any item can not be uploaded.</div>
+              </div>
+              <div>
+                <label for="img_law" data-i18n>Upload rules</label>
+                <span class="form-control icon-config">
+                  <select id="img_law" name="img_law" data-options-key="img_law" data-attr="value:img_law"></select>
+                </span>
+              </div>
+            </fieldset>
+            <fieldset data-for="lng in languages">
+              <template>
+                <fieldset>
+                  <legend class="icon-file" data-i18n>{LNG_Category} [{{lng.text}}]</legend>
+                  <div>
+                    <label for="default_icon_{{lng.value}}" data-i18n>Image</label>
+                    <span class="form-control icon-image">
+                      <input type="file" id="default_icon_{{lng.value}}" name="default_icon[{{lng.value}}]" data-files="default_icon[{{lng.value}}]" data-preview="true"
+                             data-allow-remove-existing="true" data-action-url="../api/board/category/removeIcon" data-action-params="module_id,id" data-file-reference="url"
+                             accept="image/*" data-attr="placeholder:'{LNG_Browse image uploaded, type} ' + img_typies">
+                    </span>
+                    <div class="comment" id="result_image" data-text="'{LNG_Browse image uploaded, type} ' + img_typies + ', {LNG_should be prepared to have the same size}'"></div>
+                  </div>
+                  <div>
+                    <label for="topic_{{lng.value}}" data-i18n>Topic</label>
+                    <span class="form-control icon-edit">
+                      <input type="text" id="topic_{{lng.value}}" name="topic[{{lng.value}}]" maxlength="50" data-attr="value:topic[{{lng.value}}]">
+                    </span>
+                    <div class="comment" id="result_topic" data-i18n> The name of the category, less than 50 characters </div>
+                  </div>
+                  <div>
+                    <label for="detail_{{lng.value}}" data-i18n>Description</label>
+                    <span class="form-control icon-file">
+                      <textarea id="detail_{{lng.value}}" name="detail[{{lng.value}}]" maxlength="255" data-attr="value:detail[{{lng.value}}]"></textarea>
+                    </span>
+                    <div class="comment" id="result_detail" data-i18n> Description of this category, less than 255 characters </div>
+                  </div>
+                </fieldset>
+              </template>
+            </fieldset>
+            <!-- Submit Button -->
+            <fieldset class="submit">
+              <button type="submit" class="btn btn-primary icon-save" data-i18n>Save</button>
+              <input type="hidden" name="id" data-attr="value:id">
+              <input type="hidden" name="module_id" data-attr="value:module_id">
+            </fieldset>
+          </form>
+        </div>
+      </div>
+    </main>
+  </div>
+  <footer class="footer">
+    <p class="center">&copy; 2026 GCMS - Powered by <a href="https://nowjs.net">Now.js</a></p>
+  </footer>
+</div>

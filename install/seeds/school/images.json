@@ -1,0 +1,1209 @@
+{
+    "type": "school",
+    "theme": {
+        "palette": [
+            "#e67e22",
+            "#0284c7",
+            "#16a34a",
+            "#7c3aed",
+            "#dc2626"
+        ],
+        "label": "school",
+        "document_label": "โรงเรียนตัวอย่างวิทยา"
+    },
+    "images": [
+        {
+            "file": "document/default-2.webp",
+            "kind": "article",
+            "caption": "ข่าวประชาสัมพันธ์",
+            "label": "ข่าวประชาสัมพันธ์",
+            "size": [
+                800,
+                450
+            ],
+            "seed": 1011107673
+        },
+        {
+            "file": "document/default-3.webp",
+            "kind": "article",
+            "caption": "ประกาศโรงเรียน",
+            "label": "ประกาศ",
+            "size": [
+                800,
+                450
+            ],
+            "seed": 4145583356
+        },
+        {
+            "file": "document/default-4.webp",
+            "kind": "article",
+            "caption": "สาระน่ารู้",
+            "label": "สาระน่ารู้",
+            "size": [
+                800,
+                450
+            ],
+            "seed": 3927811140
+        },
+        {
+            "file": "document/cat_th_7.webp",
+            "kind": "category",
+            "caption": "สาระน่ารู้",
+            "label": "bulb",
+            "size": [
+                480,
+                320
+            ],
+            "seed": 4204132044
+        },
+        {
+            "file": "document/cat_th_8.webp",
+            "kind": "category",
+            "caption": "ผลงานครู / นวัตกรรม",
+            "label": "star",
+            "size": [
+                480,
+                320
+            ],
+            "seed": 197346329
+        },
+        {
+            "file": "document/cat_th_9.webp",
+            "kind": "category",
+            "caption": "แนะแนวการศึกษาต่อ",
+            "label": "book",
+            "size": [
+                480,
+                320
+            ],
+            "seed": 3231684540
+        },
+        {
+            "file": "board/cat_th_17.webp",
+            "kind": "category",
+            "caption": "ถาม-ตอบทั่วไป",
+            "label": "chat",
+            "size": [
+                480,
+                320
+            ],
+            "seed": 2831651014
+        },
+        {
+            "file": "board/cat_th_18.webp",
+            "kind": "category",
+            "caption": "การรับสมัครและการเรียน",
+            "label": "book",
+            "size": [
+                480,
+                320
+            ],
+            "seed": 1502683667
+        },
+        {
+            "file": "board/cat_th_19.webp",
+            "kind": "category",
+            "caption": "กิจกรรมนักเรียน",
+            "label": "star",
+            "size": [
+                480,
+                320
+            ],
+            "seed": 2462970294
+        },
+        {
+            "file": "document/picture-2-16.webp",
+            "kind": "article",
+            "caption": "นักเรียนคว้ารางวัลเหรียญทองการแข่งขันทักษะวิชาการระดับเขตพื้นที่",
+            "label": "ผลงานนักเรียนและครู",
+            "size": [
+                800,
+                450
+            ],
+            "art": "stage",
+            "seed": 2689725849
+        },
+        {
+            "file": "document/picture-2-17.webp",
+            "kind": "article",
+            "caption": "กิจกรรมวันไหว้ครูประจำปีการศึกษา",
+            "label": "ข่าวกิจกรรม",
+            "size": [
+                800,
+                450
+            ],
+            "art": "stage",
+            "seed": 1796023868
+        },
+        {
+            "file": "document/picture-2-18.webp",
+            "kind": "article",
+            "caption": "ประชุมผู้ปกครองนักเรียนภาคเรียนนี้",
+            "label": "ข่าวประชาสัมพันธ์",
+            "size": [
+                800,
+                450
+            ],
+            "art": "meeting",
+            "seed": 2589693161
+        },
+        {
+            "file": "document/picture-2-19.webp",
+            "kind": "article",
+            "caption": "ค่ายวิทยาศาสตร์ สนุกคิด ทดลองจริง",
+            "label": "ข่าวกิจกรรม",
+            "size": [
+                800,
+                450
+            ],
+            "art": "classroom",
+            "seed": 1359431500
+        },
+        {
+            "file": "document/picture-2-20.webp",
+            "kind": "article",
+            "caption": "การแข่งขันกีฬาสีภายในประจำปี",
+            "label": "ข่าวกิจกรรม",
+            "size": [
+                800,
+                450
+            ],
+            "art": "field",
+            "seed": 1205865497
+        },
+        {
+            "file": "document/picture-2-21.webp",
+            "kind": "article",
+            "caption": "โรงเรียนผ่านการประเมินสถานศึกษาปลอดภัยระดับดีเยี่ยม",
+            "label": "ข่าวประชาสัมพันธ์",
+            "size": [
+                800,
+                450
+            ],
+            "art": "",
+            "seed": 2361188284
+        },
+        {
+            "file": "document/picture-2-22.webp",
+            "kind": "article",
+            "caption": "ครูได้รับรางวัลครูดีเด่นด้านนวัตกรรมการสอน",
+            "label": "ผลงานนักเรียนและครู",
+            "size": [
+                800,
+                450
+            ],
+            "art": "",
+            "seed": 170437906
+        },
+        {
+            "file": "document/picture-2-23.webp",
+            "kind": "article",
+            "caption": "โครงการอาหารกลางวันปลอดภัย ผักจากแปลงเกษตรในโรงเรียน",
+            "label": "ข่าวกิจกรรม",
+            "size": [
+                800,
+                450
+            ],
+            "art": "garden",
+            "seed": 3245637303
+        },
+        {
+            "file": "document/picture-2-24.webp",
+            "kind": "article",
+            "caption": "อบรมปฐมพยาบาลเบื้องต้นสำหรับนักเรียนแกนนำ",
+            "label": "ข่าวกิจกรรม",
+            "size": [
+                800,
+                450
+            ],
+            "art": "classroom",
+            "seed": 3698413071
+        },
+        {
+            "file": "document/picture-2-25.webp",
+            "kind": "article",
+            "caption": "นักเรียนร่วมกิจกรรมจิตอาสาพัฒนาชุมชน",
+            "label": "ข่าวกิจกรรม",
+            "size": [
+                800,
+                450
+            ],
+            "art": "garden",
+            "seed": 388865450
+        },
+        {
+            "file": "document/picture-2-26.webp",
+            "kind": "article",
+            "caption": "ทีมหุ่นยนต์ของโรงเรียนผ่านเข้ารอบระดับประเทศ",
+            "label": "ผลงานนักเรียนและครู",
+            "size": [
+                800,
+                450
+            ],
+            "art": "workshop",
+            "seed": 2444881668
+        },
+        {
+            "file": "document/picture-2-28.webp",
+            "kind": "article",
+            "caption": "ต้อนรับคณะศึกษาดูงานจากโรงเรียนเครือข่าย",
+            "label": "ข่าวประชาสัมพันธ์",
+            "size": [
+                800,
+                450
+            ],
+            "art": "meeting",
+            "seed": 2880671348
+        },
+        {
+            "file": "document/picture-3-29.webp",
+            "kind": "article",
+            "caption": "ประกาศรับสมัครนักเรียนชั้น ม.1 และ ม.4 ปีการศึกษาหน้า",
+            "label": "รับสมัครนักเรียน",
+            "size": [
+                800,
+                450
+            ],
+            "art": "",
+            "seed": 2006206866
+        },
+        {
+            "file": "document/picture-3-32.webp",
+            "kind": "article",
+            "caption": "ประกาศรายชื่อผู้มีสิทธิ์สอบคัดเลือกนักเรียนห้องเรียนพิเศษ",
+            "label": "รับสมัครนักเรียน",
+            "size": [
+                800,
+                450
+            ],
+            "art": "",
+            "seed": 3139744485
+        },
+        {
+            "file": "document/picture-3-35.webp",
+            "kind": "article",
+            "caption": "กำหนดการมอบตัวนักเรียนใหม่",
+            "label": "รับสมัครนักเรียน",
+            "size": [
+                800,
+                450
+            ],
+            "art": "",
+            "seed": 2787213917
+        },
+        {
+            "file": "document/picture-3-36.webp",
+            "kind": "article",
+            "caption": "ประกาศเจตนารมณ์ต่อต้านการทุจริตของโรงเรียน",
+            "label": "ประกาศโรงเรียน",
+            "size": [
+                800,
+                450
+            ],
+            "art": "",
+            "seed": 548794611
+        },
+        {
+            "file": "document/picture-4-37.webp",
+            "kind": "article",
+            "caption": "5 เทคนิคช่วยลูกอ่านหนังสือให้สนุกที่บ้าน",
+            "label": "สาระน่ารู้",
+            "size": [
+                800,
+                450
+            ],
+            "art": "",
+            "seed": 2408074911
+        },
+        {
+            "file": "document/picture-4-38.webp",
+            "kind": "article",
+            "caption": "ทำความรู้จักการเรียนรู้เชิงรุก Active Learning",
+            "label": "ผลงานครู / นวัตกรรม",
+            "size": [
+                800,
+                450
+            ],
+            "art": "",
+            "seed": 2128542794
+        },
+        {
+            "file": "document/picture-4-39.webp",
+            "kind": "article",
+            "caption": "คณิตศาสตร์สนุกด้วยเกมกระดาน",
+            "label": "ผลงานครู / นวัตกรรม",
+            "size": [
+                800,
+                450
+            ],
+            "art": "",
+            "seed": 3045208047
+        },
+        {
+            "file": "document/picture-4-40.webp",
+            "kind": "article",
+            "caption": "เตรียมตัวสอบเข้ามหาวิทยาลัยอย่างไรให้พร้อม",
+            "label": "แนะแนวการศึกษาต่อ",
+            "size": [
+                800,
+                450
+            ],
+            "art": "",
+            "seed": 1462386857
+        },
+        {
+            "file": "document/picture-4-41.webp",
+            "kind": "article",
+            "caption": "รู้ทันภัยออนไลน์ ใช้สื่อสังคมอย่างปลอดภัย",
+            "label": "สาระน่ารู้",
+            "size": [
+                800,
+                450
+            ],
+            "art": "",
+            "seed": 2625016588
+        },
+        {
+            "file": "document/picture-4-42.webp",
+            "kind": "article",
+            "caption": "อาชีพแห่งอนาคตที่นักเรียนควรรู้จัก",
+            "label": "แนะแนวการศึกษาต่อ",
+            "size": [
+                800,
+                450
+            ],
+            "art": "",
+            "seed": 451076514
+        },
+        {
+            "file": "document/picture-4-43.webp",
+            "kind": "article",
+            "caption": "ปลูกผักสวนครัวในกระถาง ทำได้ง่ายที่บ้าน",
+            "label": "สาระน่ารู้",
+            "size": [
+                800,
+                450
+            ],
+            "art": "",
+            "seed": 3518902791
+        },
+        {
+            "file": "document/picture-4-44.webp",
+            "kind": "article",
+            "caption": "สรุปแนวทางการประเมินผลการเรียนสำหรับผู้ปกครอง",
+            "label": "แนะแนวการศึกษาต่อ",
+            "size": [
+                800,
+                450
+            ],
+            "art": "",
+            "seed": 3434807999
+        },
+        {
+            "file": "personnel/person-01.webp",
+            "kind": "avatar",
+            "caption": "นายวิชัย ตั้งใจสอน",
+            "size": [
+                320,
+                400
+            ],
+            "style": "m",
+            "seed": 165479594
+        },
+        {
+            "file": "personnel/person-02.webp",
+            "kind": "avatar",
+            "caption": "นางสาวอรุณี แสงทอง",
+            "size": [
+                320,
+                400
+            ],
+            "style": "f",
+            "seed": 2403956228
+        },
+        {
+            "file": "personnel/person-03.webp",
+            "kind": "avatar",
+            "caption": "นายปกรณ์ ใฝ่รู้",
+            "size": [
+                320,
+                400
+            ],
+            "style": "m",
+            "seed": 1142269345
+        },
+        {
+            "file": "personnel/person-04.webp",
+            "kind": "avatar",
+            "caption": "นางสาวพิมพ์ชนก รักเรียน",
+            "size": [
+                320,
+                400
+            ],
+            "style": "f-bun",
+            "seed": 1494258969
+        },
+        {
+            "file": "personnel/person-05.webp",
+            "kind": "avatar",
+            "caption": "นายธนพล คิดดี",
+            "size": [
+                320,
+                400
+            ],
+            "style": "m",
+            "seed": 2454472380
+        },
+        {
+            "file": "personnel/person-06.webp",
+            "kind": "avatar",
+            "caption": "นางมาลัย ศรีสุข",
+            "size": [
+                320,
+                400
+            ],
+            "style": "f-bun",
+            "seed": 349713426
+        },
+        {
+            "file": "personnel/person-07.webp",
+            "kind": "avatar",
+            "caption": "นางสาวกมลวรรณ มั่นคง",
+            "size": [
+                320,
+                400
+            ],
+            "style": "f",
+            "seed": 3750029239
+        },
+        {
+            "file": "personnel/person-08.webp",
+            "kind": "avatar",
+            "caption": "นายสุรเชษฐ์ ทองดี",
+            "size": [
+                320,
+                400
+            ],
+            "style": "m-bald",
+            "seed": 785536354
+        },
+        {
+            "file": "personnel/person-09.webp",
+            "kind": "avatar",
+            "caption": "นายอนุชา ใจกว้าง",
+            "size": [
+                320,
+                400
+            ],
+            "style": "m",
+            "seed": 3851323079
+        },
+        {
+            "file": "personnel/person-10.webp",
+            "kind": "avatar",
+            "caption": "นางสาววราภรณ์ ยิ้มแย้ม",
+            "size": [
+                320,
+                400
+            ],
+            "style": "f",
+            "seed": 1693899963
+        },
+        {
+            "file": "personnel/person-11.webp",
+            "kind": "avatar",
+            "caption": "นายสมศักดิ์ ขยันงาน",
+            "size": [
+                320,
+                400
+            ],
+            "style": "m",
+            "seed": 2947157790
+        },
+        {
+            "file": "gallery/1/album1-01.webp",
+            "kind": "photo",
+            "caption": "พิธีเปิดการแข่งขัน",
+            "label": "กีฬาสี",
+            "size": [
+                800,
+                533
+            ],
+            "scene": "field",
+            "seed": 3602318616
+        },
+        {
+            "file": "gallery/1/album1-02.webp",
+            "kind": "photo",
+            "caption": "ขบวนพาเหรดคณะสี",
+            "label": "กีฬาสี",
+            "size": [
+                800,
+                533
+            ],
+            "scene": "field",
+            "seed": 1344501686
+        },
+        {
+            "file": "gallery/1/album1-03.webp",
+            "kind": "photo",
+            "caption": "ฟุตบอลรอบชิงชนะเลิศ",
+            "label": "กีฬาสี",
+            "size": [
+                800,
+                533
+            ],
+            "scene": "field",
+            "seed": 2608833555
+        },
+        {
+            "file": "gallery/1/album1-04.webp",
+            "kind": "photo",
+            "caption": "วิ่งผลัด 4x100 เมตร",
+            "label": "กีฬาสี",
+            "size": [
+                800,
+                533
+            ],
+            "scene": "field",
+            "seed": 2256180395
+        },
+        {
+            "file": "gallery/1/album1-05.webp",
+            "kind": "photo",
+            "caption": "กองเชียร์",
+            "label": "กีฬาสี",
+            "size": [
+                800,
+                533
+            ],
+            "scene": "field",
+            "seed": 1294354190
+        },
+        {
+            "file": "gallery/1/album1-06.webp",
+            "kind": "photo",
+            "caption": "ชักเย่อ",
+            "label": "กีฬาสี",
+            "size": [
+                800,
+                533
+            ],
+            "scene": "field",
+            "seed": 3417453984
+        },
+        {
+            "file": "gallery/1/album1-07.webp",
+            "kind": "photo",
+            "caption": "มอบถ้วยรางวัล",
+            "label": "กีฬาสี",
+            "size": [
+                800,
+                533
+            ],
+            "scene": "field",
+            "seed": 15656453
+        },
+        {
+            "file": "gallery/1/album1-08.webp",
+            "kind": "photo",
+            "caption": "ภาพหมู่ทุกคณะสี",
+            "label": "กีฬาสี",
+            "size": [
+                800,
+                533
+            ],
+            "scene": "field",
+            "seed": 4055389392
+        },
+        {
+            "file": "gallery/2/album2-01.webp",
+            "kind": "photo",
+            "caption": "ขบวนพานไหว้ครู",
+            "label": "วันไหว้ครู",
+            "size": [
+                800,
+                533
+            ],
+            "scene": "stage",
+            "seed": 3337784623
+        },
+        {
+            "file": "gallery/2/album2-02.webp",
+            "kind": "photo",
+            "caption": "ผู้อำนวยการเป็นประธานในพิธี",
+            "label": "วันไหว้ครู",
+            "size": [
+                800,
+                533
+            ],
+            "scene": "stage",
+            "seed": 1080491905
+        },
+        {
+            "file": "gallery/2/album2-03.webp",
+            "kind": "photo",
+            "caption": "ตัวแทนนักเรียนกล่าวคำปฏิญาณ",
+            "label": "วันไหว้ครู",
+            "size": [
+                800,
+                533
+            ],
+            "scene": "stage",
+            "seed": 2335845412
+        },
+        {
+            "file": "gallery/2/album2-04.webp",
+            "kind": "photo",
+            "caption": "มอบพานดอกไม้",
+            "label": "วันไหว้ครู",
+            "size": [
+                800,
+                533
+            ],
+            "scene": "stage",
+            "seed": 2520718492
+        },
+        {
+            "file": "gallery/2/album2-05.webp",
+            "kind": "photo",
+            "caption": "มอบเกียรติบัตรนักเรียนดีเด่น",
+            "label": "วันไหว้ครู",
+            "size": [
+                800,
+                533
+            ],
+            "scene": "stage",
+            "seed": 1566822201
+        },
+        {
+            "file": "gallery/2/album2-06.webp",
+            "kind": "photo",
+            "caption": "ครูให้โอวาท",
+            "label": "วันไหว้ครู",
+            "size": [
+                800,
+                533
+            ],
+            "scene": "stage",
+            "seed": 3690446231
+        },
+        {
+            "file": "gallery/2/album2-07.webp",
+            "kind": "photo",
+            "caption": "ภาพหมู่ครูและนักเรียน",
+            "label": "วันไหว้ครู",
+            "size": [
+                800,
+                533
+            ],
+            "scene": "stage",
+            "seed": 279670322
+        },
+        {
+            "file": "gallery/3/album3-01.webp",
+            "kind": "photo",
+            "caption": "ลงทะเบียนเข้าค่าย",
+            "label": "ค่ายวิทยาศาสตร์",
+            "size": [
+                800,
+                533
+            ],
+            "scene": "classroom",
+            "seed": 2145454333
+        },
+        {
+            "file": "gallery/3/album3-02.webp",
+            "kind": "photo",
+            "caption": "ฐานจรวดขวดน้ำ",
+            "label": "ค่ายวิทยาศาสตร์",
+            "size": [
+                800,
+                533
+            ],
+            "scene": "classroom",
+            "seed": 4185225811
+        },
+        {
+            "file": "gallery/3/album3-03.webp",
+            "kind": "photo",
+            "caption": "ฐานวงจรไฟฟ้า",
+            "label": "ค่ายวิทยาศาสตร์",
+            "size": [
+                800,
+                533
+            ],
+            "scene": "classroom",
+            "seed": 841591286
+        },
+        {
+            "file": "gallery/3/album3-04.webp",
+            "kind": "photo",
+            "caption": "ฐานหุ่นยนต์",
+            "label": "ค่ายวิทยาศาสตร์",
+            "size": [
+                800,
+                533
+            ],
+            "scene": "classroom",
+            "seed": 791451982
+        },
+        {
+            "file": "gallery/3/album3-05.webp",
+            "kind": "photo",
+            "caption": "นำเสนอผลงานกลุ่ม",
+            "label": "ค่ายวิทยาศาสตร์",
+            "size": [
+                800,
+                533
+            ],
+            "scene": "classroom",
+            "seed": 3832564459
+        },
+        {
+            "file": "gallery/3/album3-06.webp",
+            "kind": "photo",
+            "caption": "มอบเกียรติบัตร",
+            "label": "ค่ายวิทยาศาสตร์",
+            "size": [
+                800,
+                533
+            ],
+            "scene": "classroom",
+            "seed": 1659123781
+        },
+        {
+            "file": "gallery/3/album3-07.webp",
+            "kind": "photo",
+            "caption": "ภาพหมู่ชาวค่าย",
+            "label": "ค่ายวิทยาศาสตร์",
+            "size": [
+                800,
+                533
+            ],
+            "scene": "classroom",
+            "seed": 2847468512
+        },
+        {
+            "file": "gallery/4/album4-01.webp",
+            "kind": "photo",
+            "caption": "เตรียมแปลงผัก",
+            "label": "จิตอาสา",
+            "size": [
+                800,
+                533
+            ],
+            "scene": "garden",
+            "seed": 3866729793
+        },
+        {
+            "file": "gallery/4/album4-02.webp",
+            "kind": "photo",
+            "caption": "ปลูกผักสวนครัว",
+            "label": "จิตอาสา",
+            "size": [
+                800,
+                533
+            ],
+            "scene": "garden",
+            "seed": 1626206191
+        },
+        {
+            "file": "gallery/4/album4-03.webp",
+            "kind": "photo",
+            "caption": "รดน้ำใส่ปุ๋ย",
+            "label": "จิตอาสา",
+            "size": [
+                800,
+                533
+            ],
+            "scene": "garden",
+            "seed": 2880519242
+        },
+        {
+            "file": "gallery/4/album4-04.webp",
+            "kind": "photo",
+            "caption": "เก็บผลผลิต",
+            "label": "จิตอาสา",
+            "size": [
+                800,
+                533
+            ],
+            "scene": "garden",
+            "seed": 3065253106
+        },
+        {
+            "file": "gallery/4/album4-05.webp",
+            "kind": "photo",
+            "caption": "ทำความสะอาดวัด",
+            "label": "จิตอาสา",
+            "size": [
+                800,
+                533
+            ],
+            "scene": "garden",
+            "seed": 2112413527
+        },
+        {
+            "file": "gallery/4/album4-06.webp",
+            "kind": "photo",
+            "caption": "ทาสีศาลาพักริมทาง",
+            "label": "จิตอาสา",
+            "size": [
+                800,
+                533
+            ],
+            "scene": "garden",
+            "seed": 4219252217
+        },
+        {
+            "file": "download/admission-form.docx",
+            "kind": "docx",
+            "caption": "ใบสมัครเข้าเรียน ม.1 และ ม.4",
+            "lines": [
+                "ชื่อ-นามสกุลผู้สมัคร: ...............................................",
+                "โรงเรียนเดิม: ...............................................",
+                "ระดับชั้นที่สมัคร: [ ] ม.1  [ ] ม.4",
+                "ชื่อผู้ปกครองและเบอร์โทรศัพท์: ..............................................."
+            ],
+            "label": "ดาวน์โหลดเอกสาร",
+            "seed": 325180114
+        },
+        {
+            "file": "download/leave-form.docx",
+            "kind": "docx",
+            "caption": "แบบฟอร์มใบลาป่วย ลากิจ",
+            "lines": [
+                "เรียน ครูที่ปรึกษาชั้น ........",
+                "ข้าพเจ้าขออนุญาตให้ ........................................ ลา [ ] ป่วย [ ] กิจ",
+                "ตั้งแต่วันที่ ............ ถึงวันที่ ............ รวม ........ วัน"
+            ],
+            "label": "ดาวน์โหลดเอกสาร",
+            "seed": 1382038192
+        },
+        {
+            "file": "download/academic-calendar.pdf",
+            "kind": "pdf",
+            "caption": "ปฏิทินการศึกษาประจำภาคเรียน",
+            "lines": [
+                "สัปดาห์ที่ 1 เปิดภาคเรียน ปฐมนิเทศนักเรียนใหม่",
+                "สัปดาห์ที่ 10 สอบกลางภาคเรียน",
+                "สัปดาห์ที่ 14 กีฬาสีภายใน",
+                "สัปดาห์ที่ 20 สอบปลายภาคเรียน"
+            ],
+            "label": "ดาวน์โหลดเอกสาร",
+            "seed": 2367610826
+        },
+        {
+            "file": "download/uniform-rules.pdf",
+            "kind": "pdf",
+            "caption": "ระเบียบการแต่งกายนักเรียน",
+            "lines": [
+                "เครื่องแบบนักเรียนแต่งกายตามระเบียบของโรงเรียน",
+                "วันพุธแต่งกายชุดลูกเสือ เนตรนารี ยุวกาชาด",
+                "วันศุกร์แต่งกายชุดพลศึกษาตามคณะสี"
+            ],
+            "label": "ดาวน์โหลดเอกสาร",
+            "seed": 4217527967
+        },
+        {
+            "file": "download/annual-report.pdf",
+            "kind": "pdf",
+            "caption": "รายงานผลการดำเนินงานประจำปี",
+            "lines": [
+                "ส่วนที่ 1 ข้อมูลพื้นฐานของสถานศึกษา",
+                "ส่วนที่ 2 ผลการดำเนินงานตามแผนปฏิบัติการ",
+                "ส่วนที่ 3 ผลสัมฤทธิ์ทางการเรียน",
+                "ส่วนที่ 4 การใช้งบประมาณ"
+            ],
+            "label": "ดาวน์โหลดเอกสาร",
+            "seed": 2183910794
+        },
+        {
+            "file": "download/fraction-game.zip",
+            "kind": "zip",
+            "caption": "สื่อการสอนเกมเศษส่วน",
+            "lines": [
+                "เกมกระดานตลาดเศษส่วน สำหรับนักเรียนชั้น ม.1",
+                "ในชุดประกอบด้วยคำชี้แจงและตัวอย่างบัตรคำ"
+            ],
+            "label": "ดาวน์โหลดเอกสาร",
+            "seed": 195031431
+        },
+        {
+            "file": "video/aqz-KE-bpKQ.jpg",
+            "kind": "video",
+            "caption": "วิดีโอแนะนำโรงเรียน (ตัวอย่าง)",
+            "label": "แนะนำโรงเรียน",
+            "size": [
+                480,
+                360
+            ],
+            "seed": 3350513897
+        },
+        {
+            "file": "video/YE7VzlLtp-4.jpg",
+            "kind": "video",
+            "caption": "ประมวลภาพกีฬาสีภายใน (ตัวอย่าง)",
+            "label": "กีฬาสี",
+            "size": [
+                480,
+                360
+            ],
+            "seed": 4253466568
+        },
+        {
+            "file": "video/eRsGyueVLvQ.jpg",
+            "kind": "video",
+            "caption": "พิธีไหว้ครู (ตัวอย่าง)",
+            "label": "ไหว้ครู",
+            "size": [
+                480,
+                360
+            ],
+            "seed": 304228640
+        },
+        {
+            "file": "video/R6MlUcmOul8.jpg",
+            "kind": "video",
+            "caption": "ค่ายวิทยาศาสตร์ (ตัวอย่าง)",
+            "label": "STEM",
+            "size": [
+                480,
+                360
+            ],
+            "seed": 826779991
+        },
+        {
+            "file": "video/WhWc3b3KhnY.jpg",
+            "kind": "video",
+            "caption": "ผลงานทีมหุ่นยนต์ (ตัวอย่าง)",
+            "label": "หุ่นยนต์",
+            "size": [
+                480,
+                360
+            ],
+            "seed": 2490791919
+        },
+        {
+            "file": "video/Y-rmzh0PI3c.jpg",
+            "kind": "video",
+            "caption": "จิตอาสาพัฒนาชุมชน (ตัวอย่าง)",
+            "label": "จิตอาสา",
+            "size": [
+                480,
+                360
+            ],
+            "seed": 1800401603
+        },
+        {
+            "file": "edocument/edoc-101.pdf",
+            "kind": "pdf",
+            "caption": "เชิญประชุมผู้ปกครองนักเรียนประจำภาคเรียน",
+            "lines": [
+                "เรื่อง ขอเชิญประชุมผู้ปกครองนักเรียน",
+                "เรียน ผู้ปกครองนักเรียน",
+                "ด้วยโรงเรียนกำหนดจัดประชุมผู้ปกครองนักเรียนประจำภาคเรียน จึงขอเชิญท่านเข้าร่วมประชุมตามวันและเวลาที่ระบุในปฏิทินกิจกรรม"
+            ],
+            "label": "รร 0001/ว 101",
+            "seed": 1093407407
+        },
+        {
+            "file": "edocument/edoc-102.pdf",
+            "kind": "pdf",
+            "caption": "แจ้งกำหนดการสอบกลางภาคเรียน",
+            "lines": [
+                "เรื่อง แจ้งกำหนดการสอบกลางภาคเรียน",
+                "เรียน ครูทุกกลุ่มสาระการเรียนรู้",
+                "ขอให้ส่งต้นฉบับข้อสอบที่งานวัดผลภายในวันที่กำหนด และตรวจสอบตารางคุมสอบของตนเอง"
+            ],
+            "label": "รร 0001/ว 102",
+            "seed": 109865087
+        },
+        {
+            "file": "edocument/edoc-103.docx",
+            "kind": "docx",
+            "caption": "ขอความอนุเคราะห์วิทยากรอบรมปฐมพยาบาล",
+            "lines": [
+                "เรื่อง ขอความอนุเคราะห์วิทยากร",
+                "เรียน ผู้อำนวยการหน่วยบริการสุขภาพ",
+                "โรงเรียนกำหนดจัดอบรมการปฐมพยาบาลเบื้องต้นให้นักเรียนแกนนำ จึงขอความอนุเคราะห์วิทยากร 2 ท่าน"
+            ],
+            "label": "รร 0001/ว 103",
+            "seed": 694550159
+        },
+        {
+            "file": "edocument/edoc-104.pdf",
+            "kind": "pdf",
+            "caption": "ประกาศผลการคัดเลือกนักเรียนรับทุนการศึกษา",
+            "lines": [
+                "เรื่อง ประกาศผลการคัดเลือกนักเรียนรับทุนการศึกษา",
+                "ตามที่โรงเรียนเปิดรับสมัครนักเรียนเพื่อรับทุนการศึกษา บัดนี้การคัดเลือกเสร็จสิ้นแล้ว จึงประกาศรายชื่อผู้ได้รับทุน 25 ทุน"
+            ],
+            "label": "รร 0001/ว 104",
+            "seed": 2311888351
+        },
+        {
+            "file": "edocument/edoc-105.docx",
+            "kind": "docx",
+            "caption": "รายงานผลโครงการอาหารกลางวัน",
+            "lines": [
+                "เรื่อง รายงานผลการดำเนินงานโครงการอาหารกลางวัน",
+                "เรียน ผู้อำนวยการโรงเรียน",
+                "โครงการดำเนินการครบตามเป้าหมาย นักเรียนได้รับประทานอาหารครบทุกวันทำการ ผลผลิตจากแปลงเกษตรใช้ประกอบอาหารร้อยละ 30"
+            ],
+            "label": "รร 0001/ว 105",
+            "seed": 4282129810
+        },
+        {
+            "file": "image/textlink-1.webp",
+            "kind": "slide",
+            "caption": "เปิดรับสมัครนักเรียน ม.1 และ ม.4",
+            "subtitle": "สมัครได้ที่โรงเรียนหรือออนไลน์ ห้องเรียนทั่วไปและห้องเรียนพิเศษ",
+            "label": "รับสมัครนักเรียน",
+            "button": "ดูรายละเอียด",
+            "icon": "",
+            "scene": "classroom",
+            "size": [
+                1200,
+                450
+            ],
+            "seed": 2575220315
+        },
+        {
+            "file": "image/textlink-2.webp",
+            "kind": "slide",
+            "caption": "คว้าเหรียญทอง 5 รายการ ทักษะวิชาการระดับเขต",
+            "subtitle": "ขอแสดงความยินดีกับนักเรียนและครูผู้ฝึกสอนทุกคน",
+            "label": "ผลงานนักเรียน",
+            "button": "อ่านข่าว",
+            "icon": "",
+            "scene": "stage",
+            "size": [
+                1200,
+                450
+            ],
+            "seed": 535481589
+        },
+        {
+            "file": "image/textlink-3.webp",
+            "kind": "slide",
+            "caption": "กีฬาสีภายใน สามัคคี มีน้ำใจนักกีฬา",
+            "subtitle": "ชมภาพบรรยากาศการแข่งขันและขบวนพาเหรด",
+            "label": "ภาพกิจกรรม",
+            "button": "ชมภาพ",
+            "icon": "",
+            "scene": "field",
+            "size": [
+                1200,
+                450
+            ],
+            "seed": 3568705360
+        },
+        {
+            "file": "image/textlink-4.webp",
+            "kind": "slide",
+            "caption": "โรงเรียนสีเขียว ปลูกผักปลอดสาร",
+            "subtitle": "แปลงเกษตรของนักเรียน สู่อาหารกลางวันที่ปลอดภัย",
+            "label": "เศรษฐกิจพอเพียง",
+            "button": "อ่านต่อ",
+            "icon": "",
+            "scene": "garden",
+            "size": [
+                1200,
+                450
+            ],
+            "seed": 3383963624
+        },
+        {
+            "file": "image/textlink-5.webp",
+            "kind": "banner",
+            "caption": "ระบบรับสมัครนักเรียนออนไลน์",
+            "subtitle": "กรอกใบสมัครและแนบเอกสารได้ทุกที่ ทุกเวลา",
+            "label": "",
+            "button": "สมัครเลย",
+            "icon": "",
+            "scene": "",
+            "size": [
+                970,
+                250
+            ],
+            "seed": 49282125
+        },
+        {
+            "file": "image/textlink-6.webp",
+            "kind": "banner",
+            "caption": "ประเมินคุณธรรมและความโปร่งใส ITA",
+            "subtitle": "เปิดเผยข้อมูลสาธารณะของสถานศึกษา",
+            "label": "",
+            "button": "ดูข้อมูล",
+            "icon": "",
+            "scene": "",
+            "size": [
+                970,
+                250
+            ],
+            "seed": 2222690019
+        },
+        {
+            "file": "image/textlink-7.webp",
+            "kind": "imagemenu",
+            "caption": "หนังสือราชการ",
+            "subtitle": "ระบบ e-Document",
+            "label": "",
+            "button": "",
+            "icon": "doc",
+            "scene": "",
+            "size": [
+                400,
+                120
+            ],
+            "seed": 1327979846
+        },
+        {
+            "file": "image/textlink-8.webp",
+            "kind": "imagemenu",
+            "caption": "รับสมัครนักเรียน",
+            "subtitle": "ม.1 และ ม.4",
+            "label": "",
+            "button": "",
+            "icon": "school",
+            "scene": "",
+            "size": [
+                400,
+                120
+            ],
+            "seed": 3195137939
+        },
+        {
+            "file": "image/textlink-9.webp",
+            "kind": "imagemenu",
+            "caption": "ปฏิทินกิจกรรม",
+            "subtitle": "กำหนดการภาคเรียน",
+            "label": "",
+            "button": "",
+            "icon": "calendar",
+            "scene": "",
+            "size": [
+                400,
+                120
+            ],
+            "seed": 1965898806
+        },
+        {
+            "file": "image/textlink-10.webp",
+            "kind": "imagemenu",
+            "caption": "ดาวน์โหลดแบบฟอร์ม",
+            "subtitle": "ใบสมัคร ใบลา",
+            "label": "",
+            "button": "",
+            "icon": "download",
+            "scene": "",
+            "size": [
+                400,
+                120
+            ],
+            "seed": 4115881824
+        }
+    ]
+}
