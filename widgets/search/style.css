@@ -1,0 +1,42 @@
+/* Search widget — frontend */
+.widget-search {
+  margin: 0;
+  width: 100%;
+  background: var(--color-surface);
+  border-width: var(--field-border-width);
+  border-radius: var(--field-border-radius);
+  border-style: solid;
+}
+.widget-search__field {
+  display: flex;
+  align-items: stretch;
+  overflow: hidden;
+}
+.widget-search .widget-search__submit,
+.widget-search .widget-search__input {
+  border-style: none;
+  background: transparent;
+}
+.widget-search__input {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.widget-search__submit {
+  flex: 0 0 auto;
+  cursor: pointer;
+  transition: color 0.2s ease;
+  text-shadow: 0 0 1px var(--color-background);
+}
+.widget-search:focus-within .widget-search__submit,
+.widget-search:focus-within .widget-search__input {
+  box-shadow: none;
+  background: inherit;
+}
+.widget-search:focus-within {
+  border-color: var(--highlight-bg);
+  box-shadow: 0 0 5px var(--highlight-bg);
+}
+.widget-search__submit:hover,
+.widget-search__submit:focus-visible {
+  color: var(--color-primary);
+}

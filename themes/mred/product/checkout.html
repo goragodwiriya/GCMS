@@ -1,0 +1,163 @@
+<!-- Checkout: the form loads the customer's details and the order part
+     (#checkoutOrder: lines, shipping, payment, totals) from
+     api/product/checkout/get. Changing a line or the shipping method asks the
+     cart API for the order part again and re-renders #checkoutOrder with it -->
+<article class="main-page checkout-page">
+  <header class="page-header hero">
+    <div class="container">
+      <nav class="breadcrumbs one_line">
+        <ul>{BREADCRUMBS}</ul>
+      </nav>
+      <h1 class="page__title">{LNG_Make payment}</h1>
+      <p class="page__subtitle">{LNG_Please fill in the information to proceed with your order}</p>
+    </div>
+  </header>
+  <div class="page-body">
+    <div class="container">
+      <form id="checkoutForm" class="page-content" data-form="checkout" data-validate="true" data-ajax-submit="true" data-load-api="{WEBURL}api/product/checkout/get?module_id={MODULE_ID}" action="{WEBURL}api/product/checkout/save?module_id={MODULE_ID}" method="post" autocomplete="off">
+        <div class="checkout-content">
+          <div id="checkoutOrder" class="order-summary" data-for="cart of carts">
+            <template>
+              <h2 class="summary-title">{LNG_Order summary}</h2>
+              <div class="summary-items">
+                <p class="summary-empty" data-if="cart.empty">{LNG_Cart is empty}</p>
+                <div data-for="item of cart.items">
+                  <template>
+                    <div class="summary-item">
+                      <span class="summary-item-name"><span data-text="item.topic"></span> <small data-if="item.variant" data-text="'(' + item.variant + ')'"></small></span>
+                      <span class="summary-item-qty">
+                        <button type="button" class="btn-quantity minus icon-minus" aria-label="-" data-action="click.prevent:requestApi" data-api-url="{WEBURL}api/product/cart/update?module_id={MODULE_ID}" data-api-method="post" data-attr="data-param-key:item.key, data-param-qty:item.minus" data-param-shipping-method-id="{shipping_method_id}" data-param-payment-choice="{payment_choice}" data-response-target="#checkoutOrder" data-response-bind="template"></button>
+                        <span class="qty" data-text="item.qty"></span>
+                        <button type="button" class="btn-quantity plus icon-plus" aria-label="+" data-action="click.prevent:requestApi" data-api-url="{WEBURL}api/product/cart/update?module_id={MODULE_ID}" data-api-method="post" data-attr="data-param-key:item.key, data-param-qty:item.plus" data-param-shipping-method-id="{shipping_method_id}" data-param-payment-choice="{payment_choice}" data-response-target="#checkoutOrder" data-response-bind="template"></button>
+                        <button type="button" class="btn-remove icon-delete" aria-label="{LNG_Remove}" data-action="click.prevent:requestApi" data-api-url="{WEBURL}api/product/cart/remove?module_id={MODULE_ID}" data-api-method="post" data-attr="data-param-key:item.key" data-param-shipping-method-id="{shipping_method_id}" data-param-payment-choice="{payment_choice}" data-response-target="#checkoutOrder" data-response-bind="template"></button>
+                      </span>
+                      <span class="summary-item-total" data-text="item.total"></span>
+                    </div>
+                  </template>
+                </div>
+              </div>
+              <fieldset data-if="cart.has_methods">
+                <h3 class="summary-title">{LNG_Shipping method}</h3>
+                <ul class="payment-methods shipping-methods" data-for="method of cart.methods">
+                  <template>
+                    <li>
+                      <label class="payment-method-option">
+                        <input type="radio" name="shipping_method_id" data-attr="value:method.id, checked:method.checked" data-action="change:requestApi" data-api-url="{WEBURL}api/product/cart/checkout?module_id={MODULE_ID}" data-api-method="get" data-param-shipping-method-id="{shipping_method_id}" data-param-payment-choice="{payment_choice}" data-response-target="#checkoutOrder" data-response-bind="template">
+                        <span class="shipping-name" data-text="method.name"></span>
+                        <span class="shipping-fee" data-text="method.fee"></span>
+                      </label>
+                    </li>
+                  </template>
+                </ul>
+              </fieldset>
+              <div class="summary-totals">
+                <div class="summary-row">
+                  <span>{LNG_Subtotal}</span>
+                  <span data-text="cart.subtotal"></span>
+                </div>
+                <div class="summary-row">
+                  <span>{LNG_Shipping}</span>
+                  <span data-text="cart.shipping"></span>
+                </div>
+                <div class="summary-row total">
+                  <span>{LNG_Grand Total}</span>
+                  <span data-text="cart.total"></span>
+                </div>
+              </div>
+              <fieldset>
+                <h3 class="summary-title">{LNG_Payment Method}</h3>
+                <p class="payment-method-empty" data-if="!cart.has_payments">{LNG_No payment methods configured}</p>
+                <ul class="payment-methods" data-for="payment of cart.payments">
+                  <template>
+                    <li>
+                      <label class="payment-method-option">
+                        <input type="radio" name="payment_choice" data-attr="value:payment.value, checked:payment.checked">
+                        <span data-text="payment.label"></span>
+                      </label>
+                      <div class="payment-details payment-details-card" data-if="payment.value === 'bank'">
+                        <p class="comment">{LNG_Transfer to the account below and attach the slip.}</p>
+                        <div class="bank-info" data-text="payment.detail"></div>
+                      </div>
+                      <div class="payment-details payment-details-card qr-code-info" data-if="payment.value === 'promptpay'">
+                        <div class="qr-code-container">
+                          <img class="payment-qr" data-attr="src:payment.qr" alt="PromptPay QR">
+                          <div class="qr-code-amount"><strong>{LNG_Amount}</strong> <span data-text="cart.total"></span></div>
+                        </div>
+                        <ol class="qr-code-instructions">
+                          <li>{LNG_Open your banking app}</li>
+                          <li>{LNG_Scan QR Code with PromptPay}</li>
+                          <li>{LNG_Make payment for the displayed amount}</li>
+                          <li>{LNG_Save proof of payment}</li>
+                        </ol>
+                      </div>
+                    </li>
+                  </template>
+                </ul>
+              </fieldset>
+            </template>
+          </div>
+          <div class="checkout-form-wrapper">
+            <fieldset class="form-section">
+              <h3 class="section__header">{LNG_Customer information}</h3>
+              <div>
+                <label for="name">{LNG_Name}</label>
+                <span class="form-control icon-profile">
+                  <input type="text" id="name" name="name" data-attr="value:name" required maxlength="150">
+                </span>
+              </div>
+              <div>
+                <label for="phone">{LNG_Phone}</label>
+                <span class="form-control icon-phone">
+                  <input type="tel" id="phone" name="phone" data-attr="value:phone" required maxlength="20">
+                </span>
+              </div>
+            </fieldset>
+            <fieldset class="form-section">
+              <h3 class="section__header">{LNG_Shipping Address}</h3>
+              <div>
+                <label for="address">{LNG_Address}</label>
+                <span class="form-control icon-address">
+                  <textarea id="address" name="address" rows="3" data-text="address" required maxlength="64"></textarea>
+                </span>
+              </div>
+              <div class="form-group">
+                <div class="width50">
+                  <label for="provinceID">{LNG_Province}</label>
+                  <span class="form-control icon-location">
+                    <input type="text" id="provinceID" name="provinceID" data-attr="value:provinceID" placeholder="{LNG_Type to search}">
+                  </span>
+                </div>
+                <div class="width50">
+                  <label for="zipcode">{LNG_Zipcode}</label>
+                  <span class="form-control icon-location">
+                    <input type="text" id="zipcode" name="zipcode" data-attr="value:zipcode" inputmode="numeric" maxlength="5">
+                  </span>
+                </div>
+              </div>
+            </fieldset>
+            <fieldset class="form-section payment-proof">
+              <h3 class="section__header">{LNG_Payment Proof}</h3>
+              <div>
+                <label for="payment_proof">{LNG_Attach money transfer slip}</label>
+                <span class="form-control icon-upload">
+                  <input type="file" id="payment_proof" name="payment_proof" accept="image/*" data-files="payment_proof" data-preview="true">
+                </span>
+                <div class="comment" id="result_payment_proof">{LNG_Browse image uploaded, type} jpg, jpeg, png, webp</div>
+              </div>
+            </fieldset>
+            <fieldset class="form-section">
+              <h3 class="section__header">{LNG_Notes}</h3>
+              <span class="form-control icon-file">
+                <textarea id="comment" name="comment" rows="4" placeholder="{LNG_Provide additional information, such as preferred delivery time}"></textarea>
+              </span>
+            </fieldset>
+            <fieldset class="submit">
+              <a class="btn btn-secondary icon-prev" href="{SHOP_URL}">{LNG_Continue shopping}</a>
+              <button type="submit" class="btn btn-primary btn-submit icon-valid">{LNG_Confirm Order}</button>
+            </fieldset>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+</article>

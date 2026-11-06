@@ -1,0 +1,62 @@
+/* Event widget — frontend (upcoming events list) */
+.widget-event-upcoming {
+  display: flex;
+  flex-direction: column;
+  gap: .55rem;
+}
+
+.widget-event-item {
+  display: flex;
+  align-items: center;
+  gap: .7rem;
+  padding: .5rem .6rem;
+  border: 1px solid var(--border-color, #e5e7eb);
+  border-left: 3px solid var(--event-color, #4CAF50);
+  border-radius: 8px;
+  color: inherit;
+  text-decoration: none;
+  transition: box-shadow .2s ease;
+}
+
+.widget-event-item:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, .08);
+}
+
+.widget-event-date {
+  flex: 0 0 auto;
+  width: 2.9rem;
+  height: 2.9rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background-color: var(--event-color, #4CAF50);
+  color: #fff;
+  line-height: 1;
+}
+
+.widget-event-day {
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
+.widget-event-month {
+  font-size: .7rem;
+  text-transform: uppercase;
+  opacity: .9;
+}
+
+.widget-event-item .widget-body {
+  min-width: 0;
+}
+
+.widget-event-item h3 {
+  margin: 0 0 .15rem;
+  font-size: .92rem;
+}
+
+.widget-event-item .description {
+  font-size: .8em;
+  opacity: .75;
+}

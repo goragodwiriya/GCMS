@@ -1,0 +1,111 @@
+/* Product module — admin pages (loaded by admin/index.php) */
+
+/* Product editor: variant matrix stays inside its card */
+#variantTable {
+  table-layout: fixed;
+}
+#variantTable th:first-child {
+  width: 30%;
+}
+#variantTable th:last-child {
+  width: 90px;
+}
+#variantTable input[type="text"],
+#variantTable input[type="number"],
+#variantTable select {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+/* Product editor: the first picture is the product's main picture */
+#productForm .file-preview > .preview-item[data-existing="true"]:first-child {
+  box-shadow: inset 0 0 0 2px var(--color-primary);
+}
+.attribute-chooser {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-6);
+  margin: var(--space-3) 0;
+}
+
+/* Attribute and shipping-method editors: one card per entry */
+.attribute-card,
+.shipping-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius-lg);
+}
+.attr-head,
+.ship-head,
+.attr-value-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+.attr-head > .form-control,
+.ship-head > .form-control,
+.attr-value-row > .form-control {
+  flex: 1 1 180px;
+}
+.attr-values {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding-left: var(--space-4);
+  border-left: 2px solid var(--color-border);
+}
+.attribute-card > .a-add-val {
+  align-self: flex-start;
+}
+.ship-rates {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: var(--space-3);
+  align-items: end;
+}
+.ship-rates label {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.ship-rates label:has(> input[type="checkbox"]) {
+  flex-direction: row;
+  align-items: center;
+}
+.ship-rates select,
+.ship-rates input[type="number"] {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Order page: verify buttons side by side */
+#verifyActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+#verifyActions .btn {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  width: auto;
+  height: 40px;
+  line-height: 1;
+}
+
+/* POS: quantity of a cart line — narrower than a table cell's input
+   (td input[type="number"] sets width 100% and min-width 20em) */
+#posCartRows .pos-qty {
+  width: 5em;
+  min-width: 0;
+}
+/* Order: the customer's payment slip */
+.payment-proof-img {
+  max-width: 240px;
+}

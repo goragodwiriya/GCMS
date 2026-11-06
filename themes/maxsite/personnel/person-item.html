@@ -1,0 +1,17 @@
+<article class="person-card level-{LEVEL}" data-id="{ID}" data-level="{LEVEL}" data-photo="{IMAGE}" data-name="{NAME}" data-position="{POSITION}" data-department="{DEPARTMENT}"
+         data-phone="{PHONE}" data-email="{EMAIL}" data-detail="{DETAIL}">
+  <div class="person-photo-wrap">
+    <img class="person-photo" src="{IMAGE}" alt="{NAME}" loading="lazy" data-modal-target="photo">
+    <div class="person-overlay">
+      <button class="person-view-btn icon-user" data-modal="personnel-modal"
+              data-modal-bind="name:name,position:position,department:department,photo:photo,phone:phone,email:email,detail:detail">
+        {LNG_View details}
+      </button>
+    </div>
+  </div>
+  <div class="person-info">
+    <h3 class="person-name">{NAME}</h3>
+    <p class="person-position">{POSITION}</p>
+    <p class="person-department icon-home">{DEPARTMENT}</p>
+  </div>
+</article>

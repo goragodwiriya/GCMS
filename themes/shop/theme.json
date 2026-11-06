@@ -1,0 +1,39 @@
+{
+  "name": "e-Commerce",
+  "version": "1.0.0",
+  "author": "Goragod Wiriya",
+  "author_url": "https://goragod.com",
+  "description": "Theme หนึ่งคอลัมน์ เหมาะสำหรับร้านค้าออนไลน์ (e-commerce)",
+  "screenshot": "screenshot.webp",
+  "license": "MIT",
+  "layouts": [
+    "main",
+    "auth",
+    "blank",
+    "full-width"
+  ],
+  "components": [
+    "header",
+    "footer",
+    "navbar",
+    "sidebar",
+    "breadcrumb",
+    "pagination"
+  ],
+  "colors": {
+    "primary": "#FF0000",
+    "primary_hover": "#CC0000",
+    "secondary": "#6B645D",
+    "accent": "#DC2626",
+    "background": "#ffffff",
+    "text": "#2C2825"
+  },
+  "settings": {
+    "show_sidebar": false,
+    "sidebar_position": "none",
+    "footer_columns": 3,
+    "show_breadcrumb": true,
+    "show_search": true,
+    "products_per_page": 12
+  }
+}

@@ -1,0 +1,9 @@
+RewriteEngine On
+
+# Admin SPA routing
+# If the requested file or directory doesn't exist, serve index.php
+# This allows the SPA router to handle all client-side routes
+# index.php auto-generates <base href> from its real path, so no hardcoded subfolder needed
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.*)$ index.php [L,QSA]

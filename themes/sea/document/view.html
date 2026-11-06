@@ -1,0 +1,36 @@
+<article class="main-page view-page">
+  <header class="page-header view-header">
+    <div class="container">
+      <nav class="breadcrumbs one_line">
+        <ul>{BREADCRUMBS}</ul>
+      </nav>
+      <h1 class="page__title">{TOPIC}</h1>
+      <div class="header-meta">
+        <a href="{WEBURL}{MODULE}/{CATEGORY_ID}" class="badge category">{CATEGORY}</a>
+        <time class="date icon-calendar" datetime="{DATE}">{DATE {DATE} d M Y}</time>
+        <span class="icon-visited">{VISITED}</span>
+        <span class="icon-comments">{COMMENTS} {LNG_Comments}</span>
+      </div>
+    </div>
+  </header>
+  <div class="page-body">
+    <div class="container">
+      <div class="page-content">
+        {IMAGE}
+        <section class="page-detail">{DETAIL}</section>
+        <footer>{WIDGET_SHARE}</footer>
+        <section class="related-articles">
+          <h2>{LNG_Related Articles}</h2>
+          {WIDGET_RELATED module={MODULE};id={ID};count=6;}
+        </section>
+        <section class="document-comments" id="document-comments">{COMMENT_LIST}</section>
+        {COMMENT_FORM}
+      </div>
+    </div>
+  </div>
+</article>
+<script>
+  window.addEventListener('DOMContentLoaded', () => {
+    initDocumentView();
+  });
+</script>

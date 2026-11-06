@@ -1,0 +1,54 @@
+/* Language switcher widget — frontend */
+/* The header slot every shipped theme gives it, in its index.html */
+.header-language {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+/* Themes whose header stacks a banner over a full-width menu bar (gts,
+   maxsite, sred) give it a slim row of its own at the top instead */
+.header > .container > .header-language {
+  justify-content: flex-end;
+  padding: 6px 0;
+}
+.widget-language {
+  display: flex;
+  width: fit-content;
+  align-items: center;
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid color-mix(in srgb, currentColor 25%, transparent);
+  border-radius: 999px;
+  line-height: 1;
+}
+.widget-language a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: inherit;
+  text-decoration: none;
+  opacity: 0.75;
+  transition: background-color 0.2s ease, color 0.2s ease, opacity 0.2s ease;
+}
+.widget-language a:hover,
+.widget-language a:focus-visible {
+  opacity: 1;
+  background: color-mix(in srgb, currentColor 12%, transparent);
+}
+/* Tinted from the text colour, not --highlight-bg: headers are often painted
+   in the primary colour themselves, which would swallow a primary pill */
+.widget-language a.active {
+  opacity: 1;
+  background: color-mix(in srgb, currentColor 22%, transparent);
+}
+.widget-language img {
+  display: block;
+  width: 16px;
+  height: 11px;
+  border-radius: 2px;
+}

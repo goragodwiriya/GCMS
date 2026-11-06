@@ -1,0 +1,13 @@
+<!-- Questions of the open attempt (question.html + choice.html). [data-countdown]
+     is the time left in seconds — modules/elearning/script.js submits the form at 0 -->
+<form data-form="elearningAnswer" class="flex column gap-4" novalidate action="{WEBURL}api/elearning/learn/submit" method="post" data-ajax-submit="true" data-confirm="{LNG_Submit your answers? They cannot be changed afterwards}">
+  <input type="hidden" name="quiz_id" value="{QUIZ_ID}">
+  <input type="hidden" name="attempt_id" value="{ATTEMPT_ID}">
+  <aside class="warning" {TIMER_HIDDEN}>
+    <span class="icon-clock">{LNG_Time left}</span> <strong data-countdown="{REMAINING}">{TIME_LEFT}</strong>
+  </aside>
+  {QUESTIONS}
+  <fieldset class="submit text-center">
+    <button type="submit" class="btn btn-primary large icon-send">{LNG_Submit answers}</button>
+  </fieldset>
+</form>

@@ -1,0 +1,31 @@
+<!-- Sign in to a course for students in the school's registry (grade module) -->
+<section class="section-bg">
+  <div class="section__header">
+    <h2 class="icon-signin">{LNG_Sign in to start learning}</h2>
+  </div>
+  <div class="section__body">
+    <form data-form="elearningEnter" novalidate autocomplete="off" action="{WEBURL}api/elearning/learn/enter" method="post" data-ajax-submit="true">
+      <input type="hidden" name="course_id" value="{COURSE_ID}">
+      <fieldset>
+        <div class="form-group">
+          <div class="width50">
+            <label for="elearning_student_code">{LNG_Student ID or citizen ID}</label>
+            <span class="form-control icon-profile">
+              <input type="text" id="elearning_student_code" name="student_code" maxlength="20" required>
+            </span>
+          </div>
+          <div class="width50">
+            <label for="elearning_birthday">{LNG_Birthday}</label>
+            <span class="form-control icon-calendar">
+              <input type="text" id="elearning_birthday" name="birthday" required data-element="mask" data-format="date" placeholder="{LNG_dd/mm/yyyy}">
+            </span>
+            <div class="comment">{LNG_Buddhist or Christian year, e.g. 15/03/2555}</div>
+          </div>
+        </div>
+      </fieldset>
+      <fieldset class="submit">
+        <button type="submit" class="btn btn-primary large icon-signin">{LNG_Start learning}</button>
+      </fieldset>
+    </form>
+  </div>
+</section>
