@@ -1,0 +1,89 @@
+/* Widget Product — the layouts are the document widget's (.listview /
+   .iconview / .thumbview in themes/gcms.css); this adds the product parts:
+   square pictures, price, badges and the add-to-cart button */
+.widget-product.thumbview .figure,
+.widget-product-carousel .figure,
+.widget-product-highlight > .item .figure {
+  aspect-ratio: 1 / 1;
+}
+.widget-product .product-price,
+.widget-product-highlight .product-price {
+  color: var(--shop-price, var(--color-primary));
+  font-weight: var(--font-weight-bold, 700);
+  white-space: nowrap;
+}
+.widget-product .product-price .currency,
+.widget-product-highlight .product-price .currency {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+  font-weight: normal;
+}
+.widget-product .figure .badge-new,
+.widget-product-highlight .figure .badge-new {
+  position: absolute;
+  top: .5rem;
+  left: .5rem;
+}
+.widget-product h3 a,
+.widget-product-highlight h3 a {
+  color: inherit;
+}
+.widget-product .item footer,
+.widget-product-highlight .item footer {
+  justify-content: flex-end;
+  gap: var(--space-2);
+}
+.widget-product-carousel .item footer {
+  justify-content: space-between;
+}
+.widget-product-carousel h3 {
+  -webkit-line-clamp: 1;
+}
+/* list : name left, price right — the button is on the product's page */
+.widget-product.listview .widget-body > div:first-child {
+  justify-content: space-between;
+}
+/* list / icon : the picture is too small for a badge */
+.widget-product.listview .figure .badge,
+.widget-product.iconview .figure .badge,
+.widget-product-highlight .iconview .figure .badge {
+  display: none;
+}
+/* icon : picture | name + price | button */
+.widget-product.iconview .widget-body,
+.widget-product-highlight .iconview .widget-body {
+  flex-direction: row;
+  align-items: center;
+  gap: var(--space-2);
+}
+.widget-product.iconview .widget-body > div:first-child,
+.widget-product-highlight .iconview .widget-body > div:first-child {
+  flex: 1;
+  min-width: 0;
+}
+.widget-product.iconview .description,
+.widget-product-highlight .iconview .description {
+  display: none;
+}
+/* highlight : 1 large + up to 4 small */
+.widget-product-highlight {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  align-items: start;
+}
+.widget-product-highlight .iconview {
+  display: grid;
+  gap: var(--space-2);
+}
+.widget-product-highlight > .item .figure {
+  max-height: 20.1rem;
+}
+.widget-product-highlight .iconview .item {
+  max-height: 7rem;
+}
+@media (max-width: 768px) {
+  .widget-product-highlight {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,0 +1,11 @@
+/* Event module — admin table styling */
+.event-color-dot:before {
+  content: '';
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  margin-right: 0.35em;
+  border-radius: 50%;
+  background-color: var(--color);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .15);
+}

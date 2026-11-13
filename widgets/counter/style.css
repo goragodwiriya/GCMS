@@ -1,0 +1,33 @@
+/* Counter widget — frontend */
+.widget-counter {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.widget-counter__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-6);
+  padding: var(--space-2);
+}
+.widget-counter__label {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  font-size: .9em;
+  opacity: .85;
+}
+.widget-counter__value {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.widget-counter__row.is-total {
+  border-top: 1px dashed var(--color-border);
+}
+.widget-counter__row.is-total .widget-counter__value {
+  color: var(--color-primary);
+}

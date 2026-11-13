@@ -1,0 +1,14 @@
+<div class="board-reply" id="reply-{REPLY_ID}">
+  <div class="board-reply-meta">
+    <span class="board-reply-author icon-user">{REPLY_SENDER}</span>
+    <span class="date icon-calendar">{DATE {REPLY_DATE} d M Y H:i}</span>
+    <div class="comment-actions {MODERATOR}">
+      <button type="button" class="icon-delete" data-id="delete-{MODULE_ID}-{ID}-{REPLY_ID}"></button>
+      <a class="icon-edit {REPLY_CAN_EDIT}" href="{REPLY_EDIT_URL}" title="{LNG_Edit}"></a>
+    </div>
+  </div>
+  <div class="page-detail">
+    {REPLY_PICTURE}
+    {REPLY_DETAIL}
+  </div>
+</div>

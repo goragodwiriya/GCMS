@@ -1,0 +1,50 @@
+<!-- Products listing: filter sidebar (api/product/filter) + listitem.html per product -->
+<article class="main-page books-list-page">
+  <header class="page-header hero">
+    <div class="container">
+      <nav class="breadcrumbs one_line">
+        <ul>{BREADCRUMBS}</ul>
+      </nav>
+      <h1 class="page__title">{TOPIC}</h1>
+      <p class="page__subtitle">{DESCRIPTION}</p>
+    </div>
+  </header>
+  <div class="page-body list-content-section">
+    <div class="container">
+      <div class="page-content">
+        <div class="list-layout">
+          <aside class="filters-sidebar">
+            <div class="filters-wrapper" data-component="api" data-endpoint="{WEBURL}api/product/filter?module_id={MODULE_ID}&amp;cat={CATEGORY_IDS}" data-method="GET" data-url-params="true" data-on-load="initProductFilters">
+              <h2 class="sidebar-title">{LNG_Filters}</h2>
+              <div class="filter-group">
+                <label for="searchInput" class="filter-label">{LNG_Search}</label>
+                <span class="form-control">
+                  <input type="text" class="search-input" id="searchInput" placeholder="{LNG_Type to search}" data-attr="value:search">
+                  <button type="button" class="icon-search" id="searchButton" aria-label="{LNG_Search}"></button>
+                </span>
+              </div>
+              <div class="filter-group">
+                <span class="filter-label">{LNG_Categories}</span>
+                <ul class="filter-categories" data-for="item of categories">
+                  <template>
+                    <li>
+                      <input type="checkbox" name="category_id[]" data-attr="id:'category_' + item.id,value:item.id">
+                      <label data-attr="for:'category_' + item.id" data-text="item.topic"></label>
+                    </li>
+                  </template>
+                </ul>
+              </div>
+              <div class="filter-group">
+                <button type="button" id="clearFilters" class="btn btn-secondary width100">{LNG_Clear All Filters}</button>
+              </div>
+            </div>
+          </aside>
+          <div class="books-grid-section">
+            <div class="ggrid">{LIST}</div>
+            <nav class="pagination-wrapper">{PAGINATION}</nav>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</article>

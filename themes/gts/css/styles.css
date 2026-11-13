@@ -1,0 +1,74 @@
+:root {
+  --board-radius: 6px;
+  --card-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  --color-accent: #33ccff;
+  --color-border: #d7ccc8;
+  --color-page-bg: #fdf6ec;
+  --color-primary: #e67e22;
+  --color-primary-dark: #a04000;
+  --color-primary-hover: #d35400;
+  --color-primary-light: #f39c12;
+  --color-primary-main: #e67e22;
+  --color-primary-rgb: 230, 126, 34;
+  --color-surface-bg: #fff8f0;
+  --color-text: #3e2723;
+  --color-text-muted: #8d6e63;
+  --color-text-secondary: #5d4037;
+  --footer-bg: #3e2723;
+  --footer-border: #5d4037;
+  --footer-heading: #f39c12;
+  --footer-text: #fff8f0;
+  --header-bg: #3e2723;
+  --header-border: #5d4037;
+  --header-link-hover: #FFFFFF;
+  --header-text: #EEEEEE;
+  --home-bg: #FFFFFF;
+  --home-radius: 0;
+  --home-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  --topmenu-highlight-bg: #d35400;
+  --topmenu-highlight-text: #FFFFFF;
+  --topmenu-select-bg: #f39c12;
+  --topmenu-select-text: #fff8f0;
+  --topmenu-bg: #333333;
+  --topmenu-text-color: #FFFFFF;
+  --topmenu-gap: 0;
+}
+.page-section__bg section,
+.section-bg {
+  box-shadow: var(--home-shadow);
+}
+.breadcrumbs {
+  background-color: rgb(0, 0, 0, 0.05);
+  padding: var(--space-1) var(--space-2);
+  width: 100%;
+}
+.breadcrumbs li:not(:first-child)::before {
+  content: '▸';
+  color: var(--color-accent);
+}
+.section__body {
+  padding-top: 0;
+}
+.home .section__body,
+.page-body {
+  padding-top: var(--space-4);
+}
+.main-page {
+  background-color: var(--home-bg);
+  padding: var(--space-4);
+}
+/* Header banner: {LOGO} is the header logo image (Settings) or, when none is set, the site name */
+.img-logo {
+  display: block;
+  color: var(--color-primary-dark);
+}
+.img-logo img {
+  display: block;
+  width: 100%;
+}
+.img-logo > span {
+  display: block;
+  padding: var(--space-8) 0;
+  font-size: var(--font-size-3xl);
+  font-weight: 700;
+}
